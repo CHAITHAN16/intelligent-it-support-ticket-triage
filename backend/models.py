@@ -59,22 +59,27 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     name: Mapped[str] = mapped_column(String(150), nullable=False)
-    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(SqlEnum(UserRole, name="user_role"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    __table_args__ = (UniqueConstraint("id", "role", name="uq_users_id_role"),)
+    __table_args__ = (
+        UniqueConstraint("email", name="uq_users_email"),
+        UniqueConstraint("id", "role", name="uq_users_id_role"),
+    )
 
 
 class Team(Base):
     __tablename__ = "teams"
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
-    name: Mapped[str] = mapped_column(String(150), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(150), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (UniqueConstraint("name", name="uq_teams_name"),)
 
 
 class TeamMember(Base):
@@ -83,7 +88,10 @@ class TeamMember(Base):
     team_id: Mapped[int] = mapped_column(ForeignKey("teams.id", ondelete="RESTRICT"), primary_key=True)
     user_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     member_role: Mapped[UserRole] = mapped_column(
-        SqlEnum(UserRole, name="user_role", create_type=False), nullable=False, default=UserRole.SUPPORT_AGENT
+        SqlEnum(UserRole, name="user_role", create_type=False),
+        nullable=False,
+        default=UserRole.SUPPORT_AGENT,
+        server_default="SUPPORT_AGENT",
     )
     joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
@@ -129,6 +137,9 @@ class Ticket(Base):
         CheckConstraint("closed_at IS NULL OR closed_at >= created_at", name="chk_closed_timestamp"),
         Index("idx_tickets_status_priority", "status", "priority"),
         Index("idx_tickets_category", "category", "subcategory"),
+        Index("idx_tickets_creator", "creator_id"),
+        Index("idx_tickets_assigned_team", "assigned_team_id"),
+        Index("idx_tickets_assigned_agent", "assigned_agent_id"),
         Index("idx_tickets_created_at", "created_at"),
     )
 
@@ -157,6 +168,9 @@ class TicketAssignment(Base):
         CheckConstraint("unassigned_at IS NULL OR unassigned_at >= assigned_at", name="chk_assignment_dates"),
         Index("idx_ticket_assignments_ticket", "ticket_id", "assigned_at"),
         Index("idx_ticket_assignments_active", "ticket_id", postgresql_where=(unassigned_at.is_(None))),
+        Index("idx_ticket_assignments_agent", "agent_id", "assigned_at"),
+        Index("idx_ticket_assignments_team", "team_id", "assigned_at"),
+        Index("idx_ticket_assignments_source", "source", "assigned_at"),
     )
 
 
