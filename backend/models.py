@@ -11,6 +11,7 @@ from sqlalchemy import (
     Enum as SqlEnum,
     ForeignKey,
     ForeignKeyConstraint,
+    Identity,
     Index,
     Numeric,
     String,
@@ -56,7 +57,7 @@ class AssignmentSource(str, Enum):
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     role: Mapped[UserRole] = mapped_column(SqlEnum(UserRole, name="user_role"), nullable=False)
@@ -69,7 +70,7 @@ class User(Base):
 class Team(Base):
     __tablename__ = "teams"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     name: Mapped[str] = mapped_column(String(150), nullable=False, unique=True)
     description: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -95,7 +96,7 @@ class TeamMember(Base):
 class Ticket(Base):
     __tablename__ = "tickets"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     category: Mapped[str | None] = mapped_column(String(100))
@@ -135,7 +136,7 @@ class Ticket(Base):
 class TicketAssignment(Base):
     __tablename__ = "ticket_assignments"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
     team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id", ondelete="RESTRICT"))
     agent_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
@@ -162,7 +163,7 @@ class TicketAssignment(Base):
 class TicketStatusHistory(Base):
     __tablename__ = "ticket_status_history"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
     old_status: Mapped[TicketStatus | None] = mapped_column(SqlEnum(TicketStatus, name="ticket_status", create_type=False))
     new_status: Mapped[TicketStatus] = mapped_column(SqlEnum(TicketStatus, name="ticket_status", create_type=False), nullable=False)
