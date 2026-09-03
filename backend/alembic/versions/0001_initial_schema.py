@@ -8,6 +8,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 revision: str = "0001_initial_schema"
@@ -15,10 +16,10 @@ down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-user_role = sa.Enum("EMPLOYEE", "SUPPORT_AGENT", "ADMIN", name="user_role")
-ticket_status = sa.Enum("NEW", "ASSIGNED", "IN_PROGRESS", "WAITING_FOR_USER", "RESOLVED", "CLOSED", name="ticket_status")
-ticket_priority = sa.Enum("LOW", "MEDIUM", "HIGH", "URGENT", name="ticket_priority")
-assignment_source = sa.Enum("AI", "SYSTEM", "HUMAN", name="assignment_source")
+user_role = postgresql.ENUM("EMPLOYEE", "SUPPORT_AGENT", "ADMIN", name="user_role", create_type=False)
+ticket_status = postgresql.ENUM("NEW", "ASSIGNED", "IN_PROGRESS", "WAITING_FOR_USER", "RESOLVED", "CLOSED", name="ticket_status", create_type=False)
+ticket_priority = postgresql.ENUM("LOW", "MEDIUM", "HIGH", "URGENT", name="ticket_priority", create_type=False)
+assignment_source = postgresql.ENUM("AI", "SYSTEM", "HUMAN", name="assignment_source", create_type=False)
 
 
 def upgrade() -> None:
