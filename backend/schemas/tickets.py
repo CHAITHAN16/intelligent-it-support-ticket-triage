@@ -18,6 +18,22 @@ class TicketCreate(BaseModel):
         return value
 
 
+class TicketUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, max_length=255)
+    description: str | None = None
+    category: str | None = None
+    subcategory: str | None = None
+    priority: TicketPriority | None = None
+    status: TicketStatus | None = None
+
+    @field_validator("title", "description")
+    @classmethod
+    def reject_empty_text(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("must not be empty")
+        return value
+
+
 class TicketResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

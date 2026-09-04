@@ -1,10 +1,12 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Ticket, TicketPriority, TicketStatus
-from schemas.tickets import TicketCreate, TicketResponse
+from schemas.tickets import TicketCreate, TicketResponse, TicketUpdateRequest
 
 
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
@@ -21,6 +23,24 @@ def get_ticket(ticket_id: int, db: Session = Depends(get_db)) -> Ticket:
     ticket = db.get(Ticket, ticket_id)
     if ticket is None:
         raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
+    return ticket
+
+
+@router.patch("/{ticket_id}", response_model=TicketResponse)
+def update_ticket(ticket_id: int, payload: TicketUpdateRequest, db: Session = Depends(get_db)) -> Ticket:
+    ticket = db.get(Ticket, ticket_id)
+    if ticket is None:
+        raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
+
+    updates = payload.model_dump(exclude_unset=True)
+    for field, value in updates.items():
+        setattr(ticket, field, value)
+
+    if updates:
+        ticket.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(ticket)
+
     return ticket
 
 
