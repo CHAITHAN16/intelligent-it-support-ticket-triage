@@ -1,0 +1,19 @@
+{
+  "model_name": "IT support subcategory classifier",
+  "model_version": "ml-v1",
+  "target": "subcategory",
+  "dataset_path": "datasets/processed/tickets_ml_v1.csv",
+  "training_sample_count": 977,
+  "test_sample_count": 245,
+  "random_state": 42,
+  "class_names": [
+    "Hardware Support",
+    "Network Infrastructure",
+    "Security Operations",
+    "Software Development"
+  ],
+  "accuracy": 0.9918367346938776,
+  "macro_precision": 0.9933333333333334,
+  "macro_recall": 0.9916643512086691,
+  "macro_f1": 0.9924187537823902
+}
