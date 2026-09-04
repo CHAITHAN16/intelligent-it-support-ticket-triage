@@ -1,0 +1,18 @@
+{
+  "model_name": "IT support priority classifier",
+  "model_version": "ml-v1",
+  "target": "priority",
+  "dataset_path": "datasets/processed/tickets_ml_v1.csv",
+  "training_sample_count": 977,
+  "test_sample_count": 245,
+  "random_state": 42,
+  "class_names": [
+    "HIGH",
+    "LOW",
+    "MEDIUM"
+  ],
+  "accuracy": 0.9428571428571428,
+  "macro_precision": 0.942726485124146,
+  "macro_recall": 0.9428030303030304,
+  "macro_f1": 0.9427391070613577
+}
