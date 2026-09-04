@@ -57,15 +57,17 @@ def create_ticket(payload: TicketCreate, db: Session = Depends(get_db)) -> Ticke
         status=TicketStatus.NEW,
     )
 
+    db.add(ticket)
+    db.flush()
+
     triage_result = TriageService().triage(ticket.title, ticket.description)
     ticket.ai_predicted_category = triage_result.category
     ticket.ai_predicted_subcategory = triage_result.subcategory
     ticket.ai_predicted_priority = triage_result.priority
     ticket.ai_confidence = triage_result.confidence
     ticket.ai_model_version = triage_result.model_version
-    ticket.ai_triaged_at = datetime.now(timezone.utc)
+    ticket.ai_triaged_at = max(datetime.now(timezone.utc), ticket.created_at)
 
-    db.add(ticket)
     db.commit()
     db.refresh(ticket)
     return ticket
