@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -7,6 +8,12 @@ from schemas.tickets import TicketCreate, TicketResponse
 
 
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
+
+
+@router.get("", response_model=list[TicketResponse])
+def list_tickets(db: Session = Depends(get_db)) -> list[Ticket]:
+    statement = select(Ticket).order_by(Ticket.created_at.desc())
+    return list(db.scalars(statement).all())
 
 
 @router.post("", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
