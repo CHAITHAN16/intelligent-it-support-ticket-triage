@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,14 @@ router = APIRouter(prefix="/api/tickets", tags=["tickets"])
 def list_tickets(db: Session = Depends(get_db)) -> list[Ticket]:
     statement = select(Ticket).order_by(Ticket.created_at.desc())
     return list(db.scalars(statement).all())
+
+
+@router.get("/{ticket_id}", response_model=TicketResponse)
+def get_ticket(ticket_id: int, db: Session = Depends(get_db)) -> Ticket:
+    ticket = db.get(Ticket, ticket_id)
+    if ticket is None:
+        raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
+    return ticket
 
 
 @router.post("", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
