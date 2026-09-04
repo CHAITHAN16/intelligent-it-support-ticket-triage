@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Ticket, TicketPriority, TicketStatus
 from schemas.tickets import TicketCreate, TicketResponse, TicketUpdateRequest
+from services.triage_service import TriageService
 
 
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
@@ -55,6 +56,15 @@ def create_ticket(payload: TicketCreate, db: Session = Depends(get_db)) -> Ticke
         priority=TicketPriority.MEDIUM,
         status=TicketStatus.NEW,
     )
+
+    triage_result = TriageService().triage(ticket.title, ticket.description)
+    ticket.ai_predicted_category = triage_result.category
+    ticket.ai_predicted_subcategory = triage_result.subcategory
+    ticket.ai_predicted_priority = triage_result.priority
+    ticket.ai_confidence = triage_result.confidence
+    ticket.ai_model_version = triage_result.model_version
+    ticket.ai_triaged_at = datetime.now(timezone.utc)
+
     db.add(ticket)
     db.commit()
     db.refresh(ticket)

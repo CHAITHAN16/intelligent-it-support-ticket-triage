@@ -47,3 +47,9 @@ class TicketResponse(BaseModel):
     creator_id: int
     created_at: datetime
     updated_at: datetime
+    ai_predicted_category: str | None
+    ai_predicted_subcategory: str | None
+    ai_predicted_priority: TicketPriority | None
+    ai_confidence: float | None
+    ai_model_version: str | None
+    ai_triaged_at: datetime | None
