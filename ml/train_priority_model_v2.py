@@ -3,8 +3,8 @@ from collections import Counter
 from pathlib import Path
 
 import joblib
-import matplotlib.pyplot as plt
 import pandas as pd
+from PIL import Image, ImageDraw
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
@@ -66,35 +66,31 @@ def build_pipeline() -> Pipeline:
 
 
 def save_confusion_matrix_image(matrix: list[list[int]], class_names: list[str]) -> None:
-    figure, axis = plt.subplots(figsize=(8, 6), dpi=200)
-    image = axis.imshow(matrix, interpolation="nearest", cmap="Blues")
-    axis.figure.colorbar(image, ax=axis, fraction=0.046, pad=0.04)
-    axis.set(
-        title="Priority Confusion Matrix - ML v2",
-        xlabel="Predicted label",
-        ylabel="True label",
-        xticks=range(len(class_names)),
-        yticks=range(len(class_names)),
-    )
-    axis.set_xticklabels(class_names, rotation=45, ha="right")
-    axis.set_yticklabels(class_names)
+    CONFUSION_MATRIX_PATH.parent.mkdir(parents=True, exist_ok=True)
+    cell_size = 140
+    left_margin = 180
+    top_margin = 120
+    width = left_margin + cell_size * len(class_names) + 40
+    height = top_margin + cell_size * len(class_names) + 40
+    image = Image.new("RGB", (width, height), "white")
+    draw = ImageDraw.Draw(image)
 
-    threshold = max(max(row) for row in matrix) / 2 if matrix else 0
+    draw.text((10, 10), "Priority Confusion Matrix - ML v2", fill="black")
+    max_value = max((max(row) for row in matrix), default=1) or 1
+    for index, class_name in enumerate(class_names):
+        draw.text((left_margin + index * cell_size + 8, top_margin - 35), class_name, fill="black")
+        draw.text((10, top_margin + index * cell_size + cell_size // 2 - 8), class_name, fill="black")
+
     for row_index, row in enumerate(matrix):
         for column_index, value in enumerate(row):
-            axis.text(
-                column_index,
-                row_index,
-                str(value),
-                ha="center",
-                va="center",
-                color="white" if value > threshold else "black",
-            )
+            intensity = int(255 - (value / max_value) * 180)
+            x0 = left_margin + column_index * cell_size
+            y0 = top_margin + row_index * cell_size
+            draw.rectangle((x0, y0, x0 + cell_size, y0 + cell_size), fill=(intensity, intensity, 255), outline="black")
+            label = str(value)
+            draw.text((x0 + cell_size // 2 - 5 * len(label), y0 + cell_size // 2 - 8), label, fill="black")
 
-    figure.tight_layout()
-    CONFUSION_MATRIX_PATH.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(CONFUSION_MATRIX_PATH, bbox_inches="tight")
-    plt.close(figure)
+    image.save(CONFUSION_MATRIX_PATH)
 
 
 def sanitize_number(value: float) -> float:
