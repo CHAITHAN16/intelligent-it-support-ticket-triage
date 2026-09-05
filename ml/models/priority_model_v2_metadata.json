@@ -1,0 +1,37 @@
+{
+  "model_version": "ml-v2",
+  "task": "priority_classification",
+  "dataset": "tickets_priority_ml_v2.csv",
+  "train_size": 5343,
+  "test_size": 1336,
+  "random_state": 42,
+  "vectorizer_configuration": {
+    "lowercase": true,
+    "ngram_range": [
+      1,
+      2
+    ],
+    "min_df": 2,
+    "sublinear_tf": true
+  },
+  "classifier_configuration": {
+    "max_iter": 1000,
+    "random_state": 42,
+    "class_weight": "balanced"
+  },
+  "class_distribution": {
+    "HIGH": 3699,
+    "MEDIUM": 2268,
+    "LOW": 712
+  },
+  "accuracy": 0.7305389221556886,
+  "macro_precision": 0.6838996265264958,
+  "macro_recall": 0.7042188120986905,
+  "macro_f1": 0.6930973696221447,
+  "weighted_f1": 0.7323544112966154,
+  "classes": [
+    "HIGH",
+    "LOW",
+    "MEDIUM"
+  ]
+}
