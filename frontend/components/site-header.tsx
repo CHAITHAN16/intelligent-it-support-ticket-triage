@@ -22,6 +22,12 @@ export function SiteHeader() {
             Submit Ticket
           </Link>
           <Link
+            href="/tickets"
+            className="ml-1 rounded-full px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-sky-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+          >
+            My Tickets
+          </Link>
+          <Link
             href="/agent"
             className="ml-1 rounded-full px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-sky-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
           >

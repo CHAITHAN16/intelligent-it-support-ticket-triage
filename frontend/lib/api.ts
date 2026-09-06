@@ -116,6 +116,11 @@ export async function createTicket(input: CreateTicketInput): Promise<TicketResp
   });
 }
 
+export async function getTickets(creatorId?: number): Promise<TicketResponse[]> {
+  const query = creatorId === undefined ? "" : `?creator_id=${encodeURIComponent(creatorId)}`;
+  return request<TicketResponse[]>(`/tickets${query}`);
+}
+
 export async function getTeams(): Promise<Team[]> {
   return request<Team[]>("/teams");
 }

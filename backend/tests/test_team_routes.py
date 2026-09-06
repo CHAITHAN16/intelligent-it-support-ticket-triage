@@ -130,6 +130,16 @@ def test_lists_existing_teams(client):
     ]
 
 
+def test_lists_tickets_by_creator_id(client):
+    response = client.get("/api/tickets?creator_id=1")
+
+    assert response.status_code == 200
+    assert [ticket["id"] for ticket in response.json()] == [4, 3, 2, 1]
+
+    assert client.get("/api/tickets?creator_id=999").json() == []
+    assert client.get("/api/tickets?creator_id=0").status_code == 422
+
+
 @pytest.mark.parametrize(
     ("team_id", "expected_category"),
     [(1, "Network"), (2, "Security"), (3, "Software"), (4, None)],
