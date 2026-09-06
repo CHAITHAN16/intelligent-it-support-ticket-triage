@@ -47,30 +47,35 @@ def update_ticket(ticket_id: int, payload: TicketUpdateRequest, db: Session = De
 
 @router.post("", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
 def create_ticket(payload: TicketCreate, db: Session = Depends(get_db)) -> Ticket:
-    ticket = Ticket(
-        title=payload.title,
-        description=payload.description,
-        creator_id=payload.creator_id,
-        category=None,
-        subcategory=None,
-        priority=TicketPriority.MEDIUM,
-        status=TicketStatus.NEW,
-    )
-
-    db.add(ticket)
-    db.flush()
-
     try:
-        triage_result = TriageService().triage(ticket.title, ticket.description)
-    except (FileNotFoundError, RuntimeError) as error:
-        raise HTTPException(status_code=503, detail=f"AI triage unavailable: {error}") from error
-    ticket.ai_predicted_category = triage_result.category
-    ticket.ai_predicted_subcategory = triage_result.subcategory
-    ticket.ai_predicted_priority = triage_result.priority
-    ticket.ai_confidence = triage_result.confidence
-    ticket.ai_model_version = triage_result.model_version
-    ticket.ai_triaged_at = max(datetime.now(timezone.utc), ticket.created_at)
+        ticket = Ticket(
+            title=payload.title,
+            description=payload.description,
+            creator_id=payload.creator_id,
+            category=None,
+            subcategory=None,
+            priority=TicketPriority.MEDIUM,
+            status=TicketStatus.NEW,
+        )
 
-    db.commit()
-    db.refresh(ticket)
-    return ticket
+        db.add(ticket)
+        db.flush()
+
+        triage_result = TriageService().triage(ticket.title, ticket.description)
+        ticket.ai_predicted_category = triage_result.category
+        ticket.ai_predicted_subcategory = triage_result.subcategory
+        ticket.ai_predicted_priority = triage_result.priority
+        ticket.ai_confidence = triage_result.confidence
+        ticket.ai_model_version = triage_result.model_version
+        ticket.ai_triaged_at = max(datetime.now(timezone.utc), ticket.created_at)
+
+        RoutingService().route_and_assign(db, ticket, triage_result)
+        db.commit()
+        db.refresh(ticket)
+        return ticket
+    except (FileNotFoundError, RuntimeError) as error:
+        db.rollback()
+        raise HTTPException(status_code=503, detail=f"AI triage unavailable: {error}") from error
+    except Exception:
+        db.rollback()
+        raise
