@@ -110,7 +110,7 @@ def category_evidence(row: pd.Series) -> dict[str, bool]:
     evidence["Hardware"] = (
         has_term(text, hardware_objects)
         and (
-            {"hardware", "hardware conflict"} & tag_values
+            bool({"hardware", "hardware conflict"} & tag_values)
             or has_phrase(
                 text,
                 (
@@ -142,7 +142,7 @@ def category_evidence(row: pd.Series) -> dict[str, bool]:
         has_term(text, network_terms)
         and issue
         and (
-            {"network", "vpn", "router", "switch"} & tag_values
+            bool({"network", "vpn", "router", "switch"} & tag_values)
             or has_phrase(
                 text,
                 (
@@ -208,7 +208,7 @@ def category_evidence(row: pd.Series) -> dict[str, bool]:
         "security update",
     }
     evidence["Security"] = (
-        (has_term(text, security_terms) or security_tags & tag_values)
+        (has_term(text, security_terms) or bool(security_tags & tag_values))
         and (
             has_phrase(
                 text,
@@ -282,7 +282,7 @@ def category_evidence(row: pd.Series) -> dict[str, bool]:
         ),
     )
     evidence["Access & Identity"] = (
-        (access_text or access_tags & tag_values)
+        (access_text or bool(access_tags & tag_values))
         and (
             issue
             or has_phrase(
@@ -335,7 +335,7 @@ def category_evidence(row: pd.Series) -> dict[str, bool]:
         has_term(text, software_terms)
         and issue
         and (
-            software_tags & tag_values
+            bool(software_tags & tag_values)
             or has_phrase(
                 text,
                 (
