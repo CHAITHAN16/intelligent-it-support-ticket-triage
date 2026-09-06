@@ -77,6 +77,7 @@ class RoutingService:
         )
         db.add(assignment)
         ticket.assigned_team_id = team.id
+        ticket.assigned_team = team
         ticket.routing_reason = assignment.routing_reason
         db.flush()
         return assignment

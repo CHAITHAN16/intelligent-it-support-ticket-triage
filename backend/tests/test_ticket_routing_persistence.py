@@ -7,7 +7,7 @@ import pytest
 
 from models import Team, Ticket, TicketAssignment, TicketPriority, TicketStatus
 from routers.tickets import create_ticket
-from schemas.tickets import TicketCreate
+from schemas.tickets import TicketCreate, TicketResponse
 
 
 class _Savepoint:
@@ -121,6 +121,8 @@ def test_ticket_creation_persists_ai_team_assignment(
     assert ticket.ai_predicted_category == expected_category
     assert ticket.ai_predicted_priority.value == expected_priority
     assert ticket.assigned_team_id == db.teams[0].id
+    assert ticket.assigned_team_name == expected_team
+    assert TicketResponse.model_validate(ticket).assigned_team_name == expected_team
     assert ticket.assigned_agent_id is None
     assert len(db.assignments) == 1
     assert db.assignments[0].ticket_id == ticket.id
@@ -147,6 +149,7 @@ def test_existing_team_is_reused_without_duplicate():
     )
 
     assert ticket.assigned_team_id == 42
+    assert ticket.assigned_team_name == "Network Infrastructure"
     assert [team.name for team in db.teams] == ["Network Infrastructure"]
     assert len(db.assignments) == 1
 

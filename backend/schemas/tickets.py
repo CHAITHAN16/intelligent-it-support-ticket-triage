@@ -45,6 +45,8 @@ class TicketResponse(BaseModel):
     priority: TicketPriority
     status: TicketStatus
     creator_id: int
+    assigned_team_id: int | None
+    assigned_team_name: str | None
     created_at: datetime
     updated_at: datetime
     ai_predicted_category: str | None
