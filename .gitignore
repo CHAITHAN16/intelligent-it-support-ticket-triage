@@ -42,3 +42,4 @@ Thumbs.db
 
 # Local automation
 auto-git.ps1
+.pytest_cache/
