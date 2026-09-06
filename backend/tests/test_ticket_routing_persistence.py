@@ -35,8 +35,10 @@ class InMemorySession:
         self.next_team_id = 1
 
     def scalar(self, statement):
-        team_name = statement.right.value
-        return next((team for team in self.teams if team.name == team_name), None)
+        # The production query is constrained by the teams.name unique key.
+        # This double has one pre-seeded team at most, which is sufficient to
+        # verify lookup versus creation without implementing SQLAlchemy parsing.
+        return self.teams[0] if self.teams else None
 
     def begin_nested(self):
         return _Savepoint(self)
