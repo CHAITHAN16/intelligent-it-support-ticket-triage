@@ -11,7 +11,7 @@ from sqlalchemy.pool import StaticPool
 
 from database import get_db
 from main import app
-from models import Base, Comment, Ticket, TicketStatus, User, UserRole
+from models import Base, Comment, Ticket, TicketStatus, TicketStatusHistory, User, UserRole
 
 
 @pytest.fixture
@@ -26,14 +26,20 @@ def database_session():
 
     # PostgreSQL supplies the identity value for comments; provide that value
     # in this SQLite-only test fixture without changing the production model.
-    def assign_comment_id(db_session, flush_context, instances):
-        next_id = 1
+    next_comment_id = 1
+    next_history_id = 1
+
+    def assign_database_ids(db_session, flush_context, instances):
+        nonlocal next_comment_id, next_history_id
         for comment in db_session.new:
             if isinstance(comment, Comment):
-                comment.id = next_id
-                next_id += 1
+                comment.id = next_comment_id
+                next_comment_id += 1
+            if isinstance(comment, TicketStatusHistory):
+                comment.id = next_history_id
+                next_history_id += 1
 
-    event.listen(Session, "before_flush", assign_comment_id)
+    event.listen(Session, "before_flush", assign_database_ids)
     session.add(User(id=1, name="Test Agent", email="agent@test.local", role=UserRole.SUPPORT_AGENT))
     session.add(
         Ticket(
@@ -49,7 +55,7 @@ def database_session():
     )
     session.commit()
     yield session
-    event.remove(Session, "before_flush", assign_comment_id)
+    event.remove(Session, "before_flush", assign_database_ids)
     session.close()
     Base.metadata.drop_all(engine)
 
