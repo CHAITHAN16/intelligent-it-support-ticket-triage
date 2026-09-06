@@ -395,8 +395,11 @@ def main() -> None:
 
     evidence = filtered.apply(category_evidence, axis=1, result_type="expand")
     evidence["match_count"] = evidence.sum(axis=1)
+    evidence["target_match_count"] = evidence[TARGET_CATEGORIES].sum(axis=1)
     evidence["assigned_category"] = evidence[TARGET_CATEGORIES].idxmax(axis=1)
-    evidence.loc[evidence["match_count"] != 1, "assigned_category"] = pd.NA
+    excluded_evidence = evidence[["Hardware", "Access & Identity"]].any(axis=1)
+    valid_target = (evidence["target_match_count"] == 1) & ~excluded_evidence
+    evidence.loc[~valid_target, "assigned_category"] = pd.NA
 
     hardware_count = int((evidence["Hardware"] & (evidence["match_count"] == 1)).sum())
     access_count = int(
