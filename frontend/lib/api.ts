@@ -47,6 +47,25 @@ export type TicketResponse = {
   assigned_team?: { name?: string | null } | null;
 };
 
+export type TicketComment = {
+  id: number;
+  ticket_id: number;
+  author_id: number;
+  body: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TicketStatusHistory = {
+  id: number;
+  ticket_id: number;
+  old_status: TicketStatus | null;
+  new_status: TicketStatus;
+  changed_by_id: number | null;
+  changed_at: string;
+  note: string | null;
+};
+
 type ApiErrorPayload = {
   detail?: string | Array<{ msg?: string }>;
 };
@@ -121,4 +140,19 @@ export async function updateTicket(ticketId: number, input: TicketUpdateInput): 
     method: "PATCH",
     body: JSON.stringify(input),
   });
+}
+
+export async function createTicketComment(ticketId: number, authorId: number, body: string): Promise<TicketComment> {
+  return request<TicketComment>(`/tickets/${ticketId}/comments`, {
+    method: "POST",
+    body: JSON.stringify({ author_id: authorId, body }),
+  });
+}
+
+export async function getTicketComments(ticketId: number): Promise<TicketComment[]> {
+  return request<TicketComment[]>(`/tickets/${ticketId}/comments`);
+}
+
+export async function getTicketHistory(ticketId: number): Promise<TicketStatusHistory[]> {
+  return request<TicketStatusHistory[]>(`/tickets/${ticketId}/history`);
 }
