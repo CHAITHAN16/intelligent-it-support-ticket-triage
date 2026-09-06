@@ -62,7 +62,11 @@ def create_ticket(payload: TicketCreate, db: Session = Depends(get_db)) -> Ticke
         db.add(ticket)
         db.flush()
 
-        triage_result = TriageService().triage(ticket.title, ticket.description)
+        try:
+            triage_result = TriageService().triage(ticket.title, ticket.description)
+        except (FileNotFoundError, RuntimeError) as error:
+            db.rollback()
+            raise HTTPException(status_code=503, detail=f"AI triage unavailable: {error}") from error
         ticket.ai_predicted_category = triage_result.category
         ticket.ai_predicted_subcategory = triage_result.subcategory
         ticket.ai_predicted_priority = triage_result.priority
@@ -74,9 +78,8 @@ def create_ticket(payload: TicketCreate, db: Session = Depends(get_db)) -> Ticke
         db.commit()
         db.refresh(ticket)
         return ticket
-    except (FileNotFoundError, RuntimeError) as error:
-        db.rollback()
-        raise HTTPException(status_code=503, detail=f"AI triage unavailable: {error}") from error
+    except HTTPException:
+        raise
     except Exception:
         db.rollback()
         raise
