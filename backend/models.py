@@ -19,7 +19,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
@@ -114,6 +114,7 @@ class Ticket(Base):
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     assigned_team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id", ondelete="RESTRICT"))
     assigned_agent_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
+    assigned_team: Mapped[Team | None] = relationship("Team", foreign_keys=[assigned_team_id], lazy="joined")
 
     ai_predicted_category: Mapped[str | None] = mapped_column(String(100))
     ai_predicted_subcategory: Mapped[str | None] = mapped_column(String(100))
@@ -142,6 +143,10 @@ class Ticket(Base):
         Index("idx_tickets_assigned_agent", "assigned_agent_id"),
         Index("idx_tickets_created_at", "created_at"),
     )
+
+    @property
+    def assigned_team_name(self) -> str | None:
+        return self.assigned_team.name if self.assigned_team is not None else None
 
 
 class TicketAssignment(Base):
