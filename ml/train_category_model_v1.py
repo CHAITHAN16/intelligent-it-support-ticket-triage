@@ -45,7 +45,7 @@ def main() -> None:
 
     vectorizer_settings = {
         "lowercase": True,
-        "ngram_range": [1, 2],
+        "ngram_range": (1, 2),
         "min_df": 2,
         "sublinear_tf": True,
     }
