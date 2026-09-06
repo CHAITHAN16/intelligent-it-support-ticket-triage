@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Ticket, TicketPriority, TicketStatus
+from models import Ticket, TicketPriority, TicketStatus, TicketStatusHistory
 from schemas.tickets import TicketCreate, TicketResponse, TicketUpdateRequest
 from services.routing_service import RoutingService
 from services.triage_service import TriageService
@@ -35,15 +35,32 @@ def update_ticket(ticket_id: int, payload: TicketUpdateRequest, db: Session = De
         raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
 
     updates = payload.model_dump(exclude_unset=True)
-    for field, value in updates.items():
-        setattr(ticket, field, value)
+    previous_status = ticket.status
+    status_changed = "status" in updates and updates["status"] != previous_status
 
-    if updates:
-        ticket.updated_at = datetime.now(timezone.utc)
-        db.commit()
-        db.refresh(ticket)
+    try:
+        for field, value in updates.items():
+            setattr(ticket, field, value)
 
-    return ticket
+        if updates:
+            ticket.updated_at = datetime.now(timezone.utc)
+        if status_changed:
+            db.add(
+                TicketStatusHistory(
+                    ticket_id=ticket.id,
+                    old_status=previous_status,
+                    new_status=updates["status"],
+                    changed_by_id=None,
+                )
+            )
+        if updates:
+            db.commit()
+            db.refresh(ticket)
+
+        return ticket
+    except Exception:
+        db.rollback()
+        raise
 
 
 @router.post("", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
