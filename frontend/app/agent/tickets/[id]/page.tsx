@@ -94,10 +94,28 @@ export default function AgentTicketDetailPage() {
     }
 
     void loadTicket();
-    void refreshComments();
-    void refreshHistory();
+    async function loadCollaboration() {
+      const [commentsResult, historyResult] = await Promise.allSettled([getTicketComments(ticketId), getTicketHistory(ticketId)]);
+      if (cancelled) return;
+
+      if (commentsResult.status === "fulfilled") {
+        setComments(commentsResult.value);
+      } else {
+        setCommentsError(commentsResult.reason instanceof Error ? commentsResult.reason.message : "Comments could not be loaded.");
+      }
+      setIsCommentsLoading(false);
+
+      if (historyResult.status === "fulfilled") {
+        setHistory(historyResult.value);
+      } else {
+        setHistoryError(historyResult.reason instanceof Error ? historyResult.reason.message : "Status history could not be loaded.");
+      }
+      setIsHistoryLoading(false);
+    }
+
+    void loadCollaboration();
     return () => { cancelled = true; };
-  }, [ticketId, refreshComments, refreshHistory, refreshTicket]);
+  }, [ticketId, refreshTicket]);
 
   async function saveChanges() {
     if (!ticket || !category.trim()) { setError("Category is required."); return; }
