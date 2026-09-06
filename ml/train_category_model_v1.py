@@ -6,9 +6,8 @@ import json
 from pathlib import Path
 
 import joblib
-import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
+from PIL import Image, ImageDraw
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
@@ -101,22 +100,35 @@ def main() -> None:
     CONFUSION_MATRIX_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(pipeline, MODEL_PATH)
 
-    plt.figure(figsize=(7, 6))
-    sns.heatmap(
-        matrix,
-        annot=True,
-        fmt="d",
-        cmap="Blues",
-        cbar=False,
-        xticklabels=classes,
-        yticklabels=classes,
-    )
-    plt.xlabel("Predicted category")
-    plt.ylabel("True category")
-    plt.title("Category Classification Confusion Matrix v1")
-    plt.tight_layout()
-    plt.savefig(CONFUSION_MATRIX_PATH, dpi=160)
-    plt.close()
+    image_size = 900
+    margin = 150
+    cell_size = 150
+    image = Image.new("RGB", (image_size, image_size), "white")
+    draw = ImageDraw.Draw(image)
+    max_value = max(1, int(matrix.max()))
+    for row_index in range(len(classes)):
+        for column_index in range(len(classes)):
+            value = int(matrix[row_index, column_index])
+            intensity = int(245 - 180 * value / max_value)
+            left = margin + column_index * cell_size
+            top = margin + row_index * cell_size
+            draw.rectangle(
+                (left, top, left + cell_size, top + cell_size),
+                fill=(intensity, intensity + 5, 255),
+                outline="black",
+                width=2,
+            )
+            draw.text(
+                (left + cell_size // 2 - 10, top + cell_size // 2 - 10),
+                str(value),
+                fill="black",
+            )
+        draw.text((20, margin + row_index * cell_size + 65), classes[row_index], fill="black")
+        draw.text((margin + row_index * cell_size + 45, 110), classes[row_index], fill="black")
+    draw.text((margin, 20), "Category Classification Confusion Matrix v1", fill="black")
+    draw.text((margin, image_size - 45), "Columns: predicted category", fill="black")
+    draw.text((10, image_size - 25), "Rows: true category", fill="black")
+    image.save(CONFUSION_MATRIX_PATH)
 
     metadata = {
         "model_name": "category_classifier",
