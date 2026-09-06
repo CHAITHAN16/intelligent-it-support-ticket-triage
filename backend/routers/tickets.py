@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -15,8 +15,11 @@ router = APIRouter(prefix="/api/tickets", tags=["tickets"])
 
 
 @router.get("", response_model=list[TicketResponse])
-def list_tickets(db: Session = Depends(get_db)) -> list[Ticket]:
-    statement = select(Ticket).order_by(Ticket.created_at.desc())
+def list_tickets(creator_id: int | None = Query(default=None, ge=1), db: Session = Depends(get_db)) -> list[Ticket]:
+    statement = select(Ticket)
+    if creator_id is not None:
+        statement = statement.where(Ticket.creator_id == creator_id)
+    statement = statement.order_by(Ticket.created_at.desc())
     return list(db.scalars(statement).all())
 
 
