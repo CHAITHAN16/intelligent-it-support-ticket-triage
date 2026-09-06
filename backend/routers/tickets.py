@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Ticket, TicketPriority, TicketStatus
 from schemas.tickets import TicketCreate, TicketResponse, TicketUpdateRequest
+from services.routing_service import RoutingService
 from services.triage_service import TriageService
 
 
