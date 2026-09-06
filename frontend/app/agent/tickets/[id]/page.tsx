@@ -113,7 +113,7 @@ export default function AgentTicketDetailPage() {
       setIsHistoryLoading(false);
     }
 
-    void loadCollaboration();
+    if (Number.isInteger(ticketId)) void loadCollaboration();
     return () => { cancelled = true; };
   }, [ticketId, refreshTicket]);
 
