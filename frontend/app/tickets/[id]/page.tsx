@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { SiteHeader } from "@/components/site-header";
 import { getTicket, getTicketComments, getTicketHistory, type TicketComment, type TicketResponse, type TicketStatusHistory } from "@/lib/api";
@@ -70,7 +70,7 @@ export default function EmployeeTicketDetailPage() {
       setHistoryLoading(true);
       setError(null);
       setCommentsError(null);
-        setHistoryError(null);
+      setHistoryError(null);
 
       try {
         const [ticketResult, commentsResult, historyResult] = await Promise.allSettled([
@@ -111,7 +111,6 @@ export default function EmployeeTicketDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [loadTicket, ticketId]);
   }, [ticketId]);
 
   return (
