@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from routers.auth import router as auth_router
 from routers.collaboration import router as collaboration_router
 from routers.teams import router as teams_router
 from routers.tickets import router as tickets_router
@@ -17,5 +18,4 @@ def health_check():
     return {
         "status": "ok",
         "service": "IT Support Backend",
-    }
-from routers.auth import router as auth_router
+}
