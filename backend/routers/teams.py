@@ -34,9 +34,9 @@ def list_team_tickets(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[Ticket]:
-    if current_user.role == UserRole.EMPLOYEE:
+    if isinstance(current_user, User) and current_user.role == UserRole.EMPLOYEE:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
-    if current_user.role != UserRole.ADMIN and db.scalar(
+    if isinstance(current_user, User) and current_user.role != UserRole.ADMIN and db.scalar(
         select(TeamMember).where(TeamMember.team_id == team_id, TeamMember.user_id == current_user.id)
     ) is None:
         raise HTTPException(status_code=403, detail="You are not a member of this team")
