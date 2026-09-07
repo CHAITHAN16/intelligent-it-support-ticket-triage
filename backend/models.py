@@ -30,6 +30,8 @@ class Base(DeclarativeBase):
 class UserRole(str, Enum):
     EMPLOYEE = "EMPLOYEE"
     SUPPORT_AGENT = "SUPPORT_AGENT"
+    # AGENT is the public role name; SUPPORT_AGENT remains the persisted enum value.
+    AGENT = "SUPPORT_AGENT"
     ADMIN = "ADMIN"
 
 
