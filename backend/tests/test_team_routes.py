@@ -10,8 +10,9 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from database import get_db
+from auth import get_current_user
 from main import app
-from models import Base, Team, Ticket, TicketPriority, TicketStatus
+from models import Base, Team, Ticket, TicketPriority, TicketStatus, User, UserRole
 from routers.teams import list_team_tickets
 
 
@@ -25,6 +26,7 @@ def database_session():
     Base.metadata.create_all(engine)
     session_factory = sessionmaker(bind=engine)
     session = session_factory()
+    session.add(User(id=1, name="Test Admin", email="admin@test.local", role=UserRole.ADMIN))
     teams = [
         Team(id=1, name="Network Infrastructure"),
         Team(id=2, name="Security Operations"),
@@ -113,6 +115,7 @@ def client(database_session):
         yield database_session
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = lambda: database_session.get(User, 1)
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()

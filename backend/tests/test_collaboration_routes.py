@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from database import get_db
+from auth import get_current_user
 from main import app
 from models import Base, Comment, Ticket, TicketStatus, TicketStatusHistory, User, UserRole
 
@@ -40,7 +41,7 @@ def database_session():
                 next_history_id += 1
 
     event.listen(Session, "before_flush", assign_database_ids)
-    session.add(User(id=1, name="Test Agent", email="agent@test.local", role=UserRole.SUPPORT_AGENT))
+    session.add(User(id=1, name="Test Admin", email="admin@test.local", role=UserRole.ADMIN))
     session.add(
         Ticket(
             id=1,
@@ -66,6 +67,7 @@ def client(database_session):
         yield database_session
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = lambda: database_session.get(User, 1)
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
