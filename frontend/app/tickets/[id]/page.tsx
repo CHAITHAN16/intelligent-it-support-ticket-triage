@@ -53,11 +53,6 @@ export default function EmployeeTicketDetailPage() {
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(true);
 
-  const loadTicket = useCallback(async () => {
-    const result = await getTicket(ticketId);
-    setTicket(result);
-  }, [ticketId]);
-
   useEffect(() => {
     let cancelled = false;
 
@@ -75,11 +70,11 @@ export default function EmployeeTicketDetailPage() {
       setHistoryLoading(true);
       setError(null);
       setCommentsError(null);
-      setHistoryError(null);
+        setHistoryError(null);
 
       try {
         const [ticketResult, commentsResult, historyResult] = await Promise.allSettled([
-          loadTicket(),
+          getTicket(ticketId),
           getTicketComments(ticketId),
           getTicketHistory(ticketId),
         ]);
@@ -117,6 +112,7 @@ export default function EmployeeTicketDetailPage() {
       cancelled = true;
     };
   }, [loadTicket, ticketId]);
+  }, [ticketId]);
 
   return (
     <div className="min-h-screen bg-[#f6f8fb] text-slate-950">
