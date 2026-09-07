@@ -12,7 +12,7 @@ from sqlalchemy.pool import StaticPool
 from auth import create_access_token, password_hash
 from database import get_db
 from main import app
-from models import Base, Comment, Team, TeamMember, Ticket, TicketStatus, User, UserRole
+from models import Base, Comment, Team, TeamMember, Ticket, TicketStatus, TicketStatusHistory, User, UserRole
 
 
 @pytest.fixture
@@ -20,13 +20,22 @@ def database_session():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine)()
-    next_id = {Comment: 1}
+    next_id = {Comment: 1, Ticket: 3, TicketStatusHistory: 1, User: 4}
 
     def assign_ids(db_session, flush_context, instances):
         for comment in db_session.new:
             if isinstance(comment, Comment) and comment.id is None:
                 comment.id = next_id[Comment]
                 next_id[Comment] += 1
+            if isinstance(comment, TicketStatusHistory) and comment.id is None:
+                comment.id = next_id[TicketStatusHistory]
+                next_id[TicketStatusHistory] += 1
+            if isinstance(comment, User) and comment.id is None:
+                comment.id = next_id[User]
+                next_id[User] += 1
+            if isinstance(comment, Ticket) and comment.id is None:
+                comment.id = next_id[Ticket]
+                next_id[Ticket] += 1
 
     event.listen(Session, "before_flush", assign_ids)
     employee = User(id=1, name="Employee One", email="employee@example.com", role=UserRole.EMPLOYEE, password_hash=password_hash.hash("employee-pass"))
