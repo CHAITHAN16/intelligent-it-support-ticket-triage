@@ -4,6 +4,8 @@ export type CreateTicketInput = {
   creator_id: number;
 };
 
+export const TEMPORARY_EMPLOYEE_ID = 1;
+
 export type TicketStatus = "NEW" | "ASSIGNED" | "IN_PROGRESS" | "WAITING_FOR_USER" | "RESOLVED" | "CLOSED";
 export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
@@ -119,6 +121,10 @@ export async function createTicket(input: CreateTicketInput): Promise<TicketResp
 export async function getTickets(creatorId?: number): Promise<TicketResponse[]> {
   const query = creatorId === undefined ? "" : `?creator_id=${encodeURIComponent(creatorId)}`;
   return request<TicketResponse[]>(`/tickets${query}`);
+}
+
+export async function getMyTickets(employeeId: number = TEMPORARY_EMPLOYEE_ID): Promise<TicketResponse[]> {
+  return getTickets(employeeId);
 }
 
 export async function getTeams(): Promise<Team[]> {
