@@ -63,11 +63,16 @@ def get_ticket(ticket_id: int, current_user: User = Depends(get_current_user), d
 
 
 @router.patch("/{ticket_id}", response_model=TicketResponse)
-def update_ticket(ticket_id: int, payload: TicketUpdateRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> Ticket:
+def update_ticket(
+    ticket_id: int,
+    payload: TicketUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Ticket:
     ticket = db.get(Ticket, ticket_id)
     if ticket is None:
         raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
-    if current_user.role not in (UserRole.SUPPORT_AGENT, UserRole.ADMIN) or not _can_agent_access_ticket(ticket, current_user, db):
+    if not isinstance(current_user, User) or current_user.role not in (UserRole.SUPPORT_AGENT, UserRole.ADMIN) or not _can_agent_access_ticket(ticket, current_user, db):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only an authorized agent can update this ticket")
 
     updates = payload.model_dump(exclude_unset=True)

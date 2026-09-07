@@ -23,8 +23,8 @@ def _require_ticket(ticket_id: int, db: Session) -> Ticket:
 def create_comment(
     ticket_id: int,
     payload: CommentCreate,
-    current_user: User | None = Depends(get_current_user),
     db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user),
 ) -> Comment:
     try:
         ticket = _require_ticket(ticket_id, db)
