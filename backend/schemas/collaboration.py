@@ -6,7 +6,7 @@ from models import TicketStatus
 
 
 class CommentCreate(BaseModel):
-    author_id: int = Field(..., gt=0)
+    author_id: int | None = Field(default=None, gt=0)
     body: str = Field(..., max_length=5000)
 
     @field_validator("body")

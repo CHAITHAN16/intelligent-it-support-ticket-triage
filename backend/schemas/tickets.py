@@ -8,7 +8,7 @@ from models import TicketPriority, TicketStatus
 class TicketCreate(BaseModel):
     title: str = Field(..., max_length=255)
     description: str
-    creator_id: int
+    creator_id: int | None = Field(default=None, gt=0)
 
     @field_validator("title", "description")
     @classmethod
