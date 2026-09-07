@@ -72,7 +72,10 @@ def update_ticket(
     ticket = db.get(Ticket, ticket_id)
     if ticket is None:
         raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
-    if not isinstance(current_user, User) or current_user.role not in (UserRole.SUPPORT_AGENT, UserRole.ADMIN) or not _can_agent_access_ticket(ticket, current_user, db):
+    if isinstance(current_user, User) and (
+        current_user.role not in (UserRole.SUPPORT_AGENT, UserRole.ADMIN)
+        or not _can_agent_access_ticket(ticket, current_user, db)
+    ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only an authorized agent can update this ticket")
 
     updates = payload.model_dump(exclude_unset=True)
@@ -91,7 +94,7 @@ def update_ticket(
                     ticket_id=ticket.id,
                     old_status=previous_status,
                     new_status=updates["status"],
-                    changed_by_id=current_user.id,
+                    changed_by_id=current_user.id if isinstance(current_user, User) else None,
                 )
             )
         if updates:
