@@ -73,19 +73,16 @@ export default function EmployeeTicketDetailPage() {
       setHistoryError(null);
 
       try {
-        const [ticketResult, commentsResult, historyResult] = await Promise.allSettled([
-          getTicket(ticketId),
+        const ticketResult = await getTicket(ticketId);
+        if (cancelled) return;
+        setTicket(ticketResult);
+
+        const [commentsResult, historyResult] = await Promise.allSettled([
           getTicketComments(ticketId),
           getTicketHistory(ticketId),
         ]);
 
         if (cancelled) return;
-
-        if (ticketResult.status === "fulfilled") {
-          setTicket(ticketResult.value);
-        } else {
-          setError(ticketResult.reason instanceof Error ? ticketResult.reason.message : "Ticket could not be loaded.");
-        }
 
         if (commentsResult.status === "fulfilled") {
           setComments(commentsResult.value);
