@@ -109,8 +109,8 @@ def update_ticket(
 @router.post("", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
 def create_ticket(
     payload: TicketCreate,
-    current_user: User | None = Depends(get_current_user),
     db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user),
 ) -> Ticket:
     # Direct service-level tests may call this function without FastAPI dependency injection.
     creator_id = current_user.id if isinstance(current_user, User) else payload.creator_id
