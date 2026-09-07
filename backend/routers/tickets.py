@@ -140,7 +140,10 @@ def create_ticket(
         ticket.ai_predicted_priority = triage_result.priority
         ticket.ai_confidence = triage_result.confidence
         ticket.ai_model_version = triage_result.model_version
-        ticket.ai_triaged_at = max(datetime.now(timezone.utc), ticket.created_at)
+        created_at = ticket.created_at
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        ticket.ai_triaged_at = max(datetime.now(timezone.utc), created_at)
 
         RoutingService().route_and_assign(db, ticket, triage_result)
         db.commit()
