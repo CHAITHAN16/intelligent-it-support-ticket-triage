@@ -15,7 +15,6 @@ from services.triage_service import TriageService
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
 
 
-@router.get("", response_model=list[TicketResponse])
 def _can_agent_access_ticket(ticket: Ticket, user: User, db: Session) -> bool:
     if user.role == UserRole.ADMIN:
         return True
