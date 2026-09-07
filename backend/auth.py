@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 
@@ -21,7 +22,8 @@ class AuthRole(str, Enum):
 
 
 JWT_ALGORITHM = "HS256"
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "local-development-secret-change-me")
+# Use a process-local fallback for the simulated environment; deployments should set this explicitly.
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY") or secrets.token_urlsafe(32)
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 password_hash = PasswordHash.recommended()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -78,4 +80,3 @@ require_admin = require_roles(UserRole.ADMIN)
 
 def verify_password(plain_password: str, hashed_password: str | None) -> bool:
     return bool(hashed_password) and password_hash.verify(plain_password, hashed_password)
-
