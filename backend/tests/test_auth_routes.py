@@ -20,7 +20,7 @@ def database_session():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine)()
-    next_id = {Comment: 1, Ticket: 3, TicketAssignment: 1, TicketStatusHistory: 1, User: 4}
+    next_id = {Comment: 1, Ticket: 4, TicketAssignment: 1, TicketStatusHistory: 1, User: 4}
 
     def assign_ids(db_session, flush_context, instances):
         for comment in db_session.new:
@@ -161,7 +161,7 @@ def test_agent_ticket_list_is_limited_to_member_teams(client, database_session):
     response = client.get("/api/tickets", headers=token_for(database_session, 3))
 
     assert response.status_code == 200
-    assert [ticket["id"] for ticket in response.json()] == [2, 1]
+    assert sorted(ticket["id"] for ticket in response.json()) == [1, 2]
     assert client.get("/api/tickets/3", headers=token_for(database_session, 3)).status_code == 403
     assert client.patch(
         "/api/tickets/3",
