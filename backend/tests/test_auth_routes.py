@@ -45,11 +45,20 @@ def database_session():
     other_employee = User(id=2, name="Employee Two", email="other@example.com", role=UserRole.EMPLOYEE, password_hash=password_hash.hash("other-pass"))
     agent = User(id=3, name="Agent One", email="agent@example.com", role=UserRole.SUPPORT_AGENT, password_hash=password_hash.hash("agent-pass"))
     team = Team(id=1, name="Network Infrastructure")
-    session.add_all([employee, other_employee, agent, team, TeamMember(team_id=1, user_id=3, member_role=UserRole.SUPPORT_AGENT)])
+    other_team = Team(id=2, name="Security Operations")
+    session.add_all([
+        employee,
+        other_employee,
+        agent,
+        team,
+        other_team,
+        TeamMember(team_id=1, user_id=3, member_role=UserRole.SUPPORT_AGENT),
+    ])
     now = datetime.now(timezone.utc)
     session.add_all([
         Ticket(id=1, title="Mine", description="Mine", creator_id=1, assigned_team_id=1, status=TicketStatus.NEW, created_at=now, updated_at=now),
         Ticket(id=2, title="Other", description="Other", creator_id=2, assigned_team_id=1, status=TicketStatus.NEW, created_at=now, updated_at=now),
+        Ticket(id=3, title="Other team", description="Other team", creator_id=2, assigned_team_id=2, status=TicketStatus.NEW, created_at=now, updated_at=now),
     ])
     session.commit()
     yield session
@@ -77,6 +86,13 @@ def test_registration_and_duplicate_email(client):
     assert client.post("/api/auth/register", json={"name": "Duplicate", "email": "NEW@example.com", "password": "secure-pass"}).status_code == 409
 
 
+def test_login_normalizes_email_case(client):
+    response = client.post("/api/auth/login", json={"email": "EMPLOYEE@EXAMPLE.COM", "password": "employee-pass"})
+
+    assert response.status_code == 200
+    assert response.json()["user"]["id"] == 1
+
+
 def test_login_success_and_password_failures(client):
     response = client.post("/api/auth/login", json={"email": "employee@example.com", "password": "employee-pass"})
     assert response.status_code == 200
@@ -93,11 +109,18 @@ def test_me_requires_and_returns_authenticated_user(client, database_session):
     assert response.json()["email"] == "employee@example.com"
 
 
+def test_ticket_creation_requires_authentication(client):
+    response = client.post("/api/tickets", json={"title": "Unauthenticated", "description": "Should not be created"})
+
+    assert response.status_code == 401
+
+
 def test_employee_ticket_access_is_scoped_and_identity_cannot_be_spoofed(client, database_session, monkeypatch):
     headers = token_for(database_session, 1)
     assert [ticket["id"] for ticket in client.get("/api/tickets", headers=headers).json()] == [1]
     assert client.get("/api/tickets/2", headers=headers).status_code == 403
     assert client.get("/api/tickets?creator_id=2", headers=headers).status_code == 403
+    assert client.patch("/api/tickets/2", json={"status": "IN_PROGRESS"}, headers=headers).status_code == 403
 
     class Triage:
         category = "Network"
@@ -132,3 +155,21 @@ def test_agent_authorization_and_comment_author_identity(client, database_sessio
         headers=employee_headers,
     ).status_code == 403
     assert client.get("/api/tickets/1/history", headers=employee_headers).status_code == 200
+
+
+def test_agent_ticket_list_is_limited_to_member_teams(client, database_session):
+    response = client.get("/api/tickets", headers=token_for(database_session, 3))
+
+    assert response.status_code == 200
+    assert [ticket["id"] for ticket in response.json()] == [2, 1]
+    assert client.get("/api/tickets/3", headers=token_for(database_session, 3)).status_code == 403
+    assert client.patch(
+        "/api/tickets/3",
+        json={"status": "IN_PROGRESS"},
+        headers=token_for(database_session, 3),
+    ).status_code == 403
+    assert client.post(
+        "/api/tickets/3/comments",
+        json={"body": "Not my team"},
+        headers=token_for(database_session, 3),
+    ).status_code == 403
