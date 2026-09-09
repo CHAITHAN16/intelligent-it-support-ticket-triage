@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { SiteHeader } from "@/components/site-header";
-import { getMyTickets, TEMPORARY_EMPLOYEE_ID, type TicketResponse } from "@/lib/api";
+import { getMyTickets, type TicketResponse } from "@/lib/api";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
@@ -61,7 +61,7 @@ export default function EmployeeTicketsPage() {
   const loadTickets = useCallback(async () => {
     setError(null);
     try {
-      setTickets(await getMyTickets(TEMPORARY_EMPLOYEE_ID));
+      setTickets(await getMyTickets());
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "My tickets could not be loaded.");
     }
@@ -81,7 +81,7 @@ export default function EmployeeTicketsPage() {
     async function run() {
       setIsLoading(true);
       try {
-        const result = await getMyTickets(TEMPORARY_EMPLOYEE_ID);
+        const result = await getMyTickets();
         if (active) setTickets(result);
       } catch (reason) {
         if (active) setError(reason instanceof Error ? reason.message : "My tickets could not be loaded.");
@@ -126,7 +126,7 @@ export default function EmployeeTicketsPage() {
             </div>
           ) : (
             <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5">
-              <div className="border-b border-slate-200 px-5 py-4 text-sm text-slate-500">{tickets.length} ticket{tickets.length === 1 ? "" : "s"} for employee #{TEMPORARY_EMPLOYEE_ID}</div>
+              <div className="border-b border-slate-200 px-5 py-4 text-sm text-slate-500">{tickets.length} ticket{tickets.length === 1 ? "" : "s"} submitted by you</div>
               <div className="divide-y divide-slate-200">
                 {tickets.map((ticket) => <TicketRow key={ticket.id} ticket={ticket} />)}
               </div>

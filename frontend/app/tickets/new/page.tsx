@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 
 import { SiteHeader } from "@/components/site-header";
 import { TicketResultCard } from "@/components/ticket-result-card";
-import { createTicket, TEMPORARY_EMPLOYEE_ID, type TicketResponse } from "@/lib/api";
+import { createTicket, type TicketResponse } from "@/lib/api";
 
 const TITLE_MAX_LENGTH = 255;
 const DESCRIPTION_MAX_LENGTH = 5000;
@@ -37,7 +37,7 @@ export default function NewTicketPage() {
 
     setIsSubmitting(true);
     try {
-      const createdTicket = await createTicket({ title: title.trim(), description: description.trim(), creator_id: TEMPORARY_EMPLOYEE_ID });
+      const createdTicket = await createTicket({ title: title.trim(), description: description.trim() });
       setTicket(createdTicket);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "We could not submit your ticket.");

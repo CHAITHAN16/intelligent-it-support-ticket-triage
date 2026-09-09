@@ -10,7 +10,6 @@ import { createTicketComment, getTicket, getTicketComments, getTicketHistory, up
 const ACTION_STATUSES: TicketStatus[] = ["NEW", "IN_PROGRESS", "RESOLVED", "CLOSED"];
 const PRIORITIES: TicketPriority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 const CATEGORIES = ["Network", "Security", "Software", "Other"];
-const TEMPORARY_AUTHOR_ID = 1;
 
 function Field({ label, value }: { label: string; value: string }) {
   return <div className="border-t border-slate-200 pt-4 first:border-t-0 first:pt-0"><dt className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</dt><dd className="mt-1.5 text-sm font-medium text-slate-900">{value}</dd></div>;
@@ -139,8 +138,7 @@ export default function AgentTicketDetailPage() {
     setIsCommentPosting(true);
     setCommentSubmitError(null);
     try {
-      // Temporary until authentication supplies the current user's ID.
-      await createTicketComment(ticket.id, TEMPORARY_AUTHOR_ID, trimmedBody);
+      await createTicketComment(ticket.id, trimmedBody);
       setCommentBody("");
       await refreshComments();
     } catch (reason) {
