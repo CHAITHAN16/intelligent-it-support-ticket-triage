@@ -1,10 +1,23 @@
 export type CreateTicketInput = {
   title: string;
   description: string;
-  creator_id: number;
 };
 
-export const TEMPORARY_EMPLOYEE_ID = 1;
+export type AuthRole = "EMPLOYEE" | "AGENT" | "ADMIN";
+
+export type AuthUser = {
+  id: number;
+  name: string;
+  email: string;
+  role: AuthRole;
+  active: boolean;
+};
+
+export type LoginResponse = {
+  access_token: string;
+  token_type: string;
+  user: AuthUser;
+};
 
 export type TicketStatus = "NEW" | "ASSIGNED" | "IN_PROGRESS" | "WAITING_FOR_USER" | "RESOLVED" | "CLOSED";
 export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
@@ -73,6 +86,27 @@ type ApiErrorPayload = {
 };
 
 const API_PROXY_PATH = "/api/backend";
+const ACCESS_TOKEN_STORAGE_KEY = "it-support-access-token";
+
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+export function getAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+}
+
+export function storeAccessToken(token: string): void {
+  window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+}
+
+export function clearAccessToken(): void {
+  if (typeof window !== "undefined") window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+}
 
 function getErrorMessage(payload: ApiErrorPayload): string {
   if (Array.isArray(payload.detail)) {
@@ -84,14 +118,15 @@ function getErrorMessage(payload: ApiErrorPayload): string {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   let response: Response;
+  const headers = new Headers(options?.headers);
+  headers.set("Content-Type", "application/json");
+  const token = getAccessToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
 
   try {
     response = await fetch(`${API_PROXY_PATH}${path}`, {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options?.headers,
-      },
+      headers,
     });
   } catch {
     throw new Error("The support service is unavailable. Check that the backend is running.");
@@ -105,7 +140,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(payload as ApiErrorPayload));
+    if (response.status === 401 && token && typeof window !== "undefined") {
+      window.dispatchEvent(new Event("auth:unauthorized"));
+    }
+    throw new ApiError(getErrorMessage(payload as ApiErrorPayload), response.status);
   }
 
   return payload as T;
@@ -123,8 +161,19 @@ export async function getTickets(creatorId?: number): Promise<TicketResponse[]> 
   return request<TicketResponse[]>(`/tickets${query}`);
 }
 
-export async function getMyTickets(employeeId: number = TEMPORARY_EMPLOYEE_ID): Promise<TicketResponse[]> {
-  return getTickets(employeeId);
+export async function getMyTickets(): Promise<TicketResponse[]> {
+  return getTickets();
+}
+
+export async function login(email: string, password: string): Promise<LoginResponse> {
+  return request<LoginResponse>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function getCurrentUser(): Promise<AuthUser> {
+  return request<AuthUser>("/auth/me");
 }
 
 export async function getTeams(): Promise<Team[]> {
@@ -153,10 +202,10 @@ export async function updateTicket(ticketId: number, input: TicketUpdateInput): 
   });
 }
 
-export async function createTicketComment(ticketId: number, authorId: number, body: string): Promise<TicketComment> {
+export async function createTicketComment(ticketId: number, body: string): Promise<TicketComment> {
   return request<TicketComment>(`/tickets/${ticketId}/comments`, {
     method: "POST",
-    body: JSON.stringify({ author_id: authorId, body }),
+    body: JSON.stringify({ body }),
   });
 }
 
