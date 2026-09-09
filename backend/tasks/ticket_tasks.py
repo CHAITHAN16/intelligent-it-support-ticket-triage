@@ -37,7 +37,7 @@ def process_ticket(ticket_id: int) -> dict[str, int | str]:
             logger.info("Skipping missing ticket: ticket_id=%s", ticket_id)
             return {"status": "missing", "ticket_id": ticket_id}
 
-        if ticket.ai_triaged_at is not None and _has_completed_ai_processing(db, ticket_id):
+        if _has_completed_ai_processing(db, ticket_id):
             logger.info("Skipping already processed ticket: ticket_id=%s", ticket_id)
             return {"status": "already_processed", "ticket_id": ticket_id}
 

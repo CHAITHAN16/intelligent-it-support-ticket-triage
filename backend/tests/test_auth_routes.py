@@ -122,14 +122,8 @@ def test_employee_ticket_access_is_scoped_and_identity_cannot_be_spoofed(client,
     assert client.get("/api/tickets?creator_id=2", headers=headers).status_code == 403
     assert client.patch("/api/tickets/2", json={"status": "IN_PROGRESS"}, headers=headers).status_code == 403
 
-    class Triage:
-        category = "Network"
-        subcategory = None
-        priority = "MEDIUM"
-        confidence = 0.9
-        model_version = "test"
-
-    monkeypatch.setattr("routers.tickets.TriageService.triage", lambda self, title, description: Triage())
+    queued_ticket_ids = []
+    monkeypatch.setattr("routers.tickets.process_ticket.delay", queued_ticket_ids.append)
     response = client.post(
         "/api/tickets",
         json={"title": "Identity test", "description": "Must belong to token user", "creator_id": 2},
@@ -137,6 +131,26 @@ def test_employee_ticket_access_is_scoped_and_identity_cannot_be_spoofed(client,
     )
     assert response.status_code == 201
     assert response.json()["creator_id"] == 1
+    assert queued_ticket_ids == [response.json()["id"]]
+
+
+def test_ticket_remains_persisted_when_enqueue_fails(client, database_session, monkeypatch):
+    def fail_enqueue(ticket_id):
+        raise RuntimeError("Redis unavailable")
+
+    monkeypatch.setattr("routers.tickets.process_ticket.delay", fail_enqueue)
+    response = client.post(
+        "/api/tickets",
+        json={"title": "Queue failure", "description": "The ticket must remain durable"},
+        headers=token_for(database_session, 1),
+    )
+
+    assert response.status_code == 201
+    ticket = database_session.get(Ticket, response.json()["id"])
+    assert ticket is not None
+    assert ticket.ai_predicted_category is None
+    assert ticket.ai_predicted_priority is None
+    assert ticket.assigned_team_id is None
 
 
 def test_agent_authorization_and_comment_author_identity(client, database_session):
