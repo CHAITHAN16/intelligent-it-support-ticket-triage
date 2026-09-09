@@ -32,10 +32,7 @@ export default function NewTicketPage() {
   const [processingState, setProcessingState] = useState<"processing" | "completed" | "delayed">("processing");
 
   useEffect(() => {
-    if (!ticket || isTicketProcessingComplete(ticket)) {
-      if (ticket) setProcessingState("completed");
-      return;
-    }
+    if (!ticket || isTicketProcessingComplete(ticket)) return;
 
     let cancelled = false;
     const startedAt = Date.now();
@@ -151,7 +148,7 @@ export default function NewTicketPage() {
                 <div className="mt-8 flex flex-col-reverse items-stretch justify-between gap-4 border-t border-slate-200 pt-6 sm:flex-row sm:items-center">
                   <p className="text-xs leading-5 text-slate-500">Your request will be automatically triaged for the right support team.</p>
                   <button type="submit" disabled={isSubmitting} className="inline-flex min-w-36 items-center justify-center rounded-full bg-sky-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500">
-                    {isSubmitting ? <><span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />Submitting...</> : "Submit ticket"}
+                    {isSubmitting ? <><span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />Submitting ticket...</> : "Submit ticket"}
                   </button>
                 </div>
               </form>
