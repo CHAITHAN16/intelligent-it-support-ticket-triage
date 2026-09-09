@@ -32,7 +32,7 @@ $env:REDIS_URL = "redis://localhost:6379/0"
 The infrastructure smoke task can be submitted from a Python shell after the worker is running:
 
 ```powershell
-\.venv\Scripts\python.exe -c "from tasks.test_task import test_task; result = test_task.delay('hello'); print(result.get(timeout= दस))"
+\.venv\Scripts\python.exe -c "from tasks.test_task import test_task; result = test_task.delay('hello'); print(result.get(timeout=10))"
 ```
 
 The expected result is `hello`. This task only verifies FastAPI/backend-side Celery configuration, Redis, a worker, and result retrieval. Ticket triage and routing remain synchronous until a later roadmap step.
