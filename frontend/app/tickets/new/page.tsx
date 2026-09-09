@@ -31,8 +31,11 @@ export default function NewTicketPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [processingState, setProcessingState] = useState<"processing" | "completed" | "delayed">("processing");
 
+  const ticketId = ticket?.id;
+  const processingComplete = ticket ? isTicketProcessingComplete(ticket) : false;
+
   useEffect(() => {
-    if (!ticket || isTicketProcessingComplete(ticket)) return;
+    if (!ticketId || processingComplete) return;
 
     let cancelled = false;
     const startedAt = Date.now();
@@ -43,7 +46,7 @@ export default function NewTicketPage() {
         return;
       }
 
-      void getTicket(ticket.id)
+      void getTicket(ticketId)
         .then((updatedTicket) => {
           if (cancelled) return;
           setTicket(updatedTicket);
@@ -64,7 +67,7 @@ export default function NewTicketPage() {
       cancelled = true;
       window.clearInterval(poll);
     };
-  }, [ticket]);
+  }, [ticketId, processingComplete]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
