@@ -8,8 +8,12 @@ from database import get_db
 from auth import get_current_user, require_agent
 from models import TeamMember, Ticket, TicketPriority, TicketStatus, TicketStatusHistory, User, UserRole
 from schemas.tickets import TicketCreate, TicketResponse, TicketUpdateRequest
-from services.routing_service import RoutingService
-from services.triage_service import TriageService
+from tasks.ticket_tasks import process_ticket
+
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
@@ -135,29 +139,16 @@ def create_ticket(
         )
 
         db.add(ticket)
-        db.flush()
-
-        try:
-            triage_result = TriageService().triage(ticket.title, ticket.description)
-        except (FileNotFoundError, RuntimeError) as error:
-            db.rollback()
-            raise HTTPException(status_code=503, detail=f"AI triage unavailable: {error}") from error
-        ticket.ai_predicted_category = triage_result.category
-        ticket.ai_predicted_subcategory = triage_result.subcategory
-        ticket.ai_predicted_priority = triage_result.priority
-        ticket.ai_confidence = triage_result.confidence
-        ticket.ai_model_version = triage_result.model_version
-        created_at = ticket.created_at
-        if created_at.tzinfo is None:
-            created_at = created_at.replace(tzinfo=timezone.utc)
-        ticket.ai_triaged_at = max(datetime.now(timezone.utc), created_at)
-
-        RoutingService().route_and_assign(db, ticket, triage_result)
         db.commit()
         db.refresh(ticket)
-        return ticket
-    except HTTPException:
-        raise
     except Exception:
         db.rollback()
         raise
+
+    try:
+        process_ticket.delay(ticket.id)
+    except Exception:
+        # The ticket is already durable; Redis availability must not undo it.
+        logger.exception("Could not enqueue ticket processing: ticket_id=%s", ticket.id)
+
+    return ticket
