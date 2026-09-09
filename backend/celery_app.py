@@ -17,7 +17,7 @@ def create_celery_app(redis_url: str = REDIS_URL) -> Celery:
         result_serializer="json",
         task_serializer="json",
         timezone="UTC",
-        imports=("tasks.test_task",),
+        imports=("tasks.test_task", "tasks.ticket_tasks"),
     )
     return app
 
