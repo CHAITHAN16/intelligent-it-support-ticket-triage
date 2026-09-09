@@ -1,19 +1,7 @@
-import type { TicketResponse } from "@/lib/api";
-
-const teamByCategory: Record<string, string> = {
-  Network: "Network Infrastructure",
-  Security: "Security Operations",
-  Software: "Software Support",
-  Other: "General IT Support",
-};
+import { isTicketProcessingComplete, type TicketResponse } from "@/lib/api";
 
 function displayTeam(ticket: TicketResponse): string {
-  return (
-    ticket.assigned_team_name ??
-    ticket.assigned_team?.name ??
-    (ticket.ai_predicted_category ? teamByCategory[ticket.ai_predicted_category] : undefined) ??
-    "Pending assignment"
-  );
+  return ticket.assigned_team_name ?? ticket.assigned_team?.name ?? "Not available";
 }
 
 function confidenceLabel(confidence: number | null): string {
@@ -30,6 +18,8 @@ function Detail({ label, value }: { label: string; value: string }) {
 }
 
 export function TicketResultCard({ ticket }: { ticket: TicketResponse }) {
+  const processingComplete = isTicketProcessingComplete(ticket);
+
   return (
     <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5" aria-live="polite">
       <div className="border-b border-slate-200 bg-slate-950 px-6 py-7 text-white sm:px-8">
@@ -56,16 +46,23 @@ export function TicketResultCard({ ticket }: { ticket: TicketResponse }) {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">AI triage</p>
-              <p className="mt-1 text-sm text-slate-600">Your request has been sent to the most relevant support team.</p>
+              <p className="mt-1 text-sm font-semibold text-slate-800">
+                {processingComplete ? "AI triage completed" : "AI triage is processing..."}
+              </p>
             </div>
             <span className="hidden h-10 w-10 items-center justify-center rounded-full bg-white text-sky-700 shadow-sm sm:flex" aria-hidden="true">&rarr;</span>
           </div>
-          <dl className="mt-6 grid gap-5 sm:grid-cols-2">
-            <Detail label="Predicted category" value={ticket.ai_predicted_category ?? "Not available"} />
-            <Detail label="Predicted priority" value={ticket.ai_predicted_priority ?? "Not available"} />
-            <Detail label="Assigned team" value={displayTeam(ticket)} />
-            <Detail label="AI confidence" value={confidenceLabel(ticket.ai_confidence)} />
-          </dl>
+          {processingComplete ? (
+            <dl className="mt-6 grid gap-5 sm:grid-cols-2">
+              <Detail label="Predicted category" value={ticket.ai_predicted_category!} />
+              <Detail label="Predicted priority" value={ticket.ai_predicted_priority!} />
+              <Detail label="Assigned team" value={displayTeam(ticket)} />
+              <Detail label="AI confidence" value={confidenceLabel(ticket.ai_confidence)} />
+              <Detail label="AI model version" value={ticket.ai_model_version ?? "Not available"} />
+            </dl>
+          ) : (
+            <p className="mt-6 text-sm text-slate-600">AI triage is processing. Results will appear here automatically.</p>
+          )}
         </div>
       </div>
     </section>

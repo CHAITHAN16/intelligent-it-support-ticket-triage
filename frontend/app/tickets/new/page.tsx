@@ -1,13 +1,15 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 import { SiteHeader } from "@/components/site-header";
 import { TicketResultCard } from "@/components/ticket-result-card";
-import { createTicket, type TicketResponse } from "@/lib/api";
+import { createTicket, getTicket, isTicketProcessingComplete, type TicketResponse } from "@/lib/api";
 
 const TITLE_MAX_LENGTH = 255;
 const DESCRIPTION_MAX_LENGTH = 5000;
+const POLL_INTERVAL_MS = 2500;
+const POLL_TIMEOUT_MS = 60000;
 
 type FormErrors = { title?: string; description?: string };
 
@@ -27,6 +29,45 @@ export default function NewTicketPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [ticket, setTicket] = useState<TicketResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [processingState, setProcessingState] = useState<"processing" | "completed" | "delayed">("processing");
+
+  useEffect(() => {
+    if (!ticket || isTicketProcessingComplete(ticket)) {
+      if (ticket) setProcessingState("completed");
+      return;
+    }
+
+    let cancelled = false;
+    const startedAt = Date.now();
+    const poll = window.setInterval(() => {
+      if (Date.now() - startedAt >= POLL_TIMEOUT_MS) {
+        window.clearInterval(poll);
+        if (!cancelled) setProcessingState("delayed");
+        return;
+      }
+
+      void getTicket(ticket.id)
+        .then((updatedTicket) => {
+          if (cancelled) return;
+          setTicket(updatedTicket);
+          if (isTicketProcessingComplete(updatedTicket)) {
+            setProcessingState("completed");
+            window.clearInterval(poll);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setProcessingState("delayed");
+            window.clearInterval(poll);
+          }
+        });
+    }, POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(poll);
+    };
+  }, [ticket]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,6 +80,7 @@ export default function NewTicketPage() {
     try {
       const createdTicket = await createTicket({ title: title.trim(), description: description.trim() });
       setTicket(createdTicket);
+      setProcessingState(isTicketProcessingComplete(createdTicket) ? "completed" : "processing");
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "We could not submit your ticket.");
     } finally {
@@ -52,6 +94,7 @@ export default function NewTicketPage() {
     setDescription("");
     setErrors({});
     setSubmitError(null);
+    setProcessingState("processing");
   }
 
   return (
@@ -65,6 +108,10 @@ export default function NewTicketPage() {
                 <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-600">Request received</p>
                 <h1 className="mt-3 text-4xl font-semibold tracking-[-0.035em] text-slate-950">Your support ticket</h1>
               </div>
+              {processingState === "delayed" && <div role="status" className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">Ticket was created, but AI processing is taking longer than expected.</div>}
+              <p className="mb-4 text-sm font-semibold text-slate-700" aria-live="polite">
+                {processingState === "completed" ? "Ticket submitted successfully" : "Ticket submitted successfully. AI triage is processing..."}
+              </p>
               <TicketResultCard ticket={ticket} />
               <button type="button" onClick={startAnotherTicket} className="mt-6 text-sm font-semibold text-sky-700 underline decoration-sky-300 underline-offset-4 hover:text-sky-900">Submit another ticket</button>
             </>

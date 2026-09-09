@@ -62,6 +62,14 @@ export type TicketResponse = {
   assigned_team?: { name?: string | null } | null;
 };
 
+export function isTicketProcessingComplete(ticket: TicketResponse): boolean {
+  return Boolean(
+    ticket.ai_predicted_category &&
+      ticket.ai_predicted_priority &&
+      (ticket.assigned_team_name || ticket.assigned_team_id !== null && ticket.assigned_team_id !== undefined),
+  );
+}
+
 export type TicketComment = {
   id: number;
   ticket_id: number;
