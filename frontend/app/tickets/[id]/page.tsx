@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { SiteHeader } from "@/components/site-header";
-import { getTicket, getTicketComments, getTicketHistory, type TicketComment, type TicketResponse, type TicketStatusHistory } from "@/lib/api";
+import { getTicket, getTicketComments, getTicketHistory, isTicketProcessingComplete, type TicketComment, type TicketResponse, type TicketStatusHistory } from "@/lib/api";
 
 function formattedDate(value: string) {
   return new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
@@ -155,13 +155,19 @@ export default function EmployeeTicketDetailPage() {
 
               <section className="rounded-3xl border border-sky-100 bg-sky-50 p-6 shadow-xl shadow-slate-900/5 sm:p-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">AI predictions</p>
-                <p className="mt-2 text-sm text-slate-600">These values reflect what the triage model predicted when the ticket was created.</p>
-                <dl className="mt-6 grid gap-5 sm:grid-cols-2">
-                  <Field label="AI predicted category" value={ticket.ai_predicted_category ?? "Not available"} />
-                  <Field label="AI predicted priority" value={ticket.ai_predicted_priority ?? "Not available"} />
-                  <Field label="AI confidence" value={confidenceLabel(ticket.ai_confidence)} />
-                  <Field label="AI model version" value={ticket.ai_model_version ?? "Not available"} />
-                </dl>
+                {isTicketProcessingComplete(ticket) ? (
+                  <>
+                    <p className="mt-2 text-sm text-slate-600">These values reflect what the triage model predicted when the ticket was created.</p>
+                    <dl className="mt-6 grid gap-5 sm:grid-cols-2">
+                      <Field label="AI predicted category" value={ticket.ai_predicted_category!} />
+                      <Field label="AI predicted priority" value={ticket.ai_predicted_priority!} />
+                      <Field label="AI confidence" value={confidenceLabel(ticket.ai_confidence)} />
+                      <Field label="AI model version" value={ticket.ai_model_version ?? "Not available"} />
+                    </dl>
+                  </>
+                ) : (
+                  <p className="mt-3 text-sm font-semibold text-slate-700">AI processing in progress</p>
+                )}
               </section>
 
               <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-8">

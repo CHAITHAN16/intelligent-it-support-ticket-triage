@@ -42,9 +42,9 @@ function TicketRow({ ticket }: { ticket: TicketResponse }) {
         <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">{ticket.description}</p>
       </div>
       <div className="grid gap-2 text-sm text-slate-600 sm:text-right">
-        <p><span className="font-semibold text-slate-900">Category:</span> {ticket.category ?? "Not assigned"}</p>
-        <p><span className="font-semibold text-slate-900">Priority:</span> {ticket.priority}</p>
-        <p><span className="font-semibold text-slate-900">Team:</span> {ticket.assigned_team_name ?? ticket.assigned_team?.name ?? "Unassigned"}</p>
+        <p><span className="font-semibold text-slate-900">Category:</span> {ticket.ai_predicted_category ?? "AI processing in progress"}</p>
+        <p><span className="font-semibold text-slate-900">Priority:</span> {ticket.ai_predicted_priority ?? "AI processing in progress"}</p>
+        <p><span className="font-semibold text-slate-900">Team:</span> {ticket.assigned_team_name ?? ticket.assigned_team?.name ?? "AI processing in progress"}</p>
         <p><span className="font-semibold text-slate-900">Created:</span> {formatDate(ticket.created_at)}</p>
         <p><span className="font-semibold text-slate-900">AI confidence:</span> {confidenceValue(ticket)}</p>
       </div>
