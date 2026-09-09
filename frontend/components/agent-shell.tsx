@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import type { Team } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 export function AgentShell({
   selectedTeamName,
@@ -15,6 +16,8 @@ export function AgentShell({
   onTeamChange?: (teamId: number) => void;
   children: React.ReactNode;
 }) {
+  const { logout } = useAuth();
+
   return (
     <div className="min-h-screen bg-[#f6f8fb] text-slate-950">
       <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur">
@@ -26,16 +29,14 @@ export function AgentShell({
               <span className="block text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Support Agent</span>
             </span>
           </Link>
-          <Link href="/tickets/new" className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500">
-            Employee Portal
-          </Link>
+          <button type="button" onClick={logout} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500">Log out</button>
         </div>
       </header>
 
       <div className="mx-auto flex max-w-[1440px] flex-col lg:flex-row">
         <aside className="border-b border-slate-200 px-5 py-6 lg:min-h-[calc(100vh-73px)] lg:w-72 lg:shrink-0 lg:border-b-0 lg:border-r lg:px-6 lg:py-9">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Team queue</p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">Select a simulated team view while agent roles are not yet enabled.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">Select a team queue to review assigned support work.</p>
           {onTeamChange ? (
             <>
               <label htmlFor="team-selector" className="sr-only">Select support team</label>
