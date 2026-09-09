@@ -25,6 +25,7 @@ $env:REDIS_URL = "redis://localhost:6379/0"
 Start the Celery worker from `backend` in Terminal 2. The `solo` pool is the practical Windows development option:
 
 ```powershell
+$env:DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/it_support"
 $env:REDIS_URL = "redis://localhost:6379/0"
 \.venv\Scripts\celery.exe -A celery_app:celery_app worker --loglevel=INFO --pool=solo
 ```
@@ -32,6 +33,7 @@ $env:REDIS_URL = "redis://localhost:6379/0"
 The infrastructure smoke task can be submitted from a Python shell after the worker is running:
 
 ```powershell
+$env:DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/it_support"
 \.venv\Scripts\python.exe -c "from tasks.test_task import test_task; result = test_task.delay('hello'); print(result.get(timeout=10))"
 ```
 

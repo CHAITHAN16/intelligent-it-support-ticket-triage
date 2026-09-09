@@ -45,7 +45,7 @@ def task_database(monkeypatch):
         ]
     )
     session.commit()
-    monkeypatch.setattr(ticket_tasks, "SessionLocal", session_factory)
+    monkeypatch.setattr(ticket_tasks, "create_task_session", session_factory)
     yield session
     event.remove(Session, "before_flush", assign_sqlite_ids)
     session.close()

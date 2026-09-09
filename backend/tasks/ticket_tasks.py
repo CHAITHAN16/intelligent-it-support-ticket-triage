@@ -6,13 +6,18 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 
 from celery_app import celery_app
-from database import SessionLocal
 from models import AssignmentSource, Ticket, TicketAssignment
 from services.routing_service import RoutingService
 from services.triage_service import TriageService
 
 
 logger = logging.getLogger(__name__)
+
+
+def create_task_session():
+    from database import SessionLocal
+
+    return SessionLocal()
 
 
 def _has_completed_ai_processing(db, ticket_id: int) -> bool:
@@ -28,7 +33,7 @@ def _has_completed_ai_processing(db, ticket_id: int) -> bool:
 @celery_app.task(name="it_support.process_ticket")
 def process_ticket(ticket_id: int) -> dict[str, int | str]:
     """Run AI triage and routing for a persisted ticket."""
-    db = SessionLocal()
+    db = create_task_session()
     logger.info("Starting ticket processing: ticket_id=%s", ticket_id)
 
     try:
