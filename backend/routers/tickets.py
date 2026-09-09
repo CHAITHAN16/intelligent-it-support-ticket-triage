@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -9,8 +10,6 @@ from auth import get_current_user, require_agent
 from models import TeamMember, Ticket, TicketPriority, TicketStatus, TicketStatusHistory, User, UserRole
 from schemas.tickets import TicketCreate, TicketResponse, TicketUpdateRequest
 from tasks.ticket_tasks import process_ticket
-
-import logging
 
 
 logger = logging.getLogger(__name__)

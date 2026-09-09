@@ -35,4 +35,4 @@ The infrastructure smoke task can be submitted from a Python shell after the wor
 \.venv\Scripts\python.exe -c "from tasks.test_task import test_task; result = test_task.delay('hello'); print(result.get(timeout=10))"
 ```
 
-The expected result is `hello`. This task only verifies FastAPI/backend-side Celery configuration, Redis, a worker, and result retrieval. Ticket triage and routing remain synchronous until a later roadmap step.
+The expected result is `hello`. This task verifies the backend-side Celery configuration, Redis, a worker, and result retrieval. Ticket creation now stores the ticket first and queues `it_support.process_ticket`; the worker runs the existing AI triage and team-routing services after the HTTP response is returned.
