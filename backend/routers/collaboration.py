@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from database import get_db
-from auth import get_current_user
+from auth import get_current_user, require_agent
 from models import Comment, Ticket, TicketStatusHistory, User, UserRole
 from routers.tickets import _require_ticket_access, _can_agent_access_ticket
 from schemas.collaboration import CommentCreate, CommentResponse, TicketStatusHistoryResponse
@@ -24,7 +24,7 @@ def create_comment(
     ticket_id: int,
     payload: CommentCreate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user),
+    current_user: User | None = Depends(require_agent),
 ) -> Comment:
     try:
         ticket = _require_ticket(ticket_id, db)

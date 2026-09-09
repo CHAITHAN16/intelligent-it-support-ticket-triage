@@ -16,6 +16,14 @@ class RegisterRequest(BaseModel):
             raise ValueError("must be a valid email address")
         return value
 
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("must not be empty")
+        return value
+
 
 class LoginRequest(BaseModel):
     email: str

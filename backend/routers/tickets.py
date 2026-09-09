@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from database import get_db
-from auth import get_current_user
+from auth import get_current_user, require_agent
 from models import TeamMember, Ticket, TicketPriority, TicketStatus, TicketStatusHistory, User, UserRole
 from schemas.tickets import TicketCreate, TicketResponse, TicketUpdateRequest
 from services.routing_service import RoutingService
@@ -46,6 +46,13 @@ def list_tickets(
         if creator_id is not None and creator_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Employees can only view their own tickets")
         statement = statement.where(Ticket.creator_id == current_user.id)
+    elif current_user.role == UserRole.SUPPORT_AGENT:
+        team_ids = select(TeamMember.team_id).where(TeamMember.user_id == current_user.id)
+        statement = statement.where(
+            or_(Ticket.assigned_agent_id == current_user.id, Ticket.assigned_team_id.in_(team_ids))
+        )
+        if creator_id is not None:
+            statement = statement.where(Ticket.creator_id == creator_id)
     elif creator_id is not None:
         statement = statement.where(Ticket.creator_id == creator_id)
     statement = statement.order_by(Ticket.created_at.desc())
@@ -66,7 +73,7 @@ def update_ticket(
     ticket_id: int,
     payload: TicketUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(require_agent),
 ) -> Ticket:
     ticket = db.get(Ticket, ticket_id)
     if ticket is None:
