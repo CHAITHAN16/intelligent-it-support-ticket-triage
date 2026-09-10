@@ -396,3 +396,35 @@ The database layer uses:
 SQLAlchemy
 Alembic
 PostgreSQL
+
+🧰 Technology Stack
+Frontend
+Next.js
+React
+TypeScript
+Tailwind CSS
+Backend
+Python
+FastAPI
+SQLAlchemy
+Pydantic
+Uvicorn
+Machine Learning
+scikit-learn
+TF-IDF
+Logistic Regression
+joblib
+Database
+PostgreSQL
+Alembic
+Authentication
+JWT
+Argon2
+pwdlib
+Asynchronous Processing
+Redis
+Celery
+Development
+Git
+GitHub
+VS Code
