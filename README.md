@@ -164,3 +164,5 @@ View assigned support team.
 View comments.
 View status history.
 Track tickets while AI processing is in progress.
+
+🧑‍💼 Support Agent Dashboard
