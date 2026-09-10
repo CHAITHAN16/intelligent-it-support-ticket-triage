@@ -428,3 +428,32 @@ Development
 Git
 GitHub
 VS Code
+
+📊 Machine Learning Results
+Category Classification
+
+The current category model was evaluated on a held-out test set.
+
+Accuracy: 97.27%
+
+Macro Precision: 95.32%
+
+Macro Recall: 97.55%
+
+Macro F1: 96.35%
+Priority Classification
+
+The current priority model was evaluated on a held-out test set.
+
+Accuracy: 73.05%
+
+Macro Precision: 68.39%
+
+Macro Recall: 70.42%
+
+Macro F1: 69.31%
+Important note
+
+The datasets used for the current experiments are synthetic/curated datasets.
+
+Therefore, these evaluation scores should be interpreted as held-out dataset performance, not guaranteed real-world production accuracy.
