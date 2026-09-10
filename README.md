@@ -197,3 +197,7 @@ The system uses machine-learning models to analyze ticket text.
 Category model
 
 The category classifier predicts:
+Network
+Security
+Software
+Other
