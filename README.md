@@ -287,3 +287,14 @@ Team Routing
 Save Results
 
 The frontend polls the ticket endpoint every 2.5 seconds while processing is incomplete.
+
+Polling stops when:
+
+AI category is available
+AI priority is available
+Assigned team is available
+An API error occurs
+The 60-second timeout is reached
+The page is unmounted
+
+This allows the system to accept tickets without blocking the HTTP request on AI processing.
