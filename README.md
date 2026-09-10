@@ -512,3 +512,16 @@ Redis is used by Celery and can be run through Docker.
 git clone https://github.com/CHAITHAN16/intelligent-it-support-ticket-triage.git
 
 cd intelligent-it-support-ticket-triage
+
+2. Backend setup
+cd backend
+
+Create/activate the virtual environment:
+
+python -m venv .venv
+
+.\.venv\Scripts\Activate.ps1
+
+Install dependencies:
+
+pip install -r requirements.txt
