@@ -376,3 +376,23 @@ Changed-by information when available
 Timestamp
 
 History is only created when the status actually changes.
+
+🗄️ Database
+
+The application uses PostgreSQL.
+
+Main entities include:
+
+users
+teams
+team_members
+tickets
+ticket_assignments
+ticket_status_history
+comments
+
+The database layer uses:
+
+SQLAlchemy
+Alembic
+PostgreSQL
