@@ -182,3 +182,11 @@ Update authoritative category and priority.
 Add comments.
 View AI predictions.
 View ticket status history.
+
+🤖 AI Ticket Triage
+
+The system uses machine-learning models to analyze ticket text.
+
+Category model
+
+The category classifier predicts:
