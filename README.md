@@ -151,3 +151,16 @@ PostgreSQL
                   └─────────────┘      └─────────────┘
 
 ✨ Features
+👨‍💻 Employee Portal
+
+Employees can:
+
+Register and log in.
+Submit IT support tickets.
+View their own tickets.
+View ticket status.
+View AI classification results.
+View assigned support team.
+View comments.
+View status history.
+Track tickets while AI processing is in progress.
