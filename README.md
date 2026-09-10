@@ -298,3 +298,46 @@ The 60-second timeout is reached
 The page is unmounted
 
 This allows the system to accept tickets without blocking the HTTP request on AI processing.
+
+🔐 Authentication & Authorization
+
+The system implements JWT-based authentication.
+
+Password security
+
+Passwords are hashed using:
+
+Argon2
+
+Plaintext passwords are never stored.
+
+Roles
+EMPLOYEE
+AGENT
+ADMIN
+Employee permissions
+
+Employees can:
+
+Create tickets
+View their own tickets
+View their ticket comments
+View their ticket history
+
+Employees cannot:
+
+Access the agent dashboard
+Access another employee's tickets
+Modify another user's ticket
+Impersonate another user
+Agent permissions
+
+Agents can:
+
+Access authorized team queues
+View authorized tickets
+Update tickets they are authorized to work on
+Add ticket comments
+Update ticket status
+
+The backend remains responsible for authorization. Frontend role checks are only used for navigation and user experience.
