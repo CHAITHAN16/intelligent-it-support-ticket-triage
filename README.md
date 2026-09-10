@@ -166,3 +166,19 @@ View status history.
 Track tickets while AI processing is in progress.
 
 🧑‍💼 Support Agent Dashboard
+Support agents can:
+
+Log in using their agent account.
+Access their assigned team queues.
+View ticket statistics.
+Filter tickets by:
+Status
+Priority
+Category
+Sort tickets.
+Open individual tickets.
+Update ticket status.
+Update authoritative category and priority.
+Add comments.
+View AI predictions.
+View ticket status history.
