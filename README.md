@@ -459,3 +459,38 @@ The datasets used for the current experiments are synthetic/curated datasets.
 Therefore, these evaluation scores should be interpreted as held-out dataset performance, not guaranteed real-world production accuracy.
 
 📁 Project Structure
+intelligent-it-support-ticket-triage/
+│
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   ├── lib/
+│   └── ...
+│
+├── backend/
+│   ├── routers/
+│   ├── schemas/
+│   ├── services/
+│   ├── tasks/
+│   ├── tests/
+│   ├── celery_app.py
+│   ├── main.py
+│   └── requirements.txt
+│
+├── ml/
+│   ├── models/
+│   ├── prepare_*.py
+│   └── train_*.py
+│
+├── datasets/
+│   ├── raw/
+│   └── processed/
+│
+├── docs/
+│   └── ml/
+│
+├── tests/
+│
+├── .gitignore
+├── README.md
+└── ...
