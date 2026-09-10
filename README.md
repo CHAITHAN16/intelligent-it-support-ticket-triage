@@ -355,3 +355,24 @@ Agent:
 "VPN credentials have been reset. Please try again."
 
 Comments are stored in PostgreSQL and displayed chronologically.
+
+🕒 Ticket Status History
+
+Status changes are recorded in the ticket history.
+
+Example:
+
+NEW
+ ↓
+IN_PROGRESS
+ ↓
+RESOLVED
+
+The system preserves:
+
+Previous status
+New status
+Changed-by information when available
+Timestamp
+
+History is only created when the status actually changes.
