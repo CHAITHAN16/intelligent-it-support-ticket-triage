@@ -496,3 +496,14 @@ intelligent-it-support-ticket-triage/
 └── ...
 
 🚀 Local Setup
+Prerequisites
+
+Install:
+
+Python 3.13+
+Node.js
+PostgreSQL
+Docker Desktop
+Git
+
+Redis is used by Celery and can be run through Docker.
