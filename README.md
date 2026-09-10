@@ -236,3 +236,19 @@ AI predicted priority
 AI confidence
 AI model version
 AI processing timestamp
+
+🔀 Automatic Team Routing
+
+After AI category prediction, the ticket is routed according to the existing routing rules.
+
+AI Category	Support Team
+Network	Network Infrastructure
+Security	Security Operations
+Software	Software Support
+Other	General IT Support
+
+The routing decision is persisted in the database through the ticket assignment system.
+
+AI-generated assignments are marked with:
+
+source = AI
