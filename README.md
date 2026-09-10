@@ -38,3 +38,58 @@ $env:DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/it_su
 ```
 
 The expected result is `hello`. This task verifies the backend-side Celery configuration, Redis, a worker, and result retrieval. Ticket creation now stores the ticket first and queues `it_support.process_ticket`; the worker runs the existing AI triage and team-routing services after the HTTP response is returned.
+
+# Intelligent IT Support Ticket Triage and Routing
+
+AI-based IT support ticket triage and routing system.
+
+**7th Semester Project**
+
+---
+
+## 📌 Overview
+
+Intelligent IT Support Ticket Triage and Routing is a full-stack AI-assisted IT service management system designed to automate the initial handling of employee IT support requests.
+
+Employees can submit IT support tickets through a web portal. The system uses machine-learning models to automatically analyze each ticket, predict its category and priority, and route it to the appropriate IT support team.
+
+The system also provides authentication, role-based access, ticket collaboration, status history, asynchronous AI processing, and separate employee and support-agent interfaces.
+
+### Core workflow
+
+```text
+Employee
+   │
+   ▼
+IT Support Portal
+   │
+   ▼
+Create Ticket
+   │
+   ▼
+FastAPI Backend
+   │
+   ├──────────────► PostgreSQL
+   │
+   ▼
+Redis Queue
+   │
+   ▼
+Celery Worker
+   │
+   ▼
+AI Triage
+   │
+   ├──► Category Prediction
+   │
+   └──► Priority Prediction
+   │
+   ▼
+Team Routing
+   │
+   ▼
+PostgreSQL
+   │
+   ├──────────────► Employee Portal
+   │
+   └──────────────► Agent Dashboard
