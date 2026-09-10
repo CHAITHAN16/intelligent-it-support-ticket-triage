@@ -252,3 +252,38 @@ The routing decision is persisted in the database through the ticket assignment 
 AI-generated assignments are marked with:
 
 source = AI
+
+⚡ Asynchronous Processing
+
+AI triage and routing are processed asynchronously using:
+
+Redis
+Celery
+
+Instead of making the employee wait for the complete AI pipeline:
+
+Employee
+   ↓
+FastAPI
+   ↓
+Create Ticket
+   ↓
+Queue Celery Task
+   ↓
+Return Response
+
+The background worker then performs:
+
+Celery Worker
+   ↓
+Load Ticket
+   ↓
+AI Category Prediction
+   ↓
+AI Priority Prediction
+   ↓
+Team Routing
+   ↓
+Save Results
+
+The frontend polls the ticket endpoint every 2.5 seconds while processing is incomplete.
