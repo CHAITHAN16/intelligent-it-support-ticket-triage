@@ -218,3 +218,21 @@ The priority classifier predicts:
 LOW
 MEDIUM
 HIGH
+
+Pipeline:
+
+Ticket Text
+    ↓
+TF-IDF
+    ↓
+Logistic Regression
+    ↓
+Priority
+
+The system also records:
+
+AI predicted category
+AI predicted priority
+AI confidence
+AI model version
+AI processing timestamp
