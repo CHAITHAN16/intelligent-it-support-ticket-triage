@@ -201,3 +201,20 @@ Network
 Security
 Software
 Other
+
+The model uses:
+
+Ticket Text
+    ↓
+TF-IDF
+    ↓
+Logistic Regression
+    ↓
+Category
+Priority model
+
+The priority classifier predicts:
+
+LOW
+MEDIUM
+HIGH
