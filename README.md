@@ -341,3 +341,17 @@ Add ticket comments
 Update ticket status
 
 The backend remains responsible for authorization. Frontend role checks are only used for navigation and user experience.
+
+💬 Ticket Collaboration
+
+Tickets support comments and collaboration.
+
+Example:
+
+Agent:
+"Investigating the VPN configuration."
+
+Agent:
+"VPN credentials have been reset. Please try again."
+
+Comments are stored in PostgreSQL and displayed chronologically.
