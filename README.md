@@ -507,3 +507,5 @@ Docker Desktop
 Git
 
 Redis is used by Celery and can be run through Docker.
+
+1. Clone the repository
