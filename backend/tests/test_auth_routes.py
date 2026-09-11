@@ -102,6 +102,16 @@ def test_login_success_and_password_failures(client):
     assert client.post("/api/auth/login", json={"email": "missing@example.com", "password": "wrong-pass"}).status_code == 401
 
 
+def test_login_with_malformed_stored_hash_returns_invalid_credentials(client, database_session):
+    database_session.get(User, 1).password_hash = "legacy-plaintext-password"
+    database_session.commit()
+
+    response = client.post("/api/auth/login", json={"email": "employee@example.com", "password": "employee-pass"})
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid email or password"
+
+
 def test_me_requires_and_returns_authenticated_user(client, database_session):
     assert client.get("/api/auth/me").status_code == 401
     response = client.get("/api/auth/me", headers=token_for(database_session, 1))
