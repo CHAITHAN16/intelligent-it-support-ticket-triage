@@ -9,6 +9,7 @@ import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash
+from pwdlib.exceptions import UnknownHashError
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -79,4 +80,9 @@ require_admin = require_roles(UserRole.ADMIN)
 
 
 def verify_password(plain_password: str, hashed_password: str | None) -> bool:
-    return bool(hashed_password) and password_hash.verify(plain_password, hashed_password)
+    if not hashed_password:
+        return False
+    try:
+        return password_hash.verify(plain_password, hashed_password)
+    except UnknownHashError:
+        return False
