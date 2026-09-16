@@ -24,8 +24,10 @@ export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export type TicketUpdateInput = {
   category?: string;
+  subcategory?: string | null;
   priority?: TicketPriority;
   status?: TicketStatus;
+  assigned_team_id?: number;
 };
 
 export type Team = {
@@ -88,6 +90,29 @@ export type TicketStatusHistory = {
   changed_by_id: number | null;
   changed_at: string;
   note: string | null;
+};
+
+export type TicketFieldHistory = {
+  id: number;
+  ticket_id: number;
+  field_name: "category" | "subcategory" | "priority";
+  old_value: string | null;
+  new_value: string | null;
+  changed_by_id: number;
+  changed_at: string;
+  note: string | null;
+};
+
+export type TicketAssignmentHistory = {
+  id: number;
+  ticket_id: number;
+  team_id: number | null;
+  agent_id: number | null;
+  source: "AI" | "SYSTEM" | "HUMAN";
+  assigned_by_id: number | null;
+  routing_reason: string | null;
+  assigned_at: string;
+  unassigned_at: string | null;
 };
 
 type ApiErrorPayload = {
@@ -224,4 +249,12 @@ export async function getTicketComments(ticketId: number): Promise<TicketComment
 
 export async function getTicketHistory(ticketId: number): Promise<TicketStatusHistory[]> {
   return request<TicketStatusHistory[]>(`/tickets/${ticketId}/history`);
+}
+
+export async function getTicketFieldHistory(ticketId: number): Promise<TicketFieldHistory[]> {
+  return request<TicketFieldHistory[]>(`/tickets/${ticketId}/field-history`);
+}
+
+export async function getTicketAssignmentHistory(ticketId: number): Promise<TicketAssignmentHistory[]> {
+  return request<TicketAssignmentHistory[]>(`/tickets/${ticketId}/assignments`);
 }

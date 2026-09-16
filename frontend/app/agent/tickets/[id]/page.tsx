@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { AgentShell } from "@/components/agent-shell";
-import { createTicketComment, getTicket, getTicketComments, getTicketHistory, updateTicket, type TicketComment, type TicketPriority, type TicketResponse, type TicketStatus, type TicketStatusHistory } from "@/lib/api";
+import { createTicketComment, getTeams, getTicket, getTicketAssignmentHistory, getTicketComments, getTicketFieldHistory, getTicketHistory, updateTicket, type Team, type TicketAssignmentHistory, type TicketComment, type TicketFieldHistory, type TicketPriority, type TicketResponse, type TicketStatus, type TicketStatusHistory } from "@/lib/api";
 
 const ACTION_STATUSES: TicketStatus[] = ["NEW", "IN_PROGRESS", "RESOLVED", "CLOSED"];
 const PRIORITIES: TicketPriority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
@@ -28,18 +28,25 @@ export default function AgentTicketDetailPage() {
   const ticketId = Number(params.id);
   const [ticket, setTicket] = useState<TicketResponse | null>(null);
   const [category, setCategory] = useState("");
+  const [subcategory, setSubcategory] = useState("");
   const [priority, setPriority] = useState<TicketPriority>("MEDIUM");
   const [status, setStatus] = useState<TicketStatus>("NEW");
+  const [assignedTeamId, setAssignedTeamId] = useState("");
+  const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [comments, setComments] = useState<TicketComment[]>([]);
   const [history, setHistory] = useState<TicketStatusHistory[]>([]);
+  const [fieldHistory, setFieldHistory] = useState<TicketFieldHistory[]>([]);
+  const [assignmentHistory, setAssignmentHistory] = useState<TicketAssignmentHistory[]>([]);
   const [isCommentsLoading, setIsCommentsLoading] = useState(true);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [commentsError, setCommentsError] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [auditError, setAuditError] = useState<string | null>(null);
+  const [isAuditLoading, setIsAuditLoading] = useState(true);
   const [commentBody, setCommentBody] = useState("");
   const [isCommentPosting, setIsCommentPosting] = useState(false);
   const [commentSubmitError, setCommentSubmitError] = useState<string | null>(null);
@@ -48,8 +55,10 @@ export default function AgentTicketDetailPage() {
     const result = await getTicket(ticketId);
     setTicket(result);
     setCategory(result.category ?? "");
+    setSubcategory(result.subcategory ?? "");
     setPriority(result.priority);
     setStatus(result.status);
+    setAssignedTeamId(result.assigned_team_id?.toString() ?? "");
   }, [ticketId]);
 
   const refreshComments = useCallback(async () => {
@@ -76,6 +85,20 @@ export default function AgentTicketDetailPage() {
     }
   }, [ticketId]);
 
+  const refreshAuditHistory = useCallback(async () => {
+    setIsAuditLoading(true);
+    setAuditError(null);
+    try {
+      const [fields, assignments] = await Promise.all([getTicketFieldHistory(ticketId), getTicketAssignmentHistory(ticketId)]);
+      setFieldHistory(fields);
+      setAssignmentHistory(assignments);
+    } catch (reason) {
+      setAuditError(reason instanceof Error ? reason.message : "Override history could not be loaded.");
+    } finally {
+      setIsAuditLoading(false);
+    }
+  }, [ticketId]);
+
   useEffect(() => {
     let cancelled = false;
     async function loadTicket() {
@@ -98,7 +121,7 @@ export default function AgentTicketDetailPage() {
 
     void loadTicket();
     async function loadCollaboration() {
-      const [commentsResult, historyResult] = await Promise.allSettled([getTicketComments(ticketId), getTicketHistory(ticketId)]);
+      const [commentsResult, historyResult, teamsResult] = await Promise.allSettled([getTicketComments(ticketId), getTicketHistory(ticketId), getTeams()]);
       if (cancelled) return;
 
       if (commentsResult.status === "fulfilled") {
@@ -114,18 +137,24 @@ export default function AgentTicketDetailPage() {
         setHistoryError(historyResult.reason instanceof Error ? historyResult.reason.message : "Status history could not be loaded.");
       }
       setIsHistoryLoading(false);
+
+      if (teamsResult.status === "fulfilled") setTeams(teamsResult.value);
     }
 
-    if (Number.isInteger(ticketId)) void loadCollaboration();
+    if (Number.isInteger(ticketId)) {
+      void loadCollaboration();
+      void refreshAuditHistory();
+    }
     return () => { cancelled = true; };
-  }, [ticketId, refreshTicket]);
+  }, [ticketId, refreshAuditHistory, refreshTicket]);
 
   async function saveChanges() {
     if (!ticket || !category.trim()) { setError("Category is required."); return; }
     setIsSaving(true); setError(null); setSaveMessage(null);
     try {
-      await updateTicket(ticket.id, { category: category.trim(), priority, status });
-      await Promise.all([refreshTicket(), refreshHistory()]);
+      const teamId = Number(assignedTeamId);
+      await updateTicket(ticket.id, { category: category.trim(), subcategory: subcategory.trim() || null, priority, status, ...(teamId ? { assigned_team_id: teamId } : {}) });
+      await Promise.all([refreshTicket(), refreshHistory(), refreshAuditHistory()]);
       setSaveMessage("Ticket updated.");
     }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Ticket update failed."); }
