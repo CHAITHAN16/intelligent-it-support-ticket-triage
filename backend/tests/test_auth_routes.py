@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from auth import create_access_token, password_hash
+from auth import create_access_token, password_hash, verify_password
 from database import get_db
 from main import app
 from models import Base, Comment, Team, TeamMember, Ticket, TicketAssignment, TicketStatus, TicketStatusHistory, User, UserRole
@@ -79,7 +79,34 @@ def token_for(database_session, user_id):
     return {"Authorization": f"Bearer {create_access_token(database_session.get(User, user_id))}"}
 
 
-def test_registration_and_duplicate_email(client):
+def test_registration_persists_an_employee_with_the_client_payload(client, database_session):
+    response = client.post(
+        "/api/auth/register",
+        json={
+            "name": "Test Employee",
+            "email": "employee@test.com",
+            "password": "Test@12345",
+            "role": "employee",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body == {
+        "id": 4,
+        "name": "Test Employee",
+        "email": "employee@test.com",
+        "role": "EMPLOYEE",
+        "active": True,
+    }
+
+    registered_user = database_session.get(User, body["id"])
+    assert registered_user is not None
+    assert registered_user.password_hash != "Test@12345"
+    assert verify_password("Test@12345", registered_user.password_hash)
+
+
+def test_registration_rejects_duplicate_email(client):
     response = client.post("/api/auth/register", json={"name": "New User", "email": "new@example.com", "password": "secure-pass"})
     assert response.status_code == 201
     assert response.json()["role"] == "EMPLOYEE"
