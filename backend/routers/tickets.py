@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from auth import get_current_user, require_agent
-from models import TeamMember, Ticket, TicketPriority, TicketStatus, TicketStatusHistory, User, UserRole
+from models import AssignmentSource, Team, TeamMember, Ticket, TicketAssignment, TicketFieldHistory, TicketPriority, TicketStatus, TicketStatusHistory, User, UserRole
 from schemas.tickets import TicketCreate, TicketResponse, TicketUpdateRequest
 from tasks.ticket_tasks import process_ticket
 
@@ -90,12 +90,54 @@ def update_ticket(
     updates = payload.model_dump(exclude_unset=True)
     previous_status = ticket.status
     status_changed = "status" in updates and updates["status"] != previous_status
+    requested_team_id = updates.pop("assigned_team_id", None)
+    team_changed = "assigned_team_id" in payload.model_fields_set and requested_team_id != ticket.assigned_team_id
 
     try:
-        for field, value in updates.items():
-            setattr(ticket, field, value)
+        if team_changed:
+            team = db.get(Team, requested_team_id)
+            if team is None:
+                raise HTTPException(status_code=404, detail=f"Team {requested_team_id} not found")
 
-        if updates:
+            now = datetime.now(timezone.utc)
+            active_assignments = db.scalars(
+                select(TicketAssignment).where(
+                    TicketAssignment.ticket_id == ticket.id,
+                    TicketAssignment.unassigned_at.is_(None),
+                )
+            ).all()
+            for assignment in active_assignments:
+                assignment.unassigned_at = now
+            db.add(
+                TicketAssignment(
+                    ticket_id=ticket.id,
+                    team_id=team.id,
+                    agent_id=None,
+                    source=AssignmentSource.HUMAN,
+                    assigned_by_id=current_user.id if isinstance(current_user, User) else None,
+                    routing_reason="Reassigned by support agent",
+                    assigned_at=now,
+                )
+            )
+            ticket.assigned_team_id = team.id
+            ticket.assigned_team = team
+            ticket.assigned_agent_id = None
+
+        for field, value in updates.items():
+            old_value = getattr(ticket, field)
+            setattr(ticket, field, value)
+            if field in {"category", "subcategory", "priority"} and value != old_value:
+                db.add(
+                    TicketFieldHistory(
+                        ticket_id=ticket.id,
+                        field_name=field,
+                        old_value=old_value.value if isinstance(old_value, TicketPriority) else old_value,
+                        new_value=value.value if isinstance(value, TicketPriority) else value,
+                        changed_by_id=current_user.id if isinstance(current_user, User) else None,
+                    )
+                )
+
+        if updates or team_changed:
             ticket.updated_at = datetime.now(timezone.utc)
         if status_changed:
             db.add(
@@ -106,7 +148,7 @@ def update_ticket(
                     changed_by_id=current_user.id if isinstance(current_user, User) else None,
                 )
             )
-        if updates:
+        if updates or team_changed:
             db.commit()
             db.refresh(ticket)
 

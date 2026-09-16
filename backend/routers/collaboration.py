@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from auth import get_current_user, require_agent
-from models import Comment, Ticket, TicketStatusHistory, User, UserRole
+from models import Comment, Ticket, TicketAssignment, TicketFieldHistory, TicketStatusHistory, User, UserRole
 from routers.tickets import _require_ticket_access, _can_agent_access_ticket
-from schemas.collaboration import CommentCreate, CommentResponse, TicketStatusHistoryResponse
+from schemas.collaboration import CommentCreate, CommentResponse, TicketFieldHistoryResponse, TicketStatusHistoryResponse
+from schemas.tickets import TicketAssignmentResponse
 
 
 router = APIRouter(prefix="/api/tickets", tags=["ticket-collaboration"])
@@ -74,3 +75,25 @@ def list_status_history(ticket_id: int, current_user: User = Depends(get_current
         .order_by(TicketStatusHistory.changed_at.asc(), TicketStatusHistory.id.asc())
     )
     return list(db.scalars(statement).all())
+
+
+@router.get("/{ticket_id}/field-history", response_model=list[TicketFieldHistoryResponse])
+def list_field_history(ticket_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[TicketFieldHistory]:
+    ticket = _require_ticket(ticket_id, db)
+    _require_ticket_access(ticket, current_user, db)
+    return list(db.scalars(
+        select(TicketFieldHistory)
+        .where(TicketFieldHistory.ticket_id == ticket_id)
+        .order_by(TicketFieldHistory.changed_at.asc(), TicketFieldHistory.id.asc())
+    ).all())
+
+
+@router.get("/{ticket_id}/assignments", response_model=list[TicketAssignmentResponse])
+def list_assignment_history(ticket_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[TicketAssignment]:
+    ticket = _require_ticket(ticket_id, db)
+    _require_ticket_access(ticket, current_user, db)
+    return list(db.scalars(
+        select(TicketAssignment)
+        .where(TicketAssignment.ticket_id == ticket_id)
+        .order_by(TicketAssignment.assigned_at.asc(), TicketAssignment.id.asc())
+    ).all())

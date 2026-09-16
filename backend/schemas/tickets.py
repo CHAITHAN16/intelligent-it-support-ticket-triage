@@ -25,6 +25,7 @@ class TicketUpdateRequest(BaseModel):
     subcategory: str | None = None
     priority: TicketPriority | None = None
     status: TicketStatus | None = None
+    assigned_team_id: int | None = Field(default=None, gt=0)
 
     @field_validator("title", "description")
     @classmethod
@@ -56,3 +57,17 @@ class TicketResponse(BaseModel):
     ai_model_version: str | None
     ai_triaged_at: datetime | None
     routing_reason: str | None
+
+
+class TicketAssignmentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    ticket_id: int
+    team_id: int | None
+    agent_id: int | None
+    source: str
+    assigned_by_id: int | None
+    routing_reason: str | None
+    assigned_at: datetime
+    unassigned_at: datetime | None

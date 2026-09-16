@@ -201,6 +201,25 @@ class TicketStatusHistory(Base):
     )
 
 
+class TicketFieldHistory(Base):
+    __tablename__ = "ticket_field_history"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
+    field_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    old_value: Mapped[str | None] = mapped_column(Text)
+    new_value: Mapped[str | None] = mapped_column(Text)
+    changed_by_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    note: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        CheckConstraint("field_name IN ('category', 'subcategory', 'priority')", name="chk_field_history_field_name"),
+        CheckConstraint("old_value IS DISTINCT FROM new_value", name="chk_field_history_changed"),
+        Index("idx_ticket_field_history_ticket", "ticket_id", "changed_at"),
+    )
+
+
 class Comment(Base):
     __tablename__ = "comments"
 
