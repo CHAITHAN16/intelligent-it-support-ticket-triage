@@ -56,7 +56,7 @@ def database_session():
     ])
     now = datetime.now(timezone.utc)
     session.add_all([
-        Ticket(id=1, title="Mine", description="Mine", creator_id=1, assigned_team_id=1, status=TicketStatus.NEW, created_at=now, updated_at=now),
+        Ticket(id=1, title="Mine", description="Mine", creator_id=1, assigned_team_id=1, status=TicketStatus.NEW, routing_reason="AI category 'Network' routed to Network Infrastructure", created_at=now, updated_at=now),
         Ticket(id=2, title="Other", description="Other", creator_id=2, assigned_team_id=1, status=TicketStatus.NEW, created_at=now, updated_at=now),
         Ticket(id=3, title="Other team", description="Other team", creator_id=2, assigned_team_id=2, status=TicketStatus.NEW, created_at=now, updated_at=now),
     ])
@@ -150,6 +150,13 @@ def test_ticket_creation_requires_authentication(client):
     response = client.post("/api/tickets", json={"title": "Unauthenticated", "description": "Should not be created"})
 
     assert response.status_code == 401
+
+
+def test_ticket_response_includes_persisted_routing_reason(client, database_session):
+    response = client.get("/api/tickets/1", headers=token_for(database_session, 1))
+
+    assert response.status_code == 200
+    assert response.json()["routing_reason"] == "AI category 'Network' routed to Network Infrastructure"
 
 
 def test_employee_ticket_access_is_scoped_and_identity_cannot_be_spoofed(client, database_session, monkeypatch):

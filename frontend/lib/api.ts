@@ -57,6 +57,7 @@ export type TicketResponse = {
   ai_confidence: number | null;
   ai_model_version: string | null;
   ai_triaged_at: string | null;
+  routing_reason: string | null;
   assigned_team_id?: number | null;
   assigned_team_name?: string | null;
   assigned_team?: { name?: string | null } | null;
