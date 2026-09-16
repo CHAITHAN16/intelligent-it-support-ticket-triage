@@ -858,6 +858,82 @@ The backend test suite covers:
 - Celery infrastructure
 - Background ticket processing
 
+---
+
+# Docker Compose Development Stack
+
+## Prerequisites
+
+Install Docker Desktop and make sure it is running. The Compose stack uses Linux containers and exposes:
+
+| Service | Local address |
+| --- | --- |
+| Frontend | http://localhost:3000 |
+| FastAPI | http://localhost:8000 |
+| PostgreSQL | localhost:5432 |
+| Redis | localhost:6379 |
+
+## Environment Setup
+
+From the repository root, create a local environment file:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Replace the placeholder PostgreSQL password and JWT secret in `.env`. The `.env` file is ignored by Git and must not contain production credentials.
+
+The containers use the Compose service names `postgres`, `redis`, and `backend` for internal connections. Do not use `localhost` between containers.
+
+## Start the Stack
+
+Build and start all services:
+
+```powershell
+docker compose up --build
+```
+
+The backend container applies `alembic upgrade head` before starting FastAPI. Existing migrations are unchanged, and migrations never delete or recreate the database.
+
+To run the migration explicitly:
+
+```powershell
+docker compose run --rm backend alembic upgrade head
+```
+
+Run that command only when the backend startup migration is not being used or when applying a migration manually.
+
+## View Logs
+
+View all service logs:
+
+```powershell
+docker compose logs -f
+```
+
+View one service:
+
+```powershell
+docker compose logs -f backend
+docker compose logs -f celery
+```
+
+## Stop and Restart
+
+Stop the stack without deleting data:
+
+```powershell
+docker compose down
+```
+
+Restart it without losing PostgreSQL data:
+
+```powershell
+docker compose up --build
+```
+
+PostgreSQL data is stored in the named Docker volume `postgres_data`. Do not use `docker compose down -v` unless you intentionally want to delete the database volume.
+
 ## Frontend
 
 Run lint:
