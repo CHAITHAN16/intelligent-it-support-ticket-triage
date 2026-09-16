@@ -12,7 +12,7 @@ from sqlalchemy.pool import StaticPool
 from auth import create_access_token, password_hash, verify_password
 from database import get_db
 from main import app
-from models import Base, Comment, Team, TeamMember, Ticket, TicketAssignment, TicketStatus, TicketStatusHistory, User, UserRole
+from models import AssignmentSource, Base, Comment, Team, TeamMember, Ticket, TicketAssignment, TicketFieldHistory, TicketStatus, TicketStatusHistory, User, UserRole
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ def database_session():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine)()
-    next_id = {Comment: 1, Ticket: 4, TicketAssignment: 1, TicketStatusHistory: 1, User: 4}
+    next_id = {Comment: 1, Ticket: 4, TicketAssignment: 1, TicketFieldHistory: 1, TicketStatusHistory: 1, User: 4}
 
     def assign_ids(db_session, flush_context, instances):
         for comment in db_session.new:
@@ -30,6 +30,9 @@ def database_session():
             if isinstance(comment, TicketStatusHistory) and comment.id is None:
                 comment.id = next_id[TicketStatusHistory]
                 next_id[TicketStatusHistory] += 1
+            if isinstance(comment, TicketFieldHistory) and comment.id is None:
+                comment.id = next_id[TicketFieldHistory]
+                next_id[TicketFieldHistory] += 1
             if isinstance(comment, TicketAssignment) and comment.id is None:
                 comment.id = next_id[TicketAssignment]
                 next_id[TicketAssignment] += 1
@@ -231,3 +234,58 @@ def test_agent_ticket_list_is_limited_to_member_teams(client, database_session):
         json={"body": "Not my team"},
         headers=token_for(database_session, 3),
     ).status_code == 403
+
+
+def test_agent_field_overrides_are_audited_with_old_new_values_and_actor(client, database_session):
+    response = client.patch(
+        "/api/tickets/1",
+        json={"category": "Network", "subcategory": "VPN", "priority": "HIGH"},
+        headers=token_for(database_session, 3),
+    )
+
+    assert response.status_code == 200
+    history = client.get("/api/tickets/1/field-history", headers=token_for(database_session, 3))
+    assert history.status_code == 200
+    assert [(entry["field_name"], entry["old_value"], entry["new_value"], entry["changed_by_id"]) for entry in history.json()] == [
+        ("category", None, "Network", 3),
+        ("subcategory", None, "VPN", 3),
+        ("priority", "MEDIUM", "HIGH", 3),
+    ]
+
+
+def test_employee_cannot_create_field_or_team_overrides(client, database_session):
+    response = client.patch(
+        "/api/tickets/1",
+        json={"category": "Security", "assigned_team_id": 2},
+        headers=token_for(database_session, 1),
+    )
+
+    assert response.status_code == 403
+    assert database_session.query(TicketFieldHistory).count() == 0
+    assert database_session.query(TicketAssignment).count() == 0
+
+
+def test_agent_team_reassignment_closes_active_assignment_and_records_human_source(client, database_session):
+    database_session.add(
+        TicketAssignment(
+            ticket_id=1,
+            team_id=1,
+            source=AssignmentSource.AI,
+            routing_reason="AI route",
+        )
+    )
+    database_session.commit()
+
+    response = client.patch("/api/tickets/1", json={"assigned_team_id": 2}, headers=token_for(database_session, 3))
+
+    assert response.status_code == 200
+    ticket = database_session.get(Ticket, 1)
+    assert ticket.assigned_team_id == 2
+    assert ticket.assigned_agent_id is None
+    assignments = database_session.query(TicketAssignment).order_by(TicketAssignment.id).all()
+    assert assignments[0].unassigned_at is not None
+    assert assignments[1].source == AssignmentSource.HUMAN
+    assert assignments[1].team_id == 2
+    assert assignments[1].assigned_by_id == 3
+    history = client.get("/api/tickets/1/assignments", headers=token_for(database_session, 3))
+    assert [entry["source"] for entry in history.json()] == ["AI", "HUMAN"]
