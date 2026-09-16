@@ -266,6 +266,7 @@ def test_employee_cannot_create_field_or_team_overrides(client, database_session
 
 
 def test_agent_team_reassignment_closes_active_assignment_and_records_human_source(client, database_session):
+    database_session.add(TeamMember(team_id=2, user_id=3, member_role=UserRole.SUPPORT_AGENT))
     database_session.add(
         TicketAssignment(
             ticket_id=1,
