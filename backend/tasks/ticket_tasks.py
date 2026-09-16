@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 
 from celery_app import celery_app
+from database import SessionLocal
 from models import AssignmentSource, Ticket, TicketAssignment
 from services.routing_service import RoutingService
 from services.triage_service import TriageService
@@ -15,8 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 def create_task_session():
-    from database import SessionLocal
-
     return SessionLocal()
 
 

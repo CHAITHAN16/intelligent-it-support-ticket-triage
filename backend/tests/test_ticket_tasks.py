@@ -8,9 +8,14 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from database import SessionLocal
 from models import AssignmentSource, Base, Team, Ticket, TicketAssignment, TicketPriority, TicketStatus, User, UserRole
 from services.triage_service import TriageResult
 from tasks import ticket_tasks
+
+
+def test_task_uses_project_database_session_factory():
+    assert ticket_tasks.SessionLocal is SessionLocal
 
 
 @pytest.fixture
