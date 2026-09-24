@@ -13,7 +13,12 @@ app.include_router(collaboration_router)
 app.include_router(auth_router)
 
 
-@app.get("/api/health")
+@app.get(
+    "/api/health",
+    summary="Check service health",
+    description="Return a basic health response indicating that the API process is reachable.",
+    response_description="Service health status.",
+)
 def health_check():
     return {
         "status": "ok",
