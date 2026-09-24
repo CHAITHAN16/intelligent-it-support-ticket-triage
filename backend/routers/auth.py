@@ -23,7 +23,15 @@ def _user_response(user: User) -> UserResponse:
     )
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Register an employee account",
+    description="Create an employee account using the supplied name, email, and password. Email addresses are normalized to lowercase.",
+    response_description="The new account's public profile.",
+    responses={409: {"description": "An account with this email address already exists."}, 422: {"description": "The request body failed validation."}},
+)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> UserResponse:
     email = payload.email.lower()
     if db.scalar(select(User).where(func.lower(User.email) == email)) is not None:
@@ -46,7 +54,14 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> UserRes
     return _user_response(user)
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post(
+    "/login",
+    response_model=LoginResponse,
+    summary="Log in",
+    description="Validate account credentials and return a bearer access token with the user's public profile.",
+    response_description="The access token and authenticated user's profile.",
+    responses={401: {"description": "The credentials are invalid or the account is inactive."}, 422: {"description": "The request body failed validation."}},
+)
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> LoginResponse:
     user = db.scalar(select(User).where(func.lower(User.email) == payload.email.lower()))
     if user is None or not user.active or not verify_password(payload.password, user.password_hash):
@@ -58,6 +73,13 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> LoginResponse
     return LoginResponse(access_token=create_access_token(user), user=_user_response(user))
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    summary="Get the current user",
+    description="Return the public profile associated with the bearer access token.",
+    response_description="The authenticated user's profile.",
+    responses={401: {"description": "The access token is missing or invalid."}},
+)
 def me(current_user: User = Depends(get_current_user)) -> UserResponse:
     return _user_response(current_user)
