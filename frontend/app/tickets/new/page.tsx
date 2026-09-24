@@ -12,6 +12,7 @@ const POLL_INTERVAL_MS = 2500;
 const POLL_TIMEOUT_MS = 60000;
 
 type FormErrors = { title?: string; description?: string };
+type ProcessingState = "processing" | "completed" | "delayed" | "connection_issue";
 
 function validate(title: string, description: string): FormErrors {
   const errors: FormErrors = {};
@@ -29,7 +30,7 @@ export default function NewTicketPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [ticket, setTicket] = useState<TicketResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [processingState, setProcessingState] = useState<"processing" | "completed" | "delayed">("processing");
+  const [processingState, setProcessingState] = useState<ProcessingState>("processing");
 
   const ticketId = ticket?.id;
   const processingComplete = ticket ? isTicketProcessingComplete(ticket) : false;
@@ -53,13 +54,12 @@ export default function NewTicketPage() {
           if (isTicketProcessingComplete(updatedTicket)) {
             setProcessingState("completed");
             window.clearInterval(poll);
+          } else {
+            setProcessingState("processing");
           }
         })
         .catch(() => {
-          if (!cancelled) {
-            setProcessingState("delayed");
-            window.clearInterval(poll);
-          }
+          if (!cancelled) setProcessingState("connection_issue");
         });
     }, POLL_INTERVAL_MS);
 
@@ -108,9 +108,10 @@ export default function NewTicketPage() {
                 <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-600">Request received</p>
                 <h1 className="mt-3 text-4xl font-semibold tracking-[-0.035em] text-slate-950">Your support ticket</h1>
               </div>
-              {processingState === "delayed" && <div role="status" className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">Ticket was created, but AI processing is taking longer than expected.</div>}
+              {processingState === "delayed" && <div role="status" className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">Your ticket is saved, but triage has not finished yet. You can check its status later from My Tickets.</div>}
+              {processingState === "connection_issue" && <div role="status" className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">Your ticket is saved. We temporarily cannot refresh its triage status and will keep trying.</div>}
               <p className="mb-4 text-sm font-semibold text-slate-700" aria-live="polite">
-                {processingState === "completed" ? "Ticket submitted successfully" : "Ticket submitted successfully. AI triage is processing..."}
+                {processingState === "completed" ? "Ticket submitted and AI triage completed" : processingState === "delayed" ? "Ticket submitted. AI triage is still pending." : "Ticket submitted successfully. AI triage is processing..."}
               </p>
               <TicketResultCard ticket={ticket} />
               <button type="button" onClick={startAnotherTicket} className="mt-6 text-sm font-semibold text-sky-700 underline decoration-sky-300 underline-offset-4 hover:text-sky-900">Submit another ticket</button>
