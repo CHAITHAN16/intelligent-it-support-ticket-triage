@@ -27,16 +27,16 @@ class TicketUpdateRequest(BaseModel):
     status: TicketStatus | None = None
     assigned_team_id: int | None = Field(default=None, gt=0)
 
-    @field_validator("title", "description", "category", "subcategory")
+    @field_validator("title", "description")
     @classmethod
-    def reject_blank_text(cls, value: str | None) -> str | None:
+    def reject_empty_text(cls, value: str | None) -> str | None:
         if value is not None and not value.strip():
             raise ValueError("must not be empty")
         return value
 
-    @field_validator("title", "description")
+    @field_validator("category", "subcategory")
     @classmethod
-    def reject_empty_text(cls, value: str | None) -> str | None:
+    def reject_blank_classification(cls, value: str | None) -> str | None:
         if value is not None and not value.strip():
             raise ValueError("must not be empty")
         return value
