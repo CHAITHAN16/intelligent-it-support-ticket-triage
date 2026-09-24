@@ -38,7 +38,14 @@ def _require_ticket_access(ticket: Ticket, user: User, db: Session, *, allow_emp
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to access this ticket")
 
 
-@router.get("", response_model=list[TicketResponse])
+@router.get(
+    "",
+    response_model=list[TicketResponse],
+    summary="List tickets",
+    description="Return tickets visible to the current user. Employees see their own tickets, support agents see tickets assigned to their teams or themselves, and administrators can filter by creator.",
+    response_description="Tickets ordered from newest to oldest.",
+    responses={401: {"description": "Authentication is required."}, 403: {"description": "An employee requested another user's tickets."}},
+)
 def list_tickets(
     creator_id: int | None = Query(default=None, ge=1),
     current_user: User = Depends(get_current_user),
@@ -62,7 +69,14 @@ def list_tickets(
     return list(db.scalars(statement).all())
 
 
-@router.get("/{ticket_id}", response_model=TicketResponse)
+@router.get(
+    "/{ticket_id}",
+    response_model=TicketResponse,
+    summary="Get a ticket",
+    description="Retrieve one ticket if the current user is allowed to access it.",
+    response_description="The requested ticket.",
+    responses={401: {"description": "Authentication is required."}, 403: {"description": "The user cannot access this ticket."}, 404: {"description": "The ticket does not exist."}},
+)
 def get_ticket(ticket_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> Ticket:
     ticket = db.get(Ticket, ticket_id)
     if ticket is None:
@@ -71,7 +85,14 @@ def get_ticket(ticket_id: int, current_user: User = Depends(get_current_user), d
     return ticket
 
 
-@router.patch("/{ticket_id}", response_model=TicketResponse)
+@router.patch(
+    "/{ticket_id}",
+    response_model=TicketResponse,
+    summary="Update a ticket",
+    description="Apply the supplied ticket fields and optionally reassign the ticket to a team. Only an authorized support agent or administrator can update the ticket.",
+    response_description="The updated ticket.",
+    responses={400: {"description": "The request body failed validation."}, 401: {"description": "Authentication is required."}, 403: {"description": "The user cannot update this ticket."}, 404: {"description": "The ticket or requested team does not exist."}},
+)
 def update_ticket(
     ticket_id: int,
     payload: TicketUpdateRequest,
@@ -158,7 +179,15 @@ def update_ticket(
         raise
 
 
-@router.post("", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=TicketResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a ticket",
+    description="Create a ticket for the authenticated user. Unauthenticated service callers may provide creator_id in the request body.",
+    response_description="The created ticket, initially untriaged and in NEW status.",
+    responses={401: {"description": "Authentication or a creator_id is required."}, 422: {"description": "The request body failed validation."}},
+)
 def create_ticket(
     payload: TicketCreate,
     db: Session = Depends(get_db),

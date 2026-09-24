@@ -16,7 +16,14 @@ CategoryFilter = Literal["Network", "Security", "Software", "Other"]
 SortOrder = Literal["newest", "oldest", "priority"]
 
 
-@router.get("", response_model=list[TeamResponse])
+@router.get(
+    "",
+    response_model=list[TeamResponse],
+    summary="List teams",
+    description="List teams alphabetically. Available to support agents and administrators.",
+    response_description="The teams visible to the caller.",
+    responses={401: {"description": "Authentication is required."}, 403: {"description": "The caller is not a support agent or administrator."}},
+)
 def list_teams(current_user: User = Depends(require_agent), db: Session = Depends(get_db)) -> list[Team]:
     if current_user.role not in (UserRole.SUPPORT_AGENT, UserRole.ADMIN):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
@@ -24,7 +31,14 @@ def list_teams(current_user: User = Depends(require_agent), db: Session = Depend
     return list(db.scalars(statement).all())
 
 
-@router.get("/{team_id}/tickets", response_model=list[TicketResponse])
+@router.get(
+    "/{team_id}/tickets",
+    response_model=list[TicketResponse],
+    summary="List tickets for a team",
+    description="Return tickets assigned to a team, with optional status, priority, category, and ordering filters. Support agents must belong to the team; administrators can view any team.",
+    response_description="The matching team tickets.",
+    responses={401: {"description": "Authentication is required."}, 403: {"description": "The caller cannot access this team's tickets."}, 404: {"description": "The team does not exist."}, 422: {"description": "A path or query parameter is invalid."}},
+)
 def list_team_tickets(
     team_id: int,
     status: TicketStatus | None = Query(default=None),
