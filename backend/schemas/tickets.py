@@ -6,8 +6,8 @@ from models import TicketPriority, TicketStatus
 
 
 class TicketCreate(BaseModel):
-    title: str = Field(..., max_length=255)
-    description: str
+    title: str = Field(..., min_length=1, max_length=255)
+    description: str = Field(..., min_length=1)
     creator_id: int | None = Field(default=None, gt=0)
 
     @field_validator("title", "description")
@@ -19,13 +19,20 @@ class TicketCreate(BaseModel):
 
 
 class TicketUpdateRequest(BaseModel):
-    title: str | None = Field(default=None, max_length=255)
-    description: str | None = None
-    category: str | None = None
-    subcategory: str | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, min_length=1)
+    category: str | None = Field(default=None, max_length=100)
+    subcategory: str | None = Field(default=None, max_length=100)
     priority: TicketPriority | None = None
     status: TicketStatus | None = None
     assigned_team_id: int | None = Field(default=None, gt=0)
+
+    @field_validator("title", "description", "category", "subcategory")
+    @classmethod
+    def reject_blank_text(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("must not be empty")
+        return value
 
     @field_validator("title", "description")
     @classmethod
