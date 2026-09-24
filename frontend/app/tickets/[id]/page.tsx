@@ -7,6 +7,9 @@ import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { getTicket, getTicketComments, getTicketHistory, isTicketProcessingComplete, type TicketComment, type TicketResponse, type TicketStatusHistory } from "@/lib/api";
 
+const TRIAGE_POLL_INTERVAL_MS = 2500;
+const TRIAGE_POLL_TIMEOUT_MS = 60000;
+
 function formattedDate(value: string) {
   return new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
@@ -52,6 +55,8 @@ export default function EmployeeTicketDetailPage() {
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [triageDelayed, setTriageDelayed] = useState(false);
+  const triageComplete = ticket ? isTicketProcessingComplete(ticket) : false;
 
   useEffect(() => {
     let cancelled = false;
@@ -110,6 +115,36 @@ export default function EmployeeTicketDetailPage() {
     };
   }, [ticketId]);
 
+  useEffect(() => {
+    if (!ticket || triageComplete) return;
+
+    let cancelled = false;
+    const startedAt = Date.now();
+    const poll = window.setInterval(() => {
+      if (Date.now() - startedAt >= TRIAGE_POLL_TIMEOUT_MS) {
+        window.clearInterval(poll);
+        if (!cancelled) setTriageDelayed(true);
+        return;
+      }
+
+      void getTicket(ticketId).then((updatedTicket) => {
+        if (cancelled) return;
+        setTicket(updatedTicket);
+        if (isTicketProcessingComplete(updatedTicket)) {
+          setTriageDelayed(false);
+          window.clearInterval(poll);
+        }
+      }).catch(() => {
+        // Keep trying until completion or timeout; the ticket itself remains readable.
+      });
+    }, TRIAGE_POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(poll);
+    };
+  }, [ticketId, triageComplete]);
+
   return (
     <div className="min-h-screen bg-[#f6f8fb] text-slate-950">
       <SiteHeader />
@@ -166,7 +201,11 @@ export default function EmployeeTicketDetailPage() {
                     </dl>
                   </>
                 ) : (
-                  <p className="mt-3 text-sm font-semibold text-slate-700">AI processing in progress</p>
+                  <>
+                    <p className="mt-3 text-sm font-semibold text-slate-700">{triageDelayed ? "AI triage is still pending" : "AI triage is processing"}</p>
+                    <p className="mt-2 text-sm text-slate-600">Predicted category and priority will appear here when triage finishes.</p>
+                    {triageDelayed && <p role="status" className="mt-3 text-sm text-amber-800">Processing is taking longer than expected. You can return to My Tickets and check again later.</p>}
+                  </>
                 )}
               </section>
 
