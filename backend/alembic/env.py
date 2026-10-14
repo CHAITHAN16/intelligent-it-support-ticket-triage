@@ -3,6 +3,7 @@ import os
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+from sqlalchemy.engine import make_url
 
 from models import Base
 
@@ -14,7 +15,9 @@ if config.config_file_name is not None:
 
 database_url = os.getenv("DATABASE_URL")
 if database_url:
-    config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
+    # Keep ConfigParser escaping separate from URL parsing. Percent-encoding in
+    # credentials must be interpreted exactly once by SQLAlchemy.
+    config.set_main_option("sqlalchemy.url", make_url(database_url).render_as_string(hide_password=False).replace("%", "%%"))
 
 target_metadata = Base.metadata
 

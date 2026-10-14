@@ -2,6 +2,7 @@ import os
 from collections.abc import Generator
 
 from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
 
@@ -10,7 +11,7 @@ if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL must be set to configure the database connection")
 
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+engine = create_engine(make_url(DATABASE_URL), pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
