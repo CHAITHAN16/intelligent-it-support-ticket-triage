@@ -176,6 +176,22 @@ The Compose configuration runs the database migrations during backend startup.
 
 The health endpoint should return a successful response when the backend is running.
 
+### Local development: provision a support agent
+
+The public registration endpoint creates employee accounts only. For local Agent Dashboard testing, an administrator can provision a support-agent account with this development-only utility from the project root, with `DATABASE_URL` configured for the local database:
+
+```bash
+python backend/scripts/create_support_agent.py --email agent@example.test --name "Local Agent"
+```
+
+The utility prompts for the password without displaying it. To add the account to an existing team, supply its exact name:
+
+```bash
+python backend/scripts/create_support_agent.py --email agent@example.test --name "Local Agent" --team "Network Infrastructure"
+```
+
+This is a local development/admin utility, not a production provisioning mechanism. It rejects an email that already exists and does not change that account. Team membership is optional for signing in, but is needed for access to that team's queue. Never put passwords on the command line or in source control.
+
 ### 5. Stop the application
 
 ```bash
