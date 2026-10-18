@@ -134,6 +134,7 @@ def test_resolution_requires_note_and_persists_resolution_timestamps(client, dat
     assert client.get("/api/tickets/1/history").json() == []
 
     client.patch("/api/tickets/1", json={"status": "IN_PROGRESS"})
+    updated_before_resolution = database_session.get(Ticket, 1).updated_at
     resolved = client.patch(
         "/api/tickets/1",
         json={"status": "RESOLVED", "resolution_note": "VPN connectivity restored and confirmed with the requester."},
@@ -141,6 +142,7 @@ def test_resolution_requires_note_and_persists_resolution_timestamps(client, dat
     assert resolved.status_code == 200
     resolved_at = resolved.json()["resolved_at"]
     assert resolved_at is not None
+    assert resolved.json()["updated_at"] >= updated_before_resolution.isoformat()
     assert resolved.json()["closed_at"] is None
     history = client.get("/api/tickets/1/history").json()
     resolution_entry = history[-1]
