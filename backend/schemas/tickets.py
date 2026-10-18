@@ -26,6 +26,7 @@ class TicketUpdateRequest(BaseModel):
     priority: TicketPriority | None = None
     status: TicketStatus | None = None
     assigned_team_id: int | None = Field(default=None, gt=0)
+    resolution_note: str | None = Field(default=None, max_length=5000)
 
     @field_validator("title", "description")
     @classmethod
@@ -40,6 +41,16 @@ class TicketUpdateRequest(BaseModel):
         if value is not None and not value.strip():
             raise ValueError("must not be empty")
         return value
+
+    @field_validator("resolution_note")
+    @classmethod
+    def validate_resolution_note(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        value = value.strip()
+        if value and len(value) < 10:
+            raise ValueError("resolution note must contain at least 10 characters")
+        return value or None
 
 
 class TicketResponse(BaseModel):
@@ -58,6 +69,8 @@ class TicketResponse(BaseModel):
     assigned_team_name: str | None
     created_at: datetime
     updated_at: datetime
+    resolved_at: datetime | None
+    closed_at: datetime | None
     ai_predicted_category: str | None
     ai_predicted_subcategory: str | None
     ai_predicted_priority: TicketPriority | None

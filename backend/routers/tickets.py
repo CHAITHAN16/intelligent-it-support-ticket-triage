@@ -33,6 +33,15 @@ def _ticket_response(ticket: Ticket, db: Session) -> TicketResponse:
 
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
 
+_ALLOWED_STATUS_TRANSITIONS = {
+    TicketStatus.NEW: {TicketStatus.ASSIGNED, TicketStatus.IN_PROGRESS, TicketStatus.WAITING_FOR_USER, TicketStatus.RESOLVED},
+    TicketStatus.ASSIGNED: {TicketStatus.IN_PROGRESS, TicketStatus.WAITING_FOR_USER, TicketStatus.RESOLVED},
+    TicketStatus.IN_PROGRESS: {TicketStatus.WAITING_FOR_USER, TicketStatus.RESOLVED},
+    TicketStatus.WAITING_FOR_USER: {TicketStatus.IN_PROGRESS, TicketStatus.RESOLVED},
+    TicketStatus.RESOLVED: {TicketStatus.IN_PROGRESS, TicketStatus.CLOSED},
+    TicketStatus.CLOSED: set(),
+}
+
 
 def _can_agent_access_ticket(ticket: Ticket, user: User, db: Session) -> bool:
     if user.role == UserRole.ADMIN:
@@ -127,16 +136,28 @@ def update_ticket(
     updates = payload.model_dump(exclude_unset=True)
     previous_status = ticket.status
     status_changed = "status" in updates and updates["status"] != previous_status
+    resolution_note = updates.pop("resolution_note", None)
+    requested_status = updates.get("status")
+    if status_changed and requested_status not in _ALLOWED_STATUS_TRANSITIONS[previous_status]:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Ticket cannot transition from {previous_status.value} to {requested_status.value}",
+        )
+    if status_changed and requested_status == TicketStatus.RESOLVED and not resolution_note:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="A meaningful resolution note is required to resolve this ticket",
+        )
     requested_team_id = updates.pop("assigned_team_id", None)
     team_changed = "assigned_team_id" in payload.model_fields_set and requested_team_id != ticket.assigned_team_id
 
     try:
+        now = datetime.now(timezone.utc)
         if team_changed:
             team = db.get(Team, requested_team_id)
             if team is None:
                 raise HTTPException(status_code=404, detail=f"Team {requested_team_id} not found")
 
-            now = datetime.now(timezone.utc)
             active_assignments = db.scalars(
                 select(TicketAssignment).where(
                     TicketAssignment.ticket_id == ticket.id,
@@ -175,14 +196,24 @@ def update_ticket(
                 )
 
         if updates or team_changed:
-            ticket.updated_at = datetime.now(timezone.utc)
+            ticket.updated_at = now
         if status_changed:
+            new_status = updates["status"]
+            if new_status == TicketStatus.RESOLVED:
+                ticket.resolved_at = now
+                ticket.closed_at = None
+            elif new_status == TicketStatus.CLOSED:
+                ticket.resolved_at = ticket.resolved_at or now
+                ticket.closed_at = now
+            elif previous_status == TicketStatus.RESOLVED:
+                ticket.resolved_at = None
             db.add(
                 TicketStatusHistory(
                     ticket_id=ticket.id,
                     old_status=previous_status,
-                    new_status=updates["status"],
+                    new_status=new_status,
                     changed_by_id=current_user.id if isinstance(current_user, User) else None,
+                    note=resolution_note if new_status == TicketStatus.RESOLVED else None,
                 )
             )
         if updates or team_changed:
