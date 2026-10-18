@@ -68,6 +68,30 @@ def test_unrelated_ticket_has_no_confident_match(kb_session):
     assert result.status == "NO_MATCH"
     assert result.article_id is None
     assert result.suggested_solution is None
+    assert result.confidence is None
+
+
+def test_low_confidence_candidate_is_rejected_but_score_is_retained(kb_session):
+    kb_session.add(KnowledgeBaseArticle(
+        id=1,
+        title="Wi-Fi troubleshooting",
+        summary="Wireless connectivity",
+        category="Network",
+        resolution_steps="Restart the access point.",
+        keywords="wifi wireless",
+        active=True,
+    ))
+    kb_session.commit()
+
+    result = KnowledgeBaseService().retrieve(
+        kb_session, "Wi-Fi issue", "Connection problem", "Network"
+    )
+
+    assert result.status == "NO_MATCH"
+    assert result.confidence is not None
+    assert result.confidence < 0.40
+    assert result.article_id is None
+    assert result.suggested_solution is None
 
 
 def test_inactive_article_is_not_returned(kb_session):

@@ -61,6 +61,7 @@ export type TicketResponse = {
   ai_triaged_at: string | null;
   routing_reason: string | null;
   solution_status?: "MATCHED" | "NO_MATCH" | null;
+  solution_confidence_level?: "HIGH" | "MEDIUM" | null;
   suggested_solution?: string | null;
   knowledge_article_id?: number | null;
   knowledge_article_title?: string | null;

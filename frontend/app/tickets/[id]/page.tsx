@@ -216,6 +216,9 @@ export default function EmployeeTicketDetailPage() {
                   <p className="mt-2 text-sm text-slate-600">This is a suggested starting point, not a guaranteed fix. Your assigned IT team can help if it does not resolve the issue.</p>
                   {ticket.solution_status === "MATCHED" && ticket.suggested_solution ? (
                     <>
+                      {ticket.solution_confidence_level === "MEDIUM" && (
+                        <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">Possible troubleshooting starting point — this may not fully match your issue.</p>
+                      )}
                       <div className="mt-6">
                         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Suggested resolution</p>
                         <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">{ticket.suggested_solution}</p>
@@ -226,7 +229,7 @@ export default function EmployeeTicketDetailPage() {
                       </dl>
                     </>
                   ) : ticket.solution_status === "NO_MATCH" ? (
-                    <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">No confident knowledge-base match was found. Please contact the assigned IT team.</p>
+                    <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">No sufficiently relevant troubleshooting solution was found. Please work with your assigned IT team.</p>
                   ) : (
                     <p className="mt-5 text-sm text-slate-600">Solution recommendation is still processing.</p>
                   )}
