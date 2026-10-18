@@ -1,8 +1,14 @@
 """Insert or update the prototype curated knowledge-base articles safely."""
 
 from datetime import datetime, timezone
+from pathlib import Path
+import sys
 
 from sqlalchemy import select
+
+# Direct execution sets sys.path[0] to backend/scripts, so add the backend
+# project root for the repository's existing top-level module imports.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from database import SessionLocal
 from models import KnowledgeBaseArticle
