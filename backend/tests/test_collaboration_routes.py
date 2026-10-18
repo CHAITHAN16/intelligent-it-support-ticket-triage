@@ -116,7 +116,7 @@ def test_initial_status_change_creates_history(client):
 
 def test_multiple_status_changes_create_multiple_records(client):
     client.patch("/api/tickets/1", json={"status": "IN_PROGRESS"})
-    client.patch("/api/tickets/1", json={"status": "RESOLVED"})
+    client.patch("/api/tickets/1", json={"status": "RESOLVED", "resolution_note": "VPN connectivity restored and confirmed with the requester."})
     client.patch("/api/tickets/1", json={"status": "CLOSED"})
 
     history = client.get("/api/tickets/1/history").json()
@@ -125,6 +125,40 @@ def test_multiple_status_changes_create_multiple_records(client):
         ("IN_PROGRESS", "RESOLVED"),
         ("RESOLVED", "CLOSED"),
     ]
+
+
+def test_resolution_requires_note_and_persists_resolution_timestamps(client, database_session):
+    missing_note = client.patch("/api/tickets/1", json={"status": "RESOLVED"})
+    assert missing_note.status_code == 422
+    assert database_session.get(Ticket, 1).status == TicketStatus.NEW
+    assert client.get("/api/tickets/1/history").json() == []
+
+    client.patch("/api/tickets/1", json={"status": "IN_PROGRESS"})
+    resolved = client.patch(
+        "/api/tickets/1",
+        json={"status": "RESOLVED", "resolution_note": "VPN connectivity restored and confirmed with the requester."},
+    )
+    assert resolved.status_code == 200
+    resolved_at = resolved.json()["resolved_at"]
+    assert resolved_at is not None
+    assert resolved.json()["closed_at"] is None
+    history = client.get("/api/tickets/1/history").json()
+    resolution_entry = history[-1]
+    assert resolution_entry["new_status"] == "RESOLVED"
+    assert resolution_entry["note"] == "VPN connectivity restored and confirmed with the requester."
+
+    closed = client.patch("/api/tickets/1", json={"status": "CLOSED"})
+    assert closed.status_code == 200
+    assert closed.json()["resolved_at"] == resolved_at
+    assert closed.json()["closed_at"] is not None
+
+
+def test_invalid_lifecycle_transition_is_rejected(client, database_session):
+    response = client.patch("/api/tickets/1", json={"status": "CLOSED"})
+
+    assert response.status_code == 409
+    assert database_session.get(Ticket, 1).status == TicketStatus.NEW
+    assert client.get("/api/tickets/1/history").json() == []
 
 
 def test_unchanged_status_creates_no_history(client):
@@ -136,7 +170,7 @@ def test_unchanged_status_creates_no_history(client):
 
 def test_history_is_chronological(client):
     client.patch("/api/tickets/1", json={"status": "IN_PROGRESS"})
-    client.patch("/api/tickets/1", json={"status": "RESOLVED"})
+    client.patch("/api/tickets/1", json={"status": "RESOLVED", "resolution_note": "The reported network issue was fixed and verified."})
 
     history = client.get("/api/tickets/1/history").json()
     timestamps = [item["changed_at"] for item in history]

@@ -28,6 +28,7 @@ export type TicketUpdateInput = {
   priority?: TicketPriority;
   status?: TicketStatus;
   assigned_team_id?: number;
+  resolution_note?: string;
 };
 
 export type Team = {
@@ -53,6 +54,8 @@ export type TicketResponse = {
   creator_id: number;
   created_at: string;
   updated_at: string;
+  resolved_at?: string | null;
+  closed_at?: string | null;
   ai_predicted_category: string | null;
   ai_predicted_subcategory: string | null;
   ai_predicted_priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT" | null;
