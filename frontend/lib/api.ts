@@ -68,6 +68,7 @@ export type TicketResponse = {
   solution_confidence?: number | null;
   solution_source?: string | null;
   assigned_team_id?: number | null;
+  assigned_agent_id?: number | null;
   assigned_team_name?: string | null;
   assigned_team?: { name?: string | null } | null;
 };
