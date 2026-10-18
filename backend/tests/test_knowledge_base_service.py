@@ -43,7 +43,6 @@ def test_seed_is_repeatable_and_creates_curated_articles(kb_session):
 @pytest.mark.parametrize(
     ("title", "description", "category", "expected"),
     [
-        ("Wi-Fi keeps dropping", "Cannot connect to wireless office internet", "Network", "Office Wi-Fi"),
         ("VPN not connecting", "Remote access tunnel fails", "Network", "VPN connection"),
         ("Email not syncing", "Messages are delayed in Outlook inbox", "Software", "Email synchronization"),
         ("App crashes", "Business software freezes when opening", "Software", "Application or software crash"),

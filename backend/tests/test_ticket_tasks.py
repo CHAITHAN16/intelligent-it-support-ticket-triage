@@ -187,6 +187,35 @@ def test_process_ticket_persists_solution_recommendation(task_database, monkeypa
     assert ticket.solution_confidence > 0
 
 
+@pytest.mark.parametrize(("confidence", "expected_status", "expected_article"), [
+    (0.82, "MATCHED", 1),
+    (0.55, "MATCHED", 1),
+    (0.25, "NO_MATCH", None),
+])
+def test_process_ticket_persists_confidence_aware_recommendation(
+    task_database, monkeypatch, confidence, expected_status, expected_article
+):
+    monkeypatch.setattr(ticket_tasks.TriageService, "triage", lambda self, title, description: fake_triage_result())
+    monkeypatch.setattr(
+        ticket_tasks.KnowledgeBaseService,
+        "retrieve",
+        lambda self, db, title, description, category: type("Solution", (), {
+            "status": expected_status,
+            "suggested_solution": "Try reconnecting." if expected_status == "MATCHED" else None,
+            "article_id": expected_article,
+            "confidence": confidence,
+        })(),
+    )
+
+    assert ticket_tasks.process_ticket.run(1)["status"] == "processed"
+    task_database.expire_all()
+    ticket = task_database.get(Ticket, 1)
+    assert ticket.solution_status == expected_status
+    assert ticket.knowledge_article_id == expected_article
+    assert float(ticket.solution_confidence) == pytest.approx(confidence)
+    assert ticket.suggested_solution == ("Try reconnecting." if expected_status == "MATCHED" else None)
+
+
 def test_process_ticket_persists_no_match(task_database, monkeypatch):
     monkeypatch.setattr(ticket_tasks.TriageService, "triage", lambda self, title, description: fake_triage_result())
     assert ticket_tasks.process_ticket.run(1)["status"] == "processed"

@@ -115,3 +115,35 @@ def test_ticket_response_derives_article_fields_without_mutating_ticket():
     assert response.solution_source == "Prototype curated knowledge base: VPN guide"
     assert "knowledge_article_title" not in ticket.__dict__
     assert "solution_source" not in ticket.__dict__
+
+
+@pytest.mark.parametrize(("confidence", "status", "expected_level"), [
+    (0.82, "MATCHED", "HIGH"),
+    (0.55, "MATCHED", "MEDIUM"),
+    (0.25, "NO_MATCH", None),
+])
+def test_ticket_response_exposes_confidence_level(confidence, status, expected_level):
+    class ResponseSession:
+        def get(self, model, article_id):
+            return None
+
+    ticket = Ticket(
+        id=9,
+        title="Wi-Fi issue",
+        description="Wireless issue",
+        creator_id=1,
+        category="Network",
+        priority=TicketPriority.MEDIUM,
+        status=TicketStatus.NEW,
+        solution_status=status,
+        suggested_solution="Try reconnecting." if status == "MATCHED" else None,
+        solution_confidence=confidence,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+
+    response = _ticket_response(ticket, ResponseSession())
+
+    assert response.solution_status == status
+    assert response.solution_confidence == confidence
+    assert response.solution_confidence_level == expected_level
