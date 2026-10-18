@@ -41,24 +41,31 @@ def test_seed_is_repeatable_and_creates_curated_articles(kb_session):
 
 
 @pytest.mark.parametrize(
-    ("title", "description", "category", "expected"),
+    ("title", "description", "category", "expected", "expected_status"),
     [
-        ("VPN not connecting", "Remote access tunnel fails", "Network", "VPN connection"),
-        ("Email not syncing", "Messages are delayed in Outlook inbox", "Software", "Email synchronization"),
-        ("App crashes", "Business software freezes when opening", "Software", "Application or software crash"),
-        ("Account locked", "Password rejected and cannot sign in", "Other", "Password and account access"),
-        ("Suspicious login alert", "Unexpected unauthorized sign in detected", "Security", "Suspicious login"),
-        ("Printer not printing", "Office printer is offline and jobs are stuck", "Other", "Printer troubleshooting"),
-        ("Laptop battery issue", "Laptop will not power on and charger is hot", "Other", "Laptop hardware troubleshooting"),
+        ("VPN not connecting", "Remote access tunnel fails", "Network", "VPN connection", "MATCHED"),
+        ("Email not syncing", "Messages are delayed in Outlook inbox", "Software", "Email synchronization", "MATCHED"),
+        ("App crashes", "Business software freezes when opening", "Software", "Application or software crash", "NO_MATCH"),
+        ("Account locked", "Password rejected and cannot sign in", "Other", "Password and account access", "MATCHED"),
+        ("Suspicious login alert", "Unexpected unauthorized sign in detected", "Security", "Suspicious login", "MATCHED"),
+        ("Printer not printing", "Office printer is offline and jobs are stuck", "Other", "Printer troubleshooting", "NO_MATCH"),
+        ("Laptop battery issue", "Laptop will not power on and charger is hot", "Other", "Laptop hardware troubleshooting", "NO_MATCH"),
     ],
 )
-def test_retrieves_relevant_article(kb_session, title, description, category, expected):
+def test_retrieves_relevant_article(kb_session, title, description, category, expected, expected_status):
     seed(kb_session)
     result = KnowledgeBaseService().retrieve(kb_session, title, description, category)
-    assert result.status == "MATCHED"
-    assert expected in result.article_title
     assert result.confidence is not None
-    assert result.suggested_solution
+    assert result.status == expected_status
+    if expected_status == "MATCHED":
+        assert expected in result.article_title
+        assert result.suggested_solution
+        assert result.confidence >= 0.40
+    else:
+        assert result.article_id is None
+        assert result.article_title is None
+        assert result.suggested_solution is None
+        assert result.confidence < 0.40
 
 
 def test_unrelated_ticket_has_no_confident_match(kb_session):
@@ -67,7 +74,8 @@ def test_unrelated_ticket_has_no_confident_match(kb_session):
     assert result.status == "NO_MATCH"
     assert result.article_id is None
     assert result.suggested_solution is None
-    assert result.confidence is None
+    assert result.confidence is not None
+    assert result.confidence < 0.40
 
 
 def test_low_confidence_candidate_is_rejected_but_score_is_retained(kb_session):
@@ -91,6 +99,31 @@ def test_low_confidence_candidate_is_rejected_but_score_is_retained(kb_session):
     assert result.confidence < 0.40
     assert result.article_id is None
     assert result.suggested_solution is None
+
+
+@pytest.mark.parametrize(("title", "summary", "keywords", "expected_status", "minimum", "maximum"), [
+    ("VPN", "VPN", "VPN", "MATCHED", 0.70, 1.0),
+    ("VPN", "unrelated", "unrelated", "MATCHED", 0.40, 0.70),
+])
+def test_confidence_thresholds_classify_strong_and_plausible_matches(
+    kb_session, title, summary, keywords, expected_status, minimum, maximum
+):
+    kb_session.add(KnowledgeBaseArticle(
+        id=1,
+        title=title,
+        summary=summary,
+        category="Network",
+        resolution_steps="Reconnect.",
+        keywords=keywords,
+        active=True,
+    ))
+    kb_session.commit()
+
+    result = KnowledgeBaseService().retrieve(kb_session, "VPN", "", "Network")
+
+    assert result.status == expected_status
+    assert minimum <= result.confidence < maximum
+    assert result.suggested_solution == "Reconnect."
 
 
 def test_inactive_article_is_not_returned(kb_session):
