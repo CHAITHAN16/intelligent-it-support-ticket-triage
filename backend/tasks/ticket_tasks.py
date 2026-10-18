@@ -21,6 +21,15 @@ def create_task_session():
 
 
 def _has_completed_ai_processing(db, ticket_id: int) -> bool:
+    ticket = db.get(Ticket, ticket_id)
+    if ticket is None or not (
+        ticket.ai_predicted_category
+        and ticket.category
+        and ticket.assigned_team_id is not None
+        and ticket.solution_status in {"MATCHED", "NO_MATCH"}
+    ):
+        return False
+
     assignment = db.scalar(
         select(TicketAssignment.id).where(
             TicketAssignment.ticket_id == ticket_id,
@@ -47,6 +56,9 @@ def process_ticket(ticket_id: int) -> dict[str, int | str]:
             return {"status": "already_processed", "ticket_id": ticket_id}
 
         triage_result = TriageService().triage(ticket.title, ticket.description)
+        ticket.category = triage_result.category
+        if triage_result.subcategory is not None:
+            ticket.subcategory = triage_result.subcategory
         ticket.ai_predicted_category = triage_result.category
         ticket.ai_predicted_subcategory = triage_result.subcategory
         ticket.ai_predicted_priority = triage_result.priority
@@ -58,7 +70,17 @@ def process_ticket(ticket_id: int) -> dict[str, int | str]:
         ticket.ai_triaged_at = max(datetime.now(timezone.utc), created_at)
         ticket.updated_at = datetime.now(timezone.utc)
 
-        RoutingService().route_and_assign(db, ticket, triage_result)
+        existing_assignment = db.scalar(
+            select(TicketAssignment).where(
+                TicketAssignment.ticket_id == ticket_id,
+                TicketAssignment.source == AssignmentSource.AI,
+            )
+        )
+        if existing_assignment is None:
+            RoutingService().route_and_assign(db, ticket, triage_result)
+        else:
+            ticket.assigned_team_id = existing_assignment.team_id
+            ticket.routing_reason = existing_assignment.routing_reason
 
         # Flush primary triage and routing before opening a savepoint. Any
         # failure here must still fail the task; only KB retrieval is optional.

@@ -15,11 +15,12 @@ from tasks.ticket_tasks import process_ticket
 logger = logging.getLogger(__name__)
 
 
-def _attach_solution_source(ticket: Ticket, db: Session) -> Ticket:
+def _ticket_response(ticket: Ticket, db: Session) -> TicketResponse:
     article = db.get(KnowledgeBaseArticle, ticket.knowledge_article_id) if ticket.knowledge_article_id else None
-    ticket.knowledge_article_title = article.title if article is not None else None
-    ticket.solution_source = f"Prototype curated knowledge base: {article.title}" if article is not None else None
-    return ticket
+    return TicketResponse.model_validate(ticket).model_copy(update={
+        "knowledge_article_title": article.title if article is not None else None,
+        "solution_source": f"Prototype curated knowledge base: {article.title}" if article is not None else None,
+    })
 
 
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
@@ -57,7 +58,7 @@ def list_tickets(
     creator_id: int | None = Query(default=None, ge=1),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> list[Ticket]:
+) -> list[TicketResponse]:
     statement = select(Ticket)
     if current_user.role == UserRole.EMPLOYEE:
         if creator_id is not None and creator_id != current_user.id:
@@ -73,7 +74,7 @@ def list_tickets(
     elif creator_id is not None:
         statement = statement.where(Ticket.creator_id == creator_id)
     statement = statement.order_by(Ticket.created_at.desc())
-    return [_attach_solution_source(ticket, db) for ticket in db.scalars(statement).all()]
+    return [_ticket_response(ticket, db) for ticket in db.scalars(statement).all()]
 
 
 @router.get(
@@ -84,12 +85,12 @@ def list_tickets(
     response_description="The requested ticket.",
     responses={401: {"description": "Authentication is required."}, 403: {"description": "The user cannot access this ticket."}, 404: {"description": "The ticket does not exist."}},
 )
-def get_ticket(ticket_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> Ticket:
+def get_ticket(ticket_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> TicketResponse:
     ticket = db.get(Ticket, ticket_id)
     if ticket is None:
         raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
     _require_ticket_access(ticket, current_user, db)
-    return _attach_solution_source(ticket, db)
+    return _ticket_response(ticket, db)
 
 
 @router.patch(
@@ -105,7 +106,7 @@ def update_ticket(
     payload: TicketUpdateRequest,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(require_agent),
-) -> Ticket:
+) -> TicketResponse:
     ticket = db.get(Ticket, ticket_id)
     if ticket is None:
         raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
@@ -180,7 +181,7 @@ def update_ticket(
             db.commit()
             db.refresh(ticket)
 
-        return _attach_solution_source(ticket, db)
+        return _ticket_response(ticket, db)
     except Exception:
         db.rollback()
         raise
@@ -199,7 +200,7 @@ def create_ticket(
     payload: TicketCreate,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user),
-) -> Ticket:
+) -> TicketResponse:
     # Direct service-level tests may call this function without FastAPI dependency injection.
     creator_id = current_user.id if isinstance(current_user, User) else payload.creator_id
     if creator_id is None:
@@ -228,4 +229,4 @@ def create_ticket(
         # The ticket is already durable; Redis availability must not undo it.
         logger.exception("Could not enqueue ticket processing: ticket_id=%s", ticket.id)
 
-    return _attach_solution_source(ticket, db)
+    return _ticket_response(ticket, db)
