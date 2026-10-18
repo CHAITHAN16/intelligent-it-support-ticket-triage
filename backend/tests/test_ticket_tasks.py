@@ -177,6 +177,16 @@ def test_process_ticket_persists_solution_recommendation(task_database, monkeypa
     monkeypatch.setattr(ticket_tasks.TriageService, "triage", lambda self, title, description: fake_triage_result())
     task_database.add(KnowledgeBaseArticle(id=1, title="VPN troubleshooting", summary="VPN connection", category="Network", resolution_steps="Reconnect using the approved VPN client.", keywords="vpn remote tunnel", active=True))
     task_database.commit()
+    monkeypatch.setattr(
+        ticket_tasks.KnowledgeBaseService,
+        "retrieve",
+        lambda self, db, title, description, category: type("Solution", (), {
+            "status": "MATCHED",
+            "suggested_solution": "Reconnect using the approved VPN client.",
+            "article_id": 1,
+            "confidence": 0.82,
+        })(),
+    )
 
     assert ticket_tasks.process_ticket.run(1)["status"] == "processed"
     task_database.expire_all()
