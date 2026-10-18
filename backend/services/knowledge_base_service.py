@@ -9,7 +9,9 @@ from sqlalchemy.orm import Session
 from models import KnowledgeBaseArticle
 
 
-MIN_CONFIDENCE = 0.18
+LOW_CONFIDENCE_THRESHOLD = 0.40
+HIGH_CONFIDENCE_THRESHOLD = 0.70
+MIN_CONFIDENCE = LOW_CONFIDENCE_THRESHOLD
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _STOP_WORDS = {"a", "an", "and", "are", "for", "from", "i", "in", "is", "it", "my", "of", "on", "or", "the", "to", "with", "this", "that", "when", "after", "please", "help", "problem"}
 
@@ -63,7 +65,7 @@ class KnowledgeBaseService:
             return self._no_match()
         score, article = max(scored, key=lambda item: (item[0], item[1].id))
         if score < self.minimum_confidence:
-            return self._no_match()
+            return self._no_match(confidence=round(score, 4))
         return SolutionRecommendation(
             status="MATCHED",
             suggested_solution=article.resolution_steps,
@@ -74,12 +76,12 @@ class KnowledgeBaseService:
         )
 
     @staticmethod
-    def _no_match() -> SolutionRecommendation:
+    def _no_match(confidence: float | None = None) -> SolutionRecommendation:
         return SolutionRecommendation(
             status="NO_MATCH",
             suggested_solution=None,
             article_id=None,
             article_title=None,
-            confidence=None,
+            confidence=confidence,
             source=None,
         )

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from auth import get_current_user, require_agent
 from models import AssignmentSource, KnowledgeBaseArticle, Team, TeamMember, Ticket, TicketAssignment, TicketFieldHistory, TicketPriority, TicketStatus, TicketStatusHistory, User, UserRole
+from services.knowledge_base_service import HIGH_CONFIDENCE_THRESHOLD
 from schemas.tickets import TicketCreate, TicketResponse, TicketUpdateRequest
 from tasks.ticket_tasks import process_ticket
 
@@ -17,9 +18,16 @@ logger = logging.getLogger(__name__)
 
 def _ticket_response(ticket: Ticket, db: Session) -> TicketResponse:
     article = db.get(KnowledgeBaseArticle, ticket.knowledge_article_id) if ticket.knowledge_article_id else None
+    confidence = float(ticket.solution_confidence) if ticket.solution_confidence is not None else None
+    confidence_level = (
+        "HIGH" if confidence is not None and confidence >= HIGH_CONFIDENCE_THRESHOLD
+        else "MEDIUM" if confidence is not None and ticket.solution_status == "MATCHED"
+        else None
+    )
     return TicketResponse.model_validate(ticket).model_copy(update={
         "knowledge_article_title": article.title if article is not None else None,
         "solution_source": f"Prototype curated knowledge base: {article.title}" if article is not None else None,
+        "solution_confidence_level": confidence_level,
     })
 
 
