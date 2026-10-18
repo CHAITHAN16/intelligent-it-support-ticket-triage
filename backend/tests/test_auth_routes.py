@@ -265,6 +265,18 @@ def test_employee_cannot_create_field_or_team_overrides(client, database_session
     assert database_session.query(TicketAssignment).count() == 0
 
 
+def test_employee_cannot_resolve_ticket(client, database_session):
+    response = client.patch(
+        "/api/tickets/1",
+        json={"status": "RESOLVED", "resolution_note": "The reported issue was fixed and verified."},
+        headers=token_for(database_session, 1),
+    )
+
+    assert response.status_code == 403
+    assert database_session.get(Ticket, 1).status == TicketStatus.NEW
+    assert database_session.query(TicketStatusHistory).count() == 0
+
+
 def test_agent_team_reassignment_closes_active_assignment_and_records_human_source(client, database_session):
     database_session.add(TeamMember(team_id=2, user_id=3, member_role=UserRole.SUPPORT_AGENT))
     database_session.add(

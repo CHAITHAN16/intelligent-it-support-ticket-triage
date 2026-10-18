@@ -40,6 +40,7 @@ def test_ticket_create_rejects_invalid_text(field, value):
         ("assigned_team_id", -2),
         ("priority", "IMMEDIATE"),
         ("status", "PENDING"),
+        ("resolution_note", "short"),
     ],
 )
 def test_ticket_update_rejects_invalid_values(field, value):
