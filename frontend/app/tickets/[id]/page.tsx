@@ -216,9 +216,11 @@ export default function EmployeeTicketDetailPage() {
                   <p className="mt-2 text-sm text-slate-600">This is a suggested starting point, not a guaranteed fix. Your assigned IT team can help if it does not resolve the issue.</p>
                   {ticket.solution_status === "MATCHED" && ticket.suggested_solution ? (
                     <>
-                      {ticket.solution_confidence_level === "MEDIUM" && (
+                      {ticket.solution_confidence_level === "HIGH" ? (
+                        <p className="mt-5 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200">Strong knowledge-base match</p>
+                      ) : ticket.solution_confidence_level === "MEDIUM" ? (
                         <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">Possible troubleshooting starting point — this may not fully match your issue.</p>
-                      )}
+                      ) : null}
                       <div className="mt-6">
                         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Suggested resolution</p>
                         <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">{ticket.suggested_solution}</p>
