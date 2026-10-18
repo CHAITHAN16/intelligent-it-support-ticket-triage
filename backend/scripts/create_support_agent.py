@@ -18,7 +18,7 @@ import sys
 # Direct execution sets sys.path[0] to backend/scripts; expose backend modules.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -43,7 +43,7 @@ def create_support_agent(
         raise ValueError("A name is required.")
     if len(password) < 8:
         raise ValueError("Password must be at least 8 characters long.")
-    if db.scalar(select(User).where(User.email == normalized_email)) is not None:
+    if db.scalar(select(User).where(func.lower(User.email) == normalized_email)) is not None:
         raise ValueError("An account with that email already exists; no changes were made.")
 
     team = None
