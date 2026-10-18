@@ -29,7 +29,11 @@ export function AgentShell({
               <span className="block text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Support Agent</span>
             </span>
           </Link>
-          <button type="button" onClick={logout} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500">Log out</button>
+          <nav aria-label="Agent navigation" className="flex items-center gap-2">
+            <Link href="/agent" className="rounded-full px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">Dashboard</Link>
+            <Link href="/agent/tickets" className="rounded-full px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">All tickets</Link>
+            <button type="button" onClick={logout} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500">Log out</button>
+          </nav>
         </div>
       </header>
 
