@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AgentShell } from "@/components/agent-shell";
 import { createTicketComment, getTeams, getTicket, getTicketAssignmentHistory, getTicketComments, getTicketFieldHistory, getTicketHistory, updateTicket, type Team, type TicketAssignmentHistory, type TicketComment, type TicketFieldHistory, type TicketPriority, type TicketResponse, type TicketStatus, type TicketStatusHistory } from "@/lib/api";
 
-const ACTION_STATUSES: TicketStatus[] = ["NEW", "IN_PROGRESS", "RESOLVED", "CLOSED"];
+const ACTION_STATUSES: TicketStatus[] = ["NEW", "ASSIGNED", "IN_PROGRESS", "WAITING_FOR_USER", "RESOLVED", "CLOSED"];
 const PRIORITIES: TicketPriority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 const CATEGORIES = ["Network", "Security", "Software", "Other"];
 
@@ -54,6 +54,7 @@ export default function AgentTicketDetailPage() {
   const [commentBody, setCommentBody] = useState("");
   const [isCommentPosting, setIsCommentPosting] = useState(false);
   const [commentSubmitError, setCommentSubmitError] = useState<string | null>(null);
+  const [commentSuccess, setCommentSuccess] = useState<string | null>(null);
 
   const refreshTicket = useCallback(async () => {
     const result = await getTicket(ticketId);
@@ -153,11 +154,11 @@ export default function AgentTicketDetailPage() {
   }, [ticketId, refreshAuditHistory, refreshTicket]);
 
   async function saveChanges() {
-    if (!ticket || !category.trim()) { setError("Category is required."); return; }
+    if (!ticket) return;
     setIsSaving(true); setError(null); setSaveMessage(null);
     try {
       const teamId = Number(assignedTeamId);
-      await updateTicket(ticket.id, { category: category.trim(), subcategory: subcategory.trim() || null, priority, status, ...(teamId ? { assigned_team_id: teamId } : {}) });
+      await updateTicket(ticket.id, { ...(category.trim() ? { category: category.trim(), subcategory: subcategory.trim() || null } : {}), priority, status, ...(teamId ? { assigned_team_id: teamId } : {}) });
       await Promise.all([refreshTicket(), refreshHistory(), refreshAuditHistory()]);
       setSaveMessage("Ticket updated.");
     }
@@ -174,10 +175,12 @@ export default function AgentTicketDetailPage() {
 
     setIsCommentPosting(true);
     setCommentSubmitError(null);
+    setCommentSuccess(null);
     try {
       await createTicketComment(ticket.id, trimmedBody);
       setCommentBody("");
       await refreshComments();
+      setCommentSuccess("Internal comment added.");
     } catch (reason) {
       setCommentSubmitError(reason instanceof Error ? reason.message : "Comment could not be added.");
     } finally {
