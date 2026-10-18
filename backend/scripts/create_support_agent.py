@@ -12,6 +12,11 @@ from __future__ import annotations
 
 import argparse
 from getpass import getpass
+from pathlib import Path
+import sys
+
+# Direct execution sets sys.path[0] to backend/scripts; expose backend modules.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError

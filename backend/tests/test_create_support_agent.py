@@ -3,7 +3,7 @@ import os
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 
 import pytest
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, event, select
 from sqlalchemy.orm import Session
 
 from auth import password_hash, verify_password
@@ -17,8 +17,20 @@ from scripts.create_support_agent import create_support_agent
 def db_session():
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
-    with Session(engine) as session:
+    session = Session(engine)
+
+    @event.listens_for(session, "before_flush")
+    def assign_sqlite_user_ids(db_session, flush_context, instances):
+        next_id = max((user.id or 0 for user in db_session.query(User).all()), default=0) + 1
+        for user in db_session.new:
+            if isinstance(user, User) and user.id is None:
+                user.id = next_id
+                next_id += 1
+
+    try:
         yield session
+    finally:
+        session.close()
     Base.metadata.drop_all(engine)
     engine.dispose()
 
