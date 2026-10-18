@@ -117,12 +117,13 @@ def test_ticket_response_derives_article_fields_without_mutating_ticket():
     assert "solution_source" not in ticket.__dict__
 
 
-@pytest.mark.parametrize(("confidence", "status", "expected_level"), [
-    (0.82, "MATCHED", "HIGH"),
-    (0.55, "MATCHED", "MEDIUM"),
-    (0.25, "NO_MATCH", None),
+@pytest.mark.parametrize(("confidence", "status", "suggested_solution", "article_id", "expected_status", "expected_level"), [
+    (0.82, "MATCHED", "Try reconnecting.", 3, "MATCHED", "HIGH"),
+    (0.55, "MATCHED", "Try reconnecting.", 3, "MATCHED", "MEDIUM"),
+    (0.31, "MATCHED", "Try reconnecting.", 3, "NO_MATCH", "LOW"),
+    (0.25, "NO_MATCH", None, None, "NO_MATCH", None),
 ])
-def test_ticket_response_exposes_confidence_level(confidence, status, expected_level):
+def test_ticket_response_exposes_safe_confidence_level(confidence, status, suggested_solution, article_id, expected_status, expected_level):
     class ResponseSession:
         def get(self, model, article_id):
             return None
@@ -136,7 +137,8 @@ def test_ticket_response_exposes_confidence_level(confidence, status, expected_l
         priority=TicketPriority.MEDIUM,
         status=TicketStatus.NEW,
         solution_status=status,
-        suggested_solution="Try reconnecting." if status == "MATCHED" else None,
+        suggested_solution=suggested_solution,
+        knowledge_article_id=article_id,
         solution_confidence=confidence,
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
@@ -144,6 +146,40 @@ def test_ticket_response_exposes_confidence_level(confidence, status, expected_l
 
     response = _ticket_response(ticket, ResponseSession())
 
-    assert response.solution_status == status
+    assert response.solution_status == expected_status
     assert response.solution_confidence == confidence
     assert response.solution_confidence_level == expected_level
+    if expected_status == "NO_MATCH":
+        assert response.suggested_solution is None
+        assert response.knowledge_article_id is None
+        assert response.knowledge_article_title is None
+        assert response.solution_source is None
+
+
+def test_low_confidence_response_does_not_mutate_ticket():
+    ticket = Ticket(
+        id=10,
+        title="Wi-Fi issue",
+        description="Wireless issue",
+        creator_id=1,
+        category="Network",
+        priority=TicketPriority.MEDIUM,
+        status=TicketStatus.NEW,
+        solution_status="MATCHED",
+        suggested_solution="Try reconnecting.",
+        knowledge_article_id=3,
+        solution_confidence=0.31,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+
+    class ResponseSession:
+        def get(self, model, article_id):
+            raise AssertionError("must not fetch the article for a low-confidence match")
+
+    response = _ticket_response(ticket, ResponseSession())
+
+    assert response.solution_status == "NO_MATCH"
+    assert ticket.solution_status == "MATCHED"
+    assert ticket.suggested_solution == "Try reconnecting."
+    assert ticket.knowledge_article_id == 3
