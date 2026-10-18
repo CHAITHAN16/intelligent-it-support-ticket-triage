@@ -160,7 +160,9 @@ def test_team_queue_is_isolated(client, team_id, expected_category):
 
 
 def test_filters_are_applied(client):
-    assert [ticket["id"] for ticket in client.get("/api/teams/1/tickets?status=NEW").json()] == [1]
+    filtered = client.get("/api/teams/1/tickets?status=NEW").json()
+    assert [ticket["id"] for ticket in filtered] == [1]
+    assert filtered[0]["assigned_agent_id"] is None
     assert [ticket["id"] for ticket in client.get("/api/teams/1/tickets?priority=LOW").json()] == [2]
     assert [ticket["id"] for ticket in client.get("/api/teams/1/tickets?category=Network").json()] == [2, 1]
 
