@@ -60,6 +60,12 @@ export type TicketResponse = {
   ai_model_version: string | null;
   ai_triaged_at: string | null;
   routing_reason: string | null;
+  solution_status?: "MATCHED" | "NO_MATCH" | null;
+  suggested_solution?: string | null;
+  knowledge_article_id?: number | null;
+  knowledge_article_title?: string | null;
+  solution_confidence?: number | null;
+  solution_source?: string | null;
   assigned_team_id?: number | null;
   assigned_team_name?: string | null;
   assigned_team?: { name?: string | null } | null;

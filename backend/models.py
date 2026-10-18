@@ -128,6 +128,10 @@ class Ticket(Base):
     ai_model_version: Mapped[str | None] = mapped_column(String(100))
     ai_triaged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     routing_reason: Mapped[str | None] = mapped_column(Text)
+    solution_status: Mapped[str | None] = mapped_column(String(30))
+    suggested_solution: Mapped[str | None] = mapped_column(Text)
+    knowledge_article_id: Mapped[int | None] = mapped_column(ForeignKey("knowledge_base_articles.id", ondelete="SET NULL"))
+    solution_confidence: Mapped[Decimal | None] = mapped_column(Numeric(5, 4))
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -182,6 +186,22 @@ class TicketAssignment(Base):
         Index("idx_ticket_assignments_team", "team_id", "assigned_at"),
         Index("idx_ticket_assignments_source", "source", "assigned_at"),
     )
+
+
+class KnowledgeBaseArticle(Base):
+    __tablename__ = "knowledge_base_articles"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    resolution_steps: Mapped[str] = mapped_column(Text, nullable=False)
+    keywords: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (Index("idx_knowledge_base_articles_active_category", "active", "category"),)
 
 
 class TicketStatusHistory(Base):

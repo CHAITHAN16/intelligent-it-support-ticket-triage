@@ -209,6 +209,30 @@ export default function EmployeeTicketDetailPage() {
                 )}
               </section>
 
+              {triageComplete && (
+                <section className="rounded-3xl border border-violet-100 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-8">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700">AI suggested solution</p>
+                  <h2 className="mt-2 text-xl font-semibold text-slate-950">A recommendation to help resolve your issue</h2>
+                  <p className="mt-2 text-sm text-slate-600">This is a suggested starting point, not a guaranteed fix. Your assigned IT team can help if it does not resolve the issue.</p>
+                  {ticket.solution_status === "MATCHED" && ticket.suggested_solution ? (
+                    <>
+                      <div className="mt-6">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Suggested resolution</p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">{ticket.suggested_solution}</p>
+                      </div>
+                      <dl className="mt-6 grid gap-5 sm:grid-cols-2">
+                        <Field label="Knowledge source" value={ticket.knowledge_article_title ?? "Prototype curated knowledge base"} />
+                        <Field label="Match confidence" value={confidenceLabel(ticket.solution_confidence ?? null)} />
+                      </dl>
+                    </>
+                  ) : ticket.solution_status === "NO_MATCH" ? (
+                    <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">No confident knowledge-base match was found. Please contact the assigned IT team.</p>
+                  ) : (
+                    <p className="mt-5 text-sm text-slate-600">Solution recommendation is still processing.</p>
+                  )}
+                </section>
+              )}
+
               <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Comments</p>
                 <h2 className="mt-2 text-xl font-semibold text-slate-950">Collaboration thread</h2>

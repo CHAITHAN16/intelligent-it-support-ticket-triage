@@ -64,6 +64,12 @@ class TicketResponse(BaseModel):
     ai_model_version: str | None
     ai_triaged_at: datetime | None
     routing_reason: str | None
+    solution_status: str | None = None
+    suggested_solution: str | None = None
+    knowledge_article_id: int | None = None
+    knowledge_article_title: str | None = None
+    solution_confidence: float | None = None
+    solution_source: str | None = None
 
 
 class TicketAssignmentResponse(BaseModel):

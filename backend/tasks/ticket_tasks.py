@@ -10,6 +10,7 @@ from database import SessionLocal
 from models import AssignmentSource, Ticket, TicketAssignment
 from services.routing_service import RoutingService
 from services.triage_service import TriageService
+from services.knowledge_base_service import KnowledgeBaseService
 
 
 logger = logging.getLogger(__name__)
@@ -58,6 +59,29 @@ def process_ticket(ticket_id: int) -> dict[str, int | str]:
         ticket.updated_at = datetime.now(timezone.utc)
 
         RoutingService().route_and_assign(db, ticket, triage_result)
+
+        # Flush primary triage and routing before opening a savepoint. Any
+        # failure here must still fail the task; only KB retrieval is optional.
+        db.flush()
+        try:
+            with db.begin_nested():
+                solution = KnowledgeBaseService().retrieve(
+                    db, ticket.title, ticket.description, triage_result.category
+                )
+        except Exception:
+            logger.exception(
+                "Knowledge-base retrieval failed; continuing without recommendation: ticket_id=%s",
+                ticket_id,
+            )
+            ticket.solution_status = "NO_MATCH"
+            ticket.suggested_solution = None
+            ticket.knowledge_article_id = None
+            ticket.solution_confidence = None
+        else:
+            ticket.solution_status = solution.status
+            ticket.suggested_solution = solution.suggested_solution
+            ticket.knowledge_article_id = solution.article_id
+            ticket.solution_confidence = solution.confidence
         db.commit()
         logger.info("Finished ticket processing: ticket_id=%s", ticket_id)
         return {"status": "processed", "ticket_id": ticket_id}

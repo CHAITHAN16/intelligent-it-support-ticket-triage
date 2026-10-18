@@ -7,12 +7,19 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from auth import get_current_user, require_agent
-from models import AssignmentSource, Team, TeamMember, Ticket, TicketAssignment, TicketFieldHistory, TicketPriority, TicketStatus, TicketStatusHistory, User, UserRole
+from models import AssignmentSource, KnowledgeBaseArticle, Team, TeamMember, Ticket, TicketAssignment, TicketFieldHistory, TicketPriority, TicketStatus, TicketStatusHistory, User, UserRole
 from schemas.tickets import TicketCreate, TicketResponse, TicketUpdateRequest
 from tasks.ticket_tasks import process_ticket
 
 
 logger = logging.getLogger(__name__)
+
+
+def _attach_solution_source(ticket: Ticket, db: Session) -> Ticket:
+    article = db.get(KnowledgeBaseArticle, ticket.knowledge_article_id) if ticket.knowledge_article_id else None
+    ticket.knowledge_article_title = article.title if article is not None else None
+    ticket.solution_source = f"Prototype curated knowledge base: {article.title}" if article is not None else None
+    return ticket
 
 
 router = APIRouter(prefix="/api/tickets", tags=["tickets"])
@@ -66,7 +73,7 @@ def list_tickets(
     elif creator_id is not None:
         statement = statement.where(Ticket.creator_id == creator_id)
     statement = statement.order_by(Ticket.created_at.desc())
-    return list(db.scalars(statement).all())
+    return [_attach_solution_source(ticket, db) for ticket in db.scalars(statement).all()]
 
 
 @router.get(
@@ -82,7 +89,7 @@ def get_ticket(ticket_id: int, current_user: User = Depends(get_current_user), d
     if ticket is None:
         raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
     _require_ticket_access(ticket, current_user, db)
-    return ticket
+    return _attach_solution_source(ticket, db)
 
 
 @router.patch(
@@ -173,7 +180,7 @@ def update_ticket(
             db.commit()
             db.refresh(ticket)
 
-        return ticket
+        return _attach_solution_source(ticket, db)
     except Exception:
         db.rollback()
         raise
@@ -221,4 +228,4 @@ def create_ticket(
         # The ticket is already durable; Redis availability must not undo it.
         logger.exception("Could not enqueue ticket processing: ticket_id=%s", ticket.id)
 
-    return ticket
+    return _attach_solution_source(ticket, db)
