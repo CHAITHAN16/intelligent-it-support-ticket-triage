@@ -43,9 +43,14 @@ def test_seed_is_repeatable_and_creates_curated_articles(kb_session):
 @pytest.mark.parametrize(
     ("title", "description", "category", "expected"),
     [
-        ("Office Wi-Fi drops", "Cannot connect to wireless office network", "Network", "Office Wi-Fi"),
-        ("VPN not connecting", "Remote access VPN tunnel fails", "Network", "VPN connection"),
+        ("Wi-Fi keeps dropping", "Cannot connect to wireless office internet", "Network", "Office Wi-Fi"),
+        ("VPN not connecting", "Remote access tunnel fails", "Network", "VPN connection"),
+        ("Email not syncing", "Messages are delayed in Outlook inbox", "Software", "Email synchronization"),
+        ("App crashes", "Business software freezes when opening", "Software", "Application or software crash"),
+        ("Account locked", "Password rejected and cannot sign in", "Other", "Password and account access"),
         ("Suspicious login alert", "Unexpected unauthorized sign in detected", "Security", "Suspicious login"),
+        ("Printer not printing", "Office printer is offline and jobs are stuck", "Other", "Printer troubleshooting"),
+        ("Laptop battery issue", "Laptop will not power on and charger is hot", "Other", "Laptop hardware troubleshooting"),
     ],
 )
 def test_retrieves_relevant_article(kb_session, title, description, category, expected):

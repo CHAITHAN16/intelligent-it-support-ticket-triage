@@ -38,15 +38,25 @@ class KnowledgeBaseService:
         scored: list[tuple[float, KnowledgeBaseArticle]] = []
         articles = db.scalars(select(KnowledgeBaseArticle).where(KnowledgeBaseArticle.active.is_(True))).all()
         for article in articles:
-            fields = (article.title, article.summary, article.category, article.keywords, article.resolution_steps)
-            article_tokens = _tokens(" ".join(fields))
-            if not ticket_tokens or not article_tokens:
+            if not ticket_tokens:
                 continue
-            overlap = len(ticket_tokens & article_tokens) / len(ticket_tokens | article_tokens)
-            category_bonus = 0.12 if ticket_category and article.category.lower() == ticket_category else 0.0
-            title_overlap = len(ticket_tokens & _tokens(article.title))
-            title_bonus = min(title_overlap * 0.025, 0.075)
-            score = min(overlap + category_bonus + title_bonus, 1.0)
+
+            # Measure how much of the ticket vocabulary appears in each
+            # article field. Long resolution text therefore cannot dilute a
+            # direct match in the title, summary, or curated keywords.
+            def coverage(field: str) -> float:
+                field_tokens = _tokens(field)
+                return len(ticket_tokens & field_tokens) / len(ticket_tokens)
+
+            score = (
+                0.40 * coverage(article.title)
+                + 0.25 * coverage(article.summary)
+                + 0.20 * coverage(article.keywords)
+                + 0.05 * coverage(article.resolution_steps)
+            )
+            if ticket_category and article.category.lower() == ticket_category:
+                score += 0.10
+            score = min(score, 1.0)
             scored.append((score, article))
 
         if not scored:
