@@ -77,6 +77,7 @@ def test_process_ticket_success(task_database, monkeypatch):
 
     assert result == {"status": "processed", "ticket_id": 1}
     assert ticket.ai_predicted_category == "Network"
+    assert ticket.category == "Network"
     assert ticket.ai_predicted_priority == TicketPriority.HIGH
     assert ticket.solution_status == "NO_MATCH"
     assert ticket.suggested_solution is None
@@ -141,6 +142,31 @@ def test_process_ticket_is_idempotent(task_database, monkeypatch):
     assert task_database.query(TicketAssignment).count() == 1
 
 
+def test_process_ticket_persists_subcategory(task_database, monkeypatch):
+    result = TriageResult("Network", "VPN", TicketPriority.HIGH, 0.91, "test-model")
+    monkeypatch.setattr(ticket_tasks.TriageService, "triage", lambda self, title, description: result)
+    assert ticket_tasks.process_ticket.run(1)["status"] == "processed"
+    task_database.expire_all()
+    assert task_database.get(Ticket, 1).subcategory == "VPN"
+
+
+def test_process_ticket_repairs_partial_ticket_without_duplicate_assignment(task_database, monkeypatch):
+    monkeypatch.setattr(ticket_tasks.TriageService, "triage", lambda self, title, description: fake_triage_result())
+    assert ticket_tasks.process_ticket.run(1)["status"] == "processed"
+    task_database.expire_all()
+    ticket = task_database.get(Ticket, 1)
+    ticket.category = None
+    ticket.solution_status = None
+    task_database.commit()
+
+    assert ticket_tasks.process_ticket.run(1)["status"] == "processed"
+    task_database.expire_all()
+    ticket = task_database.get(Ticket, 1)
+    assert ticket.category == "Network"
+    assert ticket.solution_status == "NO_MATCH"
+    assert task_database.query(TicketAssignment).count() == 1
+
+
 def test_process_ticket_persists_solution_recommendation(task_database, monkeypatch):
     monkeypatch.setattr(ticket_tasks.TriageService, "triage", lambda self, title, description: fake_triage_result())
     task_database.add(KnowledgeBaseArticle(id=1, title="VPN troubleshooting", summary="VPN connection", category="Network", resolution_steps="Reconnect using the approved VPN client.", keywords="vpn remote tunnel", active=True))
@@ -153,6 +179,17 @@ def test_process_ticket_persists_solution_recommendation(task_database, monkeypa
     assert ticket.knowledge_article_id == 1
     assert "approved VPN" in ticket.suggested_solution
     assert ticket.solution_confidence > 0
+
+
+def test_process_ticket_persists_no_match(task_database, monkeypatch):
+    monkeypatch.setattr(ticket_tasks.TriageService, "triage", lambda self, title, description: fake_triage_result())
+    assert ticket_tasks.process_ticket.run(1)["status"] == "processed"
+    task_database.expire_all()
+    ticket = task_database.get(Ticket, 1)
+    assert ticket.solution_status == "NO_MATCH"
+    assert ticket.suggested_solution is None
+    assert ticket.knowledge_article_id is None
+    assert ticket.solution_confidence is None
 
 
 def test_process_ticket_continues_when_knowledge_base_fails(task_database, monkeypatch, caplog):

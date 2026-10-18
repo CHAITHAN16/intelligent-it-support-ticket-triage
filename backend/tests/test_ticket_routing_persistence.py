@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 import pytest
 
 from models import Ticket, TicketPriority, TicketStatus
-from routers.tickets import create_ticket
+from models import KnowledgeBaseArticle
+from routers.tickets import _ticket_response, create_ticket
 from schemas.tickets import TicketCreate
 
 
@@ -85,3 +86,30 @@ def test_enqueue_failure_does_not_rollback_ticket(monkeypatch):
     assert ticket.id == 1
     assert db.commit_called
     assert not db.rollback_called
+
+
+def test_ticket_response_derives_article_fields_without_mutating_ticket():
+    article = KnowledgeBaseArticle(id=3, title="VPN guide", summary="Help", category="Network", resolution_steps="Reconnect.", keywords="vpn", active=True)
+
+    class ResponseSession:
+        def get(self, model, article_id):
+            assert model is KnowledgeBaseArticle
+            assert article_id == 3
+            return article
+
+    ticket = Ticket(
+        id=8,
+        title="VPN issue",
+        description="VPN disconnects",
+        creator_id=1,
+        category="Network",
+        priority=TicketPriority.MEDIUM,
+        status=TicketStatus.NEW,
+        knowledge_article_id=3,
+    )
+    response = _ticket_response(ticket, ResponseSession())
+
+    assert response.knowledge_article_title == "VPN guide"
+    assert response.solution_source == "Prototype curated knowledge base: VPN guide"
+    assert "knowledge_article_title" not in ticket.__dict__
+    assert "solution_source" not in ticket.__dict__
