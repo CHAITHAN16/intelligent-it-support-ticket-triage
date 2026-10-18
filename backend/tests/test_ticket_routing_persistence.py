@@ -106,6 +106,8 @@ def test_ticket_response_derives_article_fields_without_mutating_ticket():
         priority=TicketPriority.MEDIUM,
         status=TicketStatus.NEW,
         knowledge_article_id=3,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     response = _ticket_response(ticket, ResponseSession())
 

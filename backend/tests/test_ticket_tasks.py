@@ -143,7 +143,13 @@ def test_process_ticket_is_idempotent(task_database, monkeypatch):
 
 
 def test_process_ticket_persists_subcategory(task_database, monkeypatch):
-    result = TriageResult("Network", "VPN", TicketPriority.HIGH, 0.91, "test-model")
+    result = TriageResult(
+        category="Network",
+        subcategory="VPN",
+        priority=TicketPriority.HIGH,
+        confidence=0.91,
+        model_version="test-model",
+    )
     monkeypatch.setattr(ticket_tasks.TriageService, "triage", lambda self, title, description: result)
     assert ticket_tasks.process_ticket.run(1)["status"] == "processed"
     task_database.expire_all()
