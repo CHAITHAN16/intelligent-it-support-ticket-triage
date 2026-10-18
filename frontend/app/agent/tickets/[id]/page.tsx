@@ -55,6 +55,7 @@ export default function AgentTicketDetailPage() {
   const [isCommentPosting, setIsCommentPosting] = useState(false);
   const [commentSubmitError, setCommentSubmitError] = useState<string | null>(null);
   const [commentSuccess, setCommentSuccess] = useState<string | null>(null);
+  const [resolutionNote, setResolutionNote] = useState("");
 
   const refreshTicket = useCallback(async () => {
     const result = await getTicket(ticketId);
@@ -64,6 +65,7 @@ export default function AgentTicketDetailPage() {
     setPriority(result.priority);
     setStatus(result.status);
     setAssignedTeamId(result.assigned_team_id?.toString() ?? "");
+    setResolutionNote("");
   }, [ticketId]);
 
   const refreshComments = useCallback(async () => {
@@ -155,12 +157,17 @@ export default function AgentTicketDetailPage() {
 
   async function saveChanges() {
     if (!ticket) return;
+    const resolving = status === "RESOLVED" && ticket.status !== "RESOLVED";
+    if (resolving && resolutionNote.trim().length < 10) {
+      setError("Add a meaningful resolution note of at least 10 characters before resolving.");
+      return;
+    }
     setIsSaving(true); setError(null); setSaveMessage(null);
     try {
       const teamId = Number(assignedTeamId);
-      await updateTicket(ticket.id, { ...(category.trim() ? { category: category.trim(), subcategory: subcategory.trim() || null } : {}), priority, status, ...(teamId ? { assigned_team_id: teamId } : {}) });
+      await updateTicket(ticket.id, { ...(category.trim() ? { category: category.trim(), subcategory: subcategory.trim() || null } : {}), priority, status, ...(teamId ? { assigned_team_id: teamId } : {}), ...(resolving ? { resolution_note: resolutionNote.trim() } : {}) });
       await Promise.all([refreshTicket(), refreshHistory(), refreshAuditHistory()]);
-      setSaveMessage("Ticket updated.");
+      setSaveMessage(resolving ? "Ticket resolved." : status === "CLOSED" && ticket.status !== "CLOSED" ? "Ticket closed." : "Ticket updated.");
     }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Ticket update failed."); }
     finally { setIsSaving(false); }
@@ -187,6 +194,8 @@ export default function AgentTicketDetailPage() {
       setIsCommentPosting(false);
     }
   }
+
+  const latestResolution = [...history].reverse().find((entry) => entry.new_status === "RESOLVED");
 
   return <AgentShell selectedTeamName={ticket?.assigned_team_name ?? "General IT Support"}>
     <div className="mx-auto max-w-5xl">
