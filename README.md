@@ -293,6 +293,7 @@ This can result in:
 - Difficulty handling large numbers of simultaneous requests
 - Limited visibility into ticket progress
 This project addresses these problems by using machine learning for automated ticket triage and asynchronous processing for scalable ticket handling.
+
 💡 Objectives
 The main objectives are to:
 - Automatically classify IT support tickets
