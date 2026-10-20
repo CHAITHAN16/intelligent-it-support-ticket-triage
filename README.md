@@ -463,3 +463,36 @@ ticket_assignments
 ticket_status_history
 comments
 knowledge_base_articles
+Database technologies:
+- PostgreSQL
+- SQLAlchemy
+- Alembic
+
+🧰 Technology Stack
+Frontend
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+Backend
+- Python
+- FastAPI
+- SQLAlchemy
+- Pydantic
+- Uvicorn
+Machine Learning
+- scikit-learn
+- TF-IDF
+- Logistic Regression
+- joblib
+Database
+- PostgreSQL
+- Alembic
+Authentication
+- JWT
+- Argon2
+- pwdlib
+Asynchronous Processing
+- Redis
+- Celery
+The project's documented technology stack follows these components.
