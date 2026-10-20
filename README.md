@@ -534,3 +534,13 @@ intelligent-it-support-ticket-triage/
 ├── docker-compose.yml
 ├── .env.example
 └── README.md
+
+🚀 Local Setup
+Prerequisites
+Install:
+- Python 3.13+
+- Node.js
+- PostgreSQL
+- Docker Desktop
+- Git
+Redis is used by Celery and can be run through Docker.
