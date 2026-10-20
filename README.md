@@ -385,3 +385,12 @@ Examples include:
 The system retrieves the most relevant article based on the ticket's content and category.
 
 It does not currently use an LLM to invent troubleshooting instructions. The recommendation comes from the curated local knowledge base.
+
+Confidence handling
+Confidence	Behavior
+≥ 70%	Strong knowledge-base match
+40–69%	Possible troubleshooting starting point
+< 40%	No-match fallback
+
+
+When confidence is too low, the employee is told to work with the assigned IT team instead of receiving an unreliable recommendation.
