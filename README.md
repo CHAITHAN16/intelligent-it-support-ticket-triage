@@ -435,3 +435,7 @@ NEW
           │
           ▼
         CLOSED
+
+Resolution requires a meaningful resolution note.
+
+Status changes are recorded in ticket history, including the previous status, new status, actor when available, and timestamp.
