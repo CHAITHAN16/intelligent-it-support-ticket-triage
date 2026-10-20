@@ -450,3 +450,16 @@ Investigating the VPN configuration.
 Agent:
 VPN credentials have been reset. Please try again.
 Comments are stored in PostgreSQL and displayed chronologically.
+
+🗄️ Database
+The application uses PostgreSQL.
+
+Main entities include:
+users
+teams
+team_members
+tickets
+ticket_assignments
+ticket_status_history
+comments
+knowledge_base_articles
