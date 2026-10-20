@@ -358,3 +358,9 @@ Supported priorities:
 LOW
 MEDIUM
 HIGH
+The AI prediction is stored separately from the authoritative ticket values so that support personnel can correct or override AI decisions when necessary. This follows the project's human-in-the-loop design principle.
+
+🔀 Automatic Team Routing
+Tickets are routed according to their predicted category.
+
+Example:
