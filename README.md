@@ -353,3 +353,8 @@ Network
 Security
 Software
 Other
+
+Supported priorities:
+LOW
+MEDIUM
+HIGH
