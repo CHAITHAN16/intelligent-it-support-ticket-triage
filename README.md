@@ -569,3 +569,18 @@ Do not commit real passwords, JWT secrets, or other credentials.
 Example:DATABASE_URL=postgresql+psycopg://postgres:<password>@localhost:5432/it_support
 
 REDIS_URL=redis://localhost:6379/0
+
+🐳 Docker Compose
+The recommended development setup uses Docker Compose.
+
+Services:
+Service	Address
+Frontend	http://localhost:3000
+FastAPI	http://localhost:8000
+PostgreSQL	localhost:5432
+Redis	localhost:6379
+
+Build and start:
+docker compose up --build
+
+The backend applies database migrations before starting FastAPI.
