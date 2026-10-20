@@ -282,3 +282,26 @@ The system provides
 - Knowledge-base-based solution recommendations
 - Confidence-aware solution fallback
 - Agent ticket queue and resolution workflow
+🎯 Problem Statement
+In a traditional IT helpdesk environment, incoming support requests often need to be manually reviewed, categorized, prioritized, and assigned to the appropriate support team.
+
+This can result in:
+- Delayed ticket assignment
+- Incorrect categorization
+- Inconsistent priority decisions
+- Increased helpdesk workload
+- Difficulty handling large numbers of simultaneous requests
+- Limited visibility into ticket progress
+This project addresses these problems by using machine learning for automated ticket triage and asynchronous processing for scalable ticket handling.
+💡 Objectives
+The main objectives are to:
+- Automatically classify IT support tickets
+- Predict ticket priority
+- Automatically route tickets to appropriate support teams
+- Provide employees with visibility into their tickets
+- Provide support agents with team-based ticket queues
+- Provide collaboration through ticket comments
+- Maintain ticket status history
+- Recommend relevant troubleshooting solutions
+- Safely fall back to human IT support when solution confidence is low
+- Support a complete ticket lifecycle from creation to resolution
