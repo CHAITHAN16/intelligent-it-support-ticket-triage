@@ -339,3 +339,17 @@ PostgreSQL       Redis
                     │
                     ▼
               Background Tasks
+
+🧠 AI Ticket Triage
+When an employee creates a ticket, the system processes the ticket asynchronously.
+
+The ML pipeline predicts:
+- Category
+- Priority
+- AI confidence
+- Model version
+Supported ticket categories include:
+Network
+Security
+Software
+Other
