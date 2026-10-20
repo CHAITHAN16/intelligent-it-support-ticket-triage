@@ -306,3 +306,36 @@ The main objectives are to:
 - Recommend relevant troubleshooting solutions
 - Safely fall back to human IT support when solution confidence is low
 - Support a complete ticket lifecycle from creation to resolution
+
+🏗️ System Architecture
+Employee
+   │
+   ▼
+Next.js Frontend
+   │
+   ▼
+FastAPI Backend
+   │
+   ├── Authentication / Authorization
+   │
+   ├── Ticket Management
+   │
+   ├── ML Triage
+   │      ├── Category Prediction
+   │      └── Priority Prediction
+   │
+   ├── Team Routing
+   │
+   ├── Knowledge Base Retrieval
+   │
+   └── Agent Workflow
+   │
+   ├───────────────┐
+   ▼               ▼
+PostgreSQL       Redis
+                    │
+                    ▼
+                 Celery
+                    │
+                    ▼
+              Background Tasks
