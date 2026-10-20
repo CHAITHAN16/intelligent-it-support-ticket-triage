@@ -439,3 +439,13 @@ NEW
 Resolution requires a meaningful resolution note.
 
 Status changes are recorded in ticket history, including the previous status, new status, actor when available, and timestamp.
+
+💬 Ticket Collaboration
+Tickets support comments and collaboration between employees and support agents.
+
+Example:
+Agent:
+Investigating the VPN configuration.
+
+Agent:
+VPN credentials have been reset. Please try again.
