@@ -496,3 +496,41 @@ Asynchronous Processing
 - Redis
 - Celery
 The project's documented technology stack follows these components.
+
+📁 Project Structure
+intelligent-it-support-ticket-triage/
+│
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   ├── lib/
+│   └── ...
+│
+├── backend/
+│   ├── routers/
+│   ├── schemas/
+│   ├── services/
+│   ├── tasks/
+│   ├── scripts/
+│   ├── tests/
+│   ├── celery_app.py
+│   ├── main.py
+│   └── requirements.txt
+│
+├── ml/
+│   ├── models/
+│   ├── prepare_*.py
+│   └── train_*.py
+│
+├── datasets/
+│   ├── raw/
+│   └── processed/
+│
+├── docs/
+│   └── ml/
+│
+├── tests/
+├── .gitignore
+├── docker-compose.yml
+├── .env.example
+└── README.md
