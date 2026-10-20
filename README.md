@@ -394,3 +394,29 @@ Confidence	Behavior
 
 
 When confidence is too low, the employee is told to work with the assigned IT team instead of receiving an unreliable recommendation.
+
+👨‍💻 Employee Portal
+Employees can:
+- Create support tickets
+- View their submitted tickets
+- View AI predictions
+- View assigned team
+- View suggested troubleshooting solutions
+- Add comments
+- View ticket history
+- Track ticket status
+
+🧑‍💼 Support Agent Portal
+Support agents can:
+- Access authorized team tickets
+- View the team queue
+- Filter tickets by status, priority, and category
+- View AI predictions
+- View suggested solutions
+- Add ticket comments
+- Change ticket status
+- Reassign tickets to another team
+- Add resolution notes
+- Resolve tickets
+- Close resolved tickets
+The backend remains responsible for authorization; frontend role checks are primarily for navigation and user experience.    Pasted markdown(20260910-102706)
