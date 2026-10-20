@@ -560,3 +560,12 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
 pip install -r requirements.txt
+
+3. Environment Configuration
+Create your local environment configuration from the provided example.
+
+Do not commit real passwords, JWT secrets, or other credentials.
+
+Example:DATABASE_URL=postgresql+psycopg://postgres:<password>@localhost:5432/it_support
+
+REDIS_URL=redis://localhost:6379/0
