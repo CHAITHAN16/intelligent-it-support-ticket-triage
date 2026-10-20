@@ -268,3 +268,17 @@ No license has been specified yet. Add a `LICENSE` file before distributing the 
 Intelligent IT Support Ticket Triage and Routing is a full-stack AI-assisted IT service management system designed to automate the initial handling of employee IT support requests.
 
 Employees can submit IT support tickets through a web portal. The system uses machine-learning models to analyze each ticket, predict its category and priority, and automatically route it to the appropriate IT support team.
+The system provides
+- Employee and support-agent portals
+- JWT-based authentication
+- Role-based authorization
+- AI ticket classification
+- Automatic team routing
+- Ticket comments
+- Status history
+- Asynchronous AI processing
+- PostgreSQL persistence
+- Redis and Celery background processing
+- Knowledge-base-based solution recommendations
+- Confidence-aware solution fallback
+- Agent ticket queue and resolution workflow
