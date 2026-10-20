@@ -1,3 +1,4 @@
+
 """merge ticket field history and user authentication
 
 Revision ID: 644de88e41c7
@@ -12,7 +13,8 @@ import sqlalchemy as sa
 
 
 revision: str = '644de88e41c7'
-down_revision: Union[str, None] = ('0002_ticket_field_history', '0002_user_authentication')
+down_revision: Union[str, None] = (
+    '0002_ticket_field_history', '0002_user_authentication')
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
