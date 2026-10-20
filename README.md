@@ -449,3 +449,4 @@ Investigating the VPN configuration.
 
 Agent:
 VPN credentials have been reset. Please try again.
+Comments are stored in PostgreSQL and displayed chronologically.
