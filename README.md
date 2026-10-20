@@ -371,3 +371,17 @@ Other     → General IT Support
 The system records the routing decision and assigned support team.
 
 📚 Knowledge Base & Suggested Solutions
+The system includes a curated knowledge base containing troubleshooting articles for common IT problems.
+
+Examples include:
+- Wi-Fi connectivity
+- VPN problems
+- Email synchronization
+- Software crashes
+- Password/account problems
+- Suspicious login activity
+- Printer issues
+- Laptop hardware problems
+The system retrieves the most relevant article based on the ticket's content and category.
+
+It does not currently use an LLM to invent troubleshooting instructions. The recommendation comes from the curated local knowledge base.
