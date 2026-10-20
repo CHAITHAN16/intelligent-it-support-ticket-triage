@@ -364,3 +364,7 @@ The AI prediction is stored separately from the authoritative ticket values so t
 Tickets are routed according to their predicted category.
 
 Example:
+Network   → Network Infrastructure
+Security  → Security Operations
+Software  → General IT Support
+Other     → General IT Support
