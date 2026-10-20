@@ -368,3 +368,4 @@ Network   → Network Infrastructure
 Security  → Security Operations
 Software  → General IT Support
 Other     → General IT Support
+The system records the routing decision and assigned support team.
