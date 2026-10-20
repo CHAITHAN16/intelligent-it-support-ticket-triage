@@ -420,3 +420,18 @@ Support agents can:
 - Resolve tickets
 - Close resolved tickets
 The backend remains responsible for authorization; frontend role checks are primarily for navigation and user experience.    Pasted markdown(20260910-102706)
+
+🔄 Ticket Lifecycle
+The supported workflow is:
+NEW
+ │
+ ├── ASSIGNED
+ │
+ ├── IN_PROGRESS
+ │
+ ├── WAITING_FOR_USER
+ │
+ └── RESOLVED
+          │
+          ▼
+        CLOSED
