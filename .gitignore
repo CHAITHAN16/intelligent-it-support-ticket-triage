@@ -23,6 +23,8 @@ env/
 *.pt
 *.pth
 *.onnx
+!ml/models/category_model_v1.joblib
+!ml/models/priority_model_v2.joblib
 
 # Datasets
 datasets/raw/

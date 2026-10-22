@@ -531,19 +531,14 @@ This utility is intended for local development and testing rather than public us
 
 ## 18. Machine Learning Models
 
-The project currently uses locally stored machine-learning models.
-
-Model files include:
+The current application requires two pre-trained model artifacts, tracked in Git so a fresh clone has the exact files used by the runtime:
 
 ```text
-ml/models/category_model_v1.joblib
-ml/models/category_model_v1_metadata.json
-ml/models/priority_model.joblib
-ml/models/priority_model_v2.joblib
-ml/models/subcategory_model.joblib
+ml/models/category_model_v1.joblib  (757,852 bytes)
+ml/models/priority_model_v2.joblib  (1,347,796 bytes)
 ```
 
-The production application loads the appropriate models from the mounted model directory.
+The backend and Celery worker load these files directly from `ml/models/`. Docker Compose mounts this directory read-only into both services. No model download or training step is required at startup.
 
 The current backend uses:
 
@@ -560,6 +555,10 @@ The reported model version is:
 ```text
 category-v1+priority-v2
 ```
+
+The other model files in `ml/models/` are not loaded by the current triage service: `priority_model.joblib` is an earlier priority model, and `subcategory_model.joblib` is a training output that runtime subcategory prediction does not use. The JSON metadata and confusion-matrix images document evaluation results; they are not needed to serve predictions.
+
+Training scripts are provided for development, but retraining is separate from application setup and may overwrite model outputs. A fresh clone does not contain the raw source datasets because `datasets/raw/` is gitignored, so the presence of those scripts does not make model training reproducible from a fresh clone. The tracked runtime artifacts are the reproducible deployment inputs.
 
 ---
 
