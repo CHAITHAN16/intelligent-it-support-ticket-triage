@@ -456,8 +456,11 @@ Example:
 ```text
 DATABASE_URL=postgresql+psycopg://postgres:<password>@postgres:5432/it_support
 REDIS_URL=redis://redis:6379/0
-JWT_SECRET=<development-secret>
+APP_ENV=development
+JWT_SECRET_KEY=<generate-a-random-secret-of-at-least-32-bytes>
 ```
+
+Set `JWT_SECRET_KEY` to a private random value before starting the backend. For example, generate one locally with `python -c "import secrets; print(secrets.token_urlsafe(48))"`, then store it only in your ignored `.env` file or secret manager. Do not commit the generated value. The backend defaults `APP_ENV` to `production` and refuses to start if the secret is missing, shorter than 32 bytes, or an obvious placeholder. Docker Compose explicitly defaults `APP_ENV` to `development` for this local stack; set it to `production` for a production deployment. There is no generated or shared fallback key.
 
 Do not commit real credentials, passwords, API keys, or JWT secrets to source control.
 

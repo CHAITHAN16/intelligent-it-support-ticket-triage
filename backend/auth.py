@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import secrets
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 
@@ -23,8 +22,40 @@ class AuthRole(str, Enum):
 
 
 JWT_ALGORITHM = "HS256"
-# Use a process-local fallback for the simulated environment; deployments should set this explicitly.
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY") or secrets.token_urlsafe(32)
+
+
+def load_jwt_secret(configured_secret: str | None, environment: str) -> str:
+    """Validate JWT configuration without including secret values in errors."""
+    normalized_environment = environment.strip().lower()
+    if normalized_environment not in {"development", "test", "production"}:
+        raise RuntimeError("APP_ENV must be development, test, or production")
+
+    if configured_secret is None or not configured_secret.strip():
+        raise RuntimeError("JWT_SECRET_KEY must be configured; no fallback key is used")
+
+    secret = configured_secret.strip()
+    normalized_secret = secret.lower()
+    placeholder_values = {
+        "secret",
+        "changeme",
+        "change-me",
+        "your-secret-key",
+        "replace-with-a-local-development-secret",
+    }
+    if (
+        normalized_secret in placeholder_values
+        or normalized_secret.startswith(("replace-", "change-", "your-", "<", "${"))
+        or "example" in normalized_secret
+    ):
+        raise RuntimeError("JWT_SECRET_KEY must be a real configured secret, not a placeholder")
+
+    if len(secret.encode("utf-8")) < 32:
+        raise RuntimeError("JWT_SECRET_KEY must contain at least 32 bytes")
+    return secret
+
+
+APP_ENV = os.getenv("APP_ENV", "production")
+JWT_SECRET_KEY = load_jwt_secret(os.getenv("JWT_SECRET_KEY"), APP_ENV)
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 password_hash = PasswordHash.recommended()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
