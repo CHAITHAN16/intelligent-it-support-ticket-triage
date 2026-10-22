@@ -533,10 +533,10 @@ This utility is intended for local development and testing rather than public us
 
 The current application requires two pre-trained model artifacts, tracked in Git so a fresh clone has the exact files used by the runtime:
 
-```text
-ml/models/category_model_v1.joblib  (757,852 bytes)
-ml/models/priority_model_v2.joblib  (1,347,796 bytes)
-```
+| Runtime artifact | Size | SHA-256 |
+|---|---:|---|
+| `ml/models/category_model_v1.joblib` | 757,852 bytes | `d4667ca05ac134081b3e947207410a37fd7d96d03050e14c5345bea8d720e2dc` |
+| `ml/models/priority_model_v2.joblib` | 1,347,796 bytes | `27a83c7c09010b9b37b0b26ca59c3170117a25af00144d27218ec5173915f47b` |
 
 The backend and Celery worker load these files directly from `ml/models/`. Docker Compose mounts this directory read-only into both services. No model download or training step is required at startup.
 
