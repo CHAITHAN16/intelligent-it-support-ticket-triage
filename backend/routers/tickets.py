@@ -242,24 +242,20 @@ def update_ticket(
     response_model=TicketResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a ticket",
-    description="Create a ticket for the authenticated user. Unauthenticated service callers may provide creator_id in the request body.",
+    description="Create a ticket for the authenticated user.",
     response_description="The created ticket, initially untriaged and in NEW status.",
-    responses={401: {"description": "Authentication or a creator_id is required."}, 422: {"description": "The request body failed validation."}},
+    responses={401: {"description": "Authentication is required."}, 422: {"description": "The request body failed validation."}},
 )
 def create_ticket(
     payload: TicketCreate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> TicketResponse:
-    # Direct service-level tests may call this function without FastAPI dependency injection.
-    creator_id = current_user.id if isinstance(current_user, User) else payload.creator_id
-    if creator_id is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication is required")
     try:
         ticket = Ticket(
             title=payload.title,
             description=payload.description,
-            creator_id=creator_id,
+            creator_id=current_user.id,
             category=None,
             subcategory=None,
             priority=TicketPriority.MEDIUM,

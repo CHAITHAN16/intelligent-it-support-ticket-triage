@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from models import Ticket, TicketPriority, TicketStatus
+from models import Ticket, TicketPriority, TicketStatus, User, UserRole
 from models import KnowledgeBaseArticle
 from routers.tickets import _ticket_response, create_ticket
 from schemas.tickets import TicketCreate
@@ -58,6 +58,7 @@ def test_ticket_creation_persists_before_enqueue(monkeypatch):
             creator_id=1,
         ),
         db,
+        User(id=1, name="Employee", email="employee@example.com", role=UserRole.EMPLOYEE),
     )
 
     assert ticket.id == 1
@@ -81,6 +82,7 @@ def test_enqueue_failure_does_not_rollback_ticket(monkeypatch):
     ticket = create_ticket(
         TicketCreate(title="Queue failure", description="Keep this ticket stored", creator_id=1),
         db,
+        User(id=1, name="Employee", email="employee@example.com", role=UserRole.EMPLOYEE),
     )
 
     assert ticket.id == 1

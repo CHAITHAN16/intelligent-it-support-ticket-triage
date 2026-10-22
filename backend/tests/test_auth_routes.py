@@ -150,7 +150,10 @@ def test_me_requires_and_returns_authenticated_user(client, database_session):
 
 
 def test_ticket_creation_requires_authentication(client):
-    response = client.post("/api/tickets", json={"title": "Unauthenticated", "description": "Should not be created"})
+    response = client.post(
+        "/api/tickets",
+        json={"title": "Unauthenticated", "description": "Should not be created", "creator_id": 1},
+    )
 
     assert response.status_code == 401
 
@@ -178,6 +181,7 @@ def test_employee_ticket_access_is_scoped_and_identity_cannot_be_spoofed(client,
     )
     assert response.status_code == 201
     assert response.json()["creator_id"] == 1
+    assert database_session.get(Ticket, response.json()["id"]).creator_id == 1
     assert queued_ticket_ids == [response.json()["id"]]
 
 
