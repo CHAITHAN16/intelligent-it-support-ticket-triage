@@ -19,22 +19,25 @@ type AIResolutionPanelProps = {
 export function AIResolutionPanel({ ticketId, onResolved }: AIResolutionPanelProps) {
   const [resolution, setResolution] = useState<AIResolutionResponse | null>(null);
   const [message, setMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [loadedTicketId, setLoadedTicketId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isLoading = loadedTicketId !== ticketId;
 
   useEffect(() => {
     let cancelled = false;
-    setIsLoading(true);
     void getAIResolution(ticketId)
       .then((result) => {
-        if (!cancelled) setResolution(result);
+        if (!cancelled) {
+          setResolution(result);
+          setLoadedTicketId(ticketId);
+        }
       })
       .catch((cause: unknown) => {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : "AI resolution could not be loaded.");
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) {
+          setError(cause instanceof Error ? cause.message : "AI resolution could not be loaded.");
+          setLoadedTicketId(ticketId);
+        }
       });
     return () => {
       cancelled = true;
