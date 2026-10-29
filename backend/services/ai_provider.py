@@ -36,6 +36,8 @@ class GroqCloudProvider:
 
     @classmethod
     def from_environment(cls) -> GroqCloudProvider:
+        if os.getenv("GROQ_DATA_PROCESSING_APPROVED", "false").strip().lower() not in {"1", "true", "yes"}:
+            raise AIProviderNotConfigured("AI provider data processing has not been approved")
         api_key = os.getenv("GROQ_API_KEY", "").strip()
         if not api_key:
             raise AIProviderNotConfigured("AI resolution is not configured")
