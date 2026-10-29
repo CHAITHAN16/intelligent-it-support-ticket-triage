@@ -188,6 +188,23 @@ def test_provider_failure_escalates_and_preserves_unresolved_ticket(
     assert resolution_session.get(Ticket, 1).status == TicketStatus.NEW
 
 
+def test_invalid_threshold_fails_closed_to_human_team(
+    resolution_client, resolution_session, monkeypatch
+):
+    monkeypatch.setenv("AI_RESOLUTION_CONFIDENCE_THRESHOLD", "invalid")
+    monkeypatch.setattr(
+        "routers.ai_resolution.AIResolutionService",
+        lambda: pytest.fail("provider must not run with invalid threshold configuration"),
+    )
+
+    response = resolution_client.post("/api/tickets/1/ai-resolution/start")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "ESCALATED"
+    assert response.json()["escalation_reason"] == "AI_CONFIGURATION_INVALID"
+    assert resolution_session.get(Ticket, 1).status == TicketStatus.NEW
+
+
 def test_only_employee_confirmation_resolves_ai_guided_ticket(
     resolution_client, resolution_session, monkeypatch
 ):

@@ -179,6 +179,8 @@ function EscalationNotice({ reason, team }: { reason: string | null; team: strin
           ? "There is no sufficiently relevant approved article for automated troubleshooting."
           : reason === "AI_PROVIDER_UNAVAILABLE"
             ? "The AI service is unavailable. Your ticket remains with the support team."
+            : reason === "AI_CONFIGURATION_INVALID"
+              ? "Automated troubleshooting is not configured correctly. Your ticket remains with the support team."
             : reason === "EMPLOYEE_REQUESTED_HUMAN_SUPPORT"
               ? "Your request has been handed back to the support team."
               : "This issue should be handled by your support team.";

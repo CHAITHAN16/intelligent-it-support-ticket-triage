@@ -27,7 +27,7 @@ from schemas.ai_resolution import (
 )
 from services.ai_provider import AIProviderError
 from services.ai_resolution_service import AIResolutionService
-from services.resolution_service import evaluate_resolution_eligibility
+from services.resolution_service import ResolutionDecision, evaluate_resolution_eligibility
 
 
 logger = logging.getLogger(__name__)
@@ -59,20 +59,31 @@ def _find_conversation(ticket_id: int, db: Session) -> AIResolutionConversation 
 def _article_and_decision(ticket: Ticket, db: Session):
     article = db.get(KnowledgeBaseArticle, ticket.knowledge_article_id) if ticket.knowledge_article_id else None
     article_is_available = article is not None and article.active
-    decision = evaluate_resolution_eligibility(
-        category=ticket.ai_predicted_category or ticket.category,
-        title=ticket.title,
-        description=ticket.description,
-        classification_confidence=(
-            float(ticket.ai_classification_confidence)
-            if ticket.ai_classification_confidence is not None
-            else None
-        ),
-        knowledge_match_status=ticket.solution_status if article_is_available else "NO_MATCH",
-        knowledge_match_confidence=(
-            float(ticket.solution_confidence) if ticket.solution_confidence is not None else None
-        ),
+    classification_confidence = (
+        float(ticket.ai_classification_confidence)
+        if ticket.ai_classification_confidence is not None
+        else None
     )
+    knowledge_match_confidence = (
+        float(ticket.solution_confidence) if ticket.solution_confidence is not None else None
+    )
+    try:
+        decision = evaluate_resolution_eligibility(
+            category=ticket.ai_predicted_category or ticket.category,
+            title=ticket.title,
+            description=ticket.description,
+            classification_confidence=classification_confidence,
+            knowledge_match_status=ticket.solution_status if article_is_available else "NO_MATCH",
+            knowledge_match_confidence=knowledge_match_confidence,
+        )
+    except ValueError:
+        logger.error("Invalid AI resolution configuration: ticket_id=%s", ticket.id)
+        decision = ResolutionDecision(
+            eligible=False,
+            reason="AI_CONFIGURATION_INVALID",
+            classification_confidence=classification_confidence,
+            knowledge_match_confidence=knowledge_match_confidence,
+        )
     return article if article_is_available else None, decision
 
 
