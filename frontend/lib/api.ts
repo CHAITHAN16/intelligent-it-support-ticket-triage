@@ -60,6 +60,7 @@ export type TicketResponse = {
   ai_predicted_subcategory: string | null;
   ai_predicted_priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT" | null;
   ai_confidence: number | null;
+  ai_classification_confidence: number | null;
   ai_model_version: string | null;
   ai_triaged_at: string | null;
   routing_reason: string | null;

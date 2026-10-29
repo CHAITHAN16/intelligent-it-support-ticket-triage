@@ -197,7 +197,8 @@ export default function EmployeeTicketDetailPage() {
                     <dl className="mt-6 grid gap-5 sm:grid-cols-2">
                       <Field label="AI predicted category" value={ticket.ai_predicted_category!} />
                       <Field label="AI predicted priority" value={ticket.ai_predicted_priority!} />
-                      <Field label="AI confidence" value={confidenceLabel(ticket.ai_confidence)} />
+                      <Field label="Classification model score (not calibrated)" value={confidenceLabel(ticket.ai_classification_confidence)} />
+                      <Field label="Combined triage score (not calibrated)" value={confidenceLabel(ticket.ai_confidence)} />
                       <Field label="AI model version" value={ticket.ai_model_version ?? "Not available"} />
                     </dl>
                   </>
