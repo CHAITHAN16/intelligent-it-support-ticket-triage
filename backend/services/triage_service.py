@@ -16,6 +16,7 @@ class TriageResult(BaseModel):
     category: str
     subcategory: str | None
     priority: TicketPriority
+    classification_confidence: float = Field(ge=0.0, le=1.0)
     confidence: float = Field(ge=0.0, le=1.0)
     model_version: str
 
@@ -81,6 +82,7 @@ class TriageService:
             category=predicted_category,
             subcategory=None,
             priority=priority,
+            classification_confidence=category_confidence,
             # The mean is deterministic and gives equal weight to both model signals.
             confidence=(category_confidence + priority_confidence) / 2,
             model_version=MODEL_VERSION,

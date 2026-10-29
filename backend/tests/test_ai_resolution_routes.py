@@ -70,6 +70,7 @@ def resolution_session():
                 creator_id=1,
                 ai_predicted_category="Software",
                 ai_confidence=0.82,
+                ai_classification_confidence=0.82,
                 ai_triaged_at=now,
                 solution_status="MATCHED",
                 suggested_solution="Close and reopen the approved application.",
@@ -125,7 +126,7 @@ def test_start_persists_assistant_reply_without_resolving_ticket(
 @pytest.mark.parametrize(
     ("ticket_updates", "expected_reason"),
     [
-        ({"ai_confidence": 0.74}, "LOW_CLASSIFICATION_CONFIDENCE"),
+        ({"ai_classification_confidence": 0.74}, "LOW_CLASSIFICATION_CONFIDENCE"),
         ({"ai_predicted_category": "Security", "category": "Security"}, "SECURITY_SENSITIVE"),
     ],
 )

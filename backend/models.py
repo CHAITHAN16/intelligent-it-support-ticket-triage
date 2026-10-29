@@ -125,6 +125,7 @@ class Ticket(Base):
     ai_predicted_subcategory: Mapped[str | None] = mapped_column(String(100))
     ai_predicted_priority: Mapped[TicketPriority | None] = mapped_column(SqlEnum(TicketPriority, name="ticket_priority", create_type=False))
     ai_confidence: Mapped[Decimal | None] = mapped_column(Numeric(5, 4))
+    ai_classification_confidence: Mapped[Decimal | None] = mapped_column(Numeric(5, 4))
     ai_model_version: Mapped[str | None] = mapped_column(String(100))
     ai_triaged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     routing_reason: Mapped[str | None] = mapped_column(Text)
@@ -142,6 +143,7 @@ class Ticket(Base):
         ForeignKeyConstraint(["assigned_team_id", "assigned_agent_id"], ["team_members.team_id", "team_members.user_id"], name="fk_ticket_agent_team_membership"),
         CheckConstraint("assigned_agent_id IS NULL OR assigned_team_id IS NOT NULL", name="chk_ticket_agent_requires_team"),
         CheckConstraint("ai_confidence IS NULL OR ai_confidence BETWEEN 0 AND 1", name="chk_ai_confidence"),
+        CheckConstraint("ai_classification_confidence IS NULL OR ai_classification_confidence BETWEEN 0 AND 1", name="chk_ai_classification_confidence"),
         CheckConstraint("ai_triaged_at IS NULL OR ai_triaged_at >= created_at", name="chk_ai_triaged_timestamp"),
         CheckConstraint("resolved_at IS NULL OR resolved_at >= created_at", name="chk_resolved_timestamp"),
         CheckConstraint("closed_at IS NULL OR closed_at >= created_at", name="chk_closed_timestamp"),

@@ -63,7 +63,11 @@ def _article_and_decision(ticket: Ticket, db: Session):
         category=ticket.ai_predicted_category or ticket.category,
         title=ticket.title,
         description=ticket.description,
-        classification_confidence=(float(ticket.ai_confidence) if ticket.ai_confidence is not None else None),
+        classification_confidence=(
+            float(ticket.ai_classification_confidence)
+            if ticket.ai_classification_confidence is not None
+            else None
+        ),
         knowledge_match_status=ticket.solution_status if article_is_available else "NO_MATCH",
         knowledge_match_confidence=(
             float(ticket.solution_confidence) if ticket.solution_confidence is not None else None

@@ -63,6 +63,7 @@ def process_ticket(ticket_id: int) -> dict[str, int | str]:
         ticket.ai_predicted_subcategory = triage_result.subcategory
         ticket.ai_predicted_priority = triage_result.priority
         ticket.ai_confidence = triage_result.confidence
+        ticket.ai_classification_confidence = triage_result.classification_confidence
         ticket.ai_model_version = triage_result.model_version
         created_at = ticket.created_at
         if created_at.tzinfo is None:
