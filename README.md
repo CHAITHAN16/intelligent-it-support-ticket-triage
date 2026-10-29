@@ -158,7 +158,7 @@ The provider integration is server-side. The frontend never receives `GROQ_API_K
 
 An AI response never resolves a ticket by itself. The employee must explicitly confirm that the issue is fixed; otherwise, they can request human support and the ticket remains unresolved.
 
-For local backend development, configure the same variables in `backend/.env` and explicitly set `GROQ_DATA_PROCESSING_APPROVED=true` only when approved. Never put a real provider key in either example file or commit `.env` files.
+For local backend development, export the same variables into the backend process or configure them in your IDE; `backend/.env.example` is documentation and is not loaded automatically. Explicitly set `GROQ_DATA_PROCESSING_APPROVED=true` only when approved. Never put a real provider key in either example file or commit `.env` files.
 
 ### Confidence-Based Recommendations
 
