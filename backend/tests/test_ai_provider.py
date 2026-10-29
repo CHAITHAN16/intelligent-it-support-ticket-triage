@@ -13,6 +13,7 @@ from services.ai_provider import (
 
 
 def test_provider_reads_configuration_from_environment(monkeypatch):
+    monkeypatch.setenv("GROQ_DATA_PROCESSING_APPROVED", "true")
     monkeypatch.setenv("GROQ_API_KEY", "test-key")
     monkeypatch.setenv("GROQ_MODEL", "test-model")
 
@@ -23,9 +24,18 @@ def test_provider_reads_configuration_from_environment(monkeypatch):
 
 
 def test_provider_requires_api_key(monkeypatch):
+    monkeypatch.setenv("GROQ_DATA_PROCESSING_APPROVED", "true")
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
 
     with pytest.raises(AIProviderNotConfigured):
+        GroqCloudProvider.from_environment()
+
+
+def test_provider_requires_explicit_data_processing_approval(monkeypatch):
+    monkeypatch.delenv("GROQ_DATA_PROCESSING_APPROVED", raising=False)
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+
+    with pytest.raises(AIProviderNotConfigured, match="not been approved"):
         GroqCloudProvider.from_environment()
 
 
