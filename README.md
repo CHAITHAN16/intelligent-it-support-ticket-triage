@@ -148,7 +148,17 @@ Current knowledge-base topics include:
 
 When a ticket is processed, the system searches the knowledge base for a relevant article using the ticket's content and predicted category.
 
-The current implementation does not generate troubleshooting instructions using an external LLM. Recommendations are retrieved from the curated local knowledge base.
+Recommendations are retrieved from the curated local knowledge base. Eligible software issues can also use an optional GroqCloud-backed conversation grounded in the matched article; the existing article remains the source of approved troubleshooting guidance.
+
+### Guided AI Resolution and Provider Privacy
+
+AI-guided resolution is available only for software tickets with a classification score at or above `AI_RESOLUTION_CONFIDENCE_THRESHOLD` (default `0.75`) and a separate sufficient knowledge-base match. The ML classification score is a model score, not a calibrated probability. Security-sensitive, hardware-repair, low-confidence, and no-guidance cases stay with the routed human support team. Provider failures also fall back to that team.
+
+The provider integration is server-side. The frontend never receives `GROQ_API_KEY`. For Docker Compose, set `GROQ_API_KEY` and optionally `GROQ_MODEL` in the ignored root `.env` file. `GROQ_DATA_PROCESSING_APPROVED` defaults to `false`; set it to `true` only after confirming GroqCloud is approved for the ticket data processed in your organization. When approval is absent, AI resolution is unavailable and tickets remain with their assigned team. Common email, IP address, password, token, API key, and secret values are redacted before provider submission; this does not replace organization data-classification or provider-approval controls. Use sanitized test data unless the provider is approved for real company data.
+
+An AI response never resolves a ticket by itself. The employee must explicitly confirm that the issue is fixed; otherwise, they can request human support and the ticket remains unresolved.
+
+For local backend development, configure the same variables in `backend/.env` and explicitly set `GROQ_DATA_PROCESSING_APPROVED=true` only when approved. Never put a real provider key in either example file or commit `.env` files.
 
 ### Confidence-Based Recommendations
 
