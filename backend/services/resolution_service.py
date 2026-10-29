@@ -14,7 +14,9 @@ _SECURITY_SIGNALS = re.compile(
     re.IGNORECASE,
 )
 _HARDWARE_REPAIR_SIGNALS = re.compile(
-    r"\b(physical damage|broken (?:screen|hinge|keyboard|port)|"
+    r"\b(physical damage|broken (?:screen|hinge|keyboard|port|monitor|display)|"
+    r"(?:keyboard|mouse|touchpad|trackpad|monitor|printer|charger|battery|power supply|docking station) "
+    r"(?:is )?(?:broken|damaged|not working|failed)|"
     r"won't power on|will not power on|does not power on|dead battery|"
     r"battery swelling|cracked display|liquid damage|hardware repair)\b",
     re.IGNORECASE,
