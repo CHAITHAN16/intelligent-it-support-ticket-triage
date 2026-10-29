@@ -251,3 +251,43 @@ class Comment(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (Index("idx_comments_ticket", "ticket_id", "created_at"),)
+
+
+class AIResolutionConversation(Base):
+    __tablename__ = "ai_resolution_conversations"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="ACTIVE", server_default="ACTIVE")
+    escalation_reason: Mapped[str | None] = mapped_column(String(80))
+    provider_model: Mapped[str | None] = mapped_column(String(150))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("ticket_id", name="uq_ai_resolution_conversations_ticket"),
+        CheckConstraint("status IN ('ACTIVE', 'ESCALATED', 'RESOLVED')", name="chk_ai_resolution_conversation_status"),
+        Index("idx_ai_resolution_conversations_status", "status", "updated_at"),
+    )
+
+
+class AIResolutionMessage(Base):
+    __tablename__ = "ai_resolution_messages"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    conversation_id: Mapped[int] = mapped_column(
+        ForeignKey("ai_resolution_conversations.id", ondelete="CASCADE"), nullable=False
+    )
+    speaker: Mapped[str] = mapped_column(String(20), nullable=False)
+    author_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("speaker IN ('EMPLOYEE', 'AI')", name="chk_ai_resolution_message_speaker"),
+        CheckConstraint(
+            "(speaker = 'AI' AND author_id IS NULL) OR (speaker = 'EMPLOYEE' AND author_id IS NOT NULL)",
+            name="chk_ai_resolution_message_author",
+        ),
+        Index("idx_ai_resolution_messages_conversation", "conversation_id", "created_at", "id"),
+    )
