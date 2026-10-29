@@ -41,7 +41,8 @@ class GroqCloudProvider:
             raise AIProviderNotConfigured("AI resolution is not configured")
         model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
         if not model:
-            raise AIProviderNotConfigured("AI resolution model is not configured")
+            raise AIProviderNotConfigured(
+                "AI resolution model is not configured")
         return cls(api_key=api_key, model=model)
 
     def generate(self, system_prompt: str, user_prompt: str) -> str:
@@ -70,17 +71,22 @@ class GroqCloudProvider:
                 result = json.loads(response.read())
         except HTTPError as error:
             if error.code == 429:
-                raise AIProviderRateLimited("AI provider rate limit reached") from None
+                raise AIProviderRateLimited(
+                    "AI provider rate limit reached") from None
             raise AIProviderUnavailable("AI provider request failed") from None
         except (TimeoutError, URLError):
-            raise AIProviderUnavailable("AI provider timed out or is unavailable") from None
+            raise AIProviderUnavailable(
+                "AI provider timed out or is unavailable") from None
         except (json.JSONDecodeError, UnicodeDecodeError):
-            raise AIProviderUnavailable("AI provider returned an invalid response") from None
+            raise AIProviderUnavailable(
+                "AI provider returned an invalid response") from None
 
         try:
             content = result["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError):
-            raise AIProviderUnavailable("AI provider returned an invalid response") from None
+            raise AIProviderUnavailable(
+                "AI provider returned an invalid response") from None
         if not isinstance(content, str) or not content.strip():
-            raise AIProviderUnavailable("AI provider returned an empty response")
+            raise AIProviderUnavailable(
+                "AI provider returned an empty response")
         return content.strip()

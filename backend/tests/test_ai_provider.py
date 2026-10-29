@@ -50,7 +50,8 @@ def test_provider_sends_chat_request_and_returns_content(monkeypatch):
         return Response()
 
     monkeypatch.setattr("services.ai_provider.urlopen", fake_urlopen)
-    provider = GroqCloudProvider(api_key="test-key", model="test-model", timeout_seconds=4)
+    provider = GroqCloudProvider(
+        api_key="test-key", model="test-model", timeout_seconds=4)
 
     assert provider.generate("system", "user") == "Try again."
     assert observed["url"] == "https://api.groq.com/openai/v1/chat/completions"
@@ -65,12 +66,14 @@ def test_provider_sends_chat_request_and_returns_content(monkeypatch):
 
 def test_provider_handles_rate_limit_without_exposing_provider_body(monkeypatch):
     def fail_urlopen(*_args, **_kwargs):
-        raise HTTPError("url", 429, "limited", {}, BytesIO(b"sensitive provider detail"))
+        raise HTTPError("url", 429, "limited", {},
+                        BytesIO(b"sensitive provider detail"))
 
     monkeypatch.setattr("services.ai_provider.urlopen", fail_urlopen)
 
     with pytest.raises(AIProviderRateLimited, match="rate limit") as error:
-        GroqCloudProvider(api_key="test-key", model="test-model").generate("system", "user")
+        GroqCloudProvider(api_key="test-key",
+                          model="test-model").generate("system", "user")
     assert "sensitive" not in str(error.value)
 
 
@@ -80,7 +83,8 @@ def test_provider_handles_timeout_and_invalid_response(monkeypatch):
 
     monkeypatch.setattr("services.ai_provider.urlopen", timeout)
     with pytest.raises(AIProviderUnavailable, match="timed out"):
-        GroqCloudProvider(api_key="test-key", model="test-model").generate("system", "user")
+        GroqCloudProvider(api_key="test-key",
+                          model="test-model").generate("system", "user")
 
     class InvalidResponse:
         def __enter__(self):
@@ -92,6 +96,8 @@ def test_provider_handles_timeout_and_invalid_response(monkeypatch):
         def read(self):
             return b"{}"
 
-    monkeypatch.setattr("services.ai_provider.urlopen", lambda *_args, **_kwargs: InvalidResponse())
+    monkeypatch.setattr("services.ai_provider.urlopen",
+                        lambda *_args, **_kwargs: InvalidResponse())
     with pytest.raises(AIProviderUnavailable, match="invalid response"):
-        GroqCloudProvider(api_key="test-key", model="test-model").generate("system", "user")
+        GroqCloudProvider(api_key="test-key",
+                          model="test-model").generate("system", "user")
