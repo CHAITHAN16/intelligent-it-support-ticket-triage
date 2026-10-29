@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { SiteHeader } from "@/components/site-header";
+import { AIResolutionPanel } from "@/components/ai-resolution-panel";
 import { getTicket, getTicketComments, getTicketHistory, isTicketProcessingComplete, type TicketComment, type TicketResponse, type TicketStatusHistory } from "@/lib/api";
 
 const TRIAGE_POLL_INTERVAL_MS = 2500;
@@ -82,7 +83,7 @@ export default function EmployeeTicketDetailPage() {
         if (cancelled) return;
         setTicket(ticketResult);
 
-        const [commentsResult, historyResult] = await Promise.allSettled([
+      const [commentsResult, historyResult] = await Promise.allSettled([
           getTicketComments(ticketId),
           getTicketHistory(ticketId),
         ]);
@@ -236,6 +237,18 @@ export default function EmployeeTicketDetailPage() {
                     <p className="mt-5 text-sm text-slate-600">Solution recommendation is still processing.</p>
                   )}
                 </section>
+              )}
+
+              {triageComplete && ticket.status !== "RESOLVED" && ticket.status !== "CLOSED" && (
+                <AIResolutionPanel
+                  ticketId={ticket.id}
+                  onResolved={async () => {
+                    const updatedTicket = await getTicket(ticket.id);
+                    setTicket(updatedTicket);
+                    const updatedHistory = await getTicketHistory(ticket.id);
+                    setHistory(updatedHistory);
+                  }}
+                />
               )}
 
               <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-8">

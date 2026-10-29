@@ -126,6 +126,23 @@ export type TicketAssignmentHistory = {
   unassigned_at: string | null;
 };
 
+export type AIResolutionMessage = {
+  id: number;
+  speaker: "EMPLOYEE" | "AI";
+  body: string;
+  created_at: string;
+};
+
+export type AIResolutionResponse = {
+  status: "NOT_STARTED" | "ACTIVE" | "ESCALATED" | "RESOLVED";
+  eligible: boolean;
+  escalation_reason: string | null;
+  classification_confidence: number | null;
+  knowledge_match_confidence: number | null;
+  assigned_team_name: string | null;
+  messages: AIResolutionMessage[];
+};
+
 type ApiErrorPayload = {
   detail?: string | Array<{ msg?: string }>;
 };
@@ -268,4 +285,30 @@ export async function getTicketFieldHistory(ticketId: number): Promise<TicketFie
 
 export async function getTicketAssignmentHistory(ticketId: number): Promise<TicketAssignmentHistory[]> {
   return request<TicketAssignmentHistory[]>(`/tickets/${ticketId}/assignments`);
+}
+
+export async function getAIResolution(ticketId: number): Promise<AIResolutionResponse> {
+  return request<AIResolutionResponse>(`/tickets/${ticketId}/ai-resolution`);
+}
+
+export async function startAIResolution(ticketId: number): Promise<AIResolutionResponse> {
+  return request<AIResolutionResponse>(`/tickets/${ticketId}/ai-resolution/start`, { method: "POST" });
+}
+
+export async function sendAIResolutionMessage(ticketId: number, body: string): Promise<AIResolutionResponse> {
+  return request<AIResolutionResponse>(`/tickets/${ticketId}/ai-resolution/messages`, {
+    method: "POST",
+    body: JSON.stringify({ body }),
+  });
+}
+
+export async function confirmAIResolution(ticketId: number): Promise<AIResolutionResponse> {
+  return request<AIResolutionResponse>(`/tickets/${ticketId}/ai-resolution/confirm`, {
+    method: "POST",
+    body: JSON.stringify({ confirmed: true }),
+  });
+}
+
+export async function escalateAIResolution(ticketId: number): Promise<AIResolutionResponse> {
+  return request<AIResolutionResponse>(`/tickets/${ticketId}/ai-resolution/escalate`, { method: "POST" });
 }
