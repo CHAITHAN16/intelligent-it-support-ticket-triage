@@ -17,6 +17,8 @@ _HARDWARE_REPAIR_SIGNALS = re.compile(
     r"\b(physical damage|broken (?:screen|hinge|keyboard|port|monitor|display)|"
     r"(?:keyboard|mouse|touchpad|trackpad|monitor|printer|charger|battery|power supply|docking station) "
     r"(?:is )?(?:broken|damaged|not working|failed)|"
+    r"(?:laptop|computer|monitor|printer|keyboard|mouse|charger|battery|display|screen|hinge|port)"
+    r".{0,30}(?:physically damaged|cracked|broken|swollen|dead battery|won't power on|will not power on)|"
     r"won't power on|will not power on|does not power on|dead battery|"
     r"battery swelling|cracked display|liquid damage|hardware repair)\b",
     re.IGNORECASE,

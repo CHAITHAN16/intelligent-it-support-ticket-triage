@@ -44,15 +44,17 @@ export function AIResolutionPanel({ ticketId, onResolved }: AIResolutionPanelPro
     };
   }, [ticketId]);
 
-  async function runAction(action: () => Promise<AIResolutionResponse>) {
+  async function runAction(action: () => Promise<AIResolutionResponse>): Promise<boolean> {
     setIsSubmitting(true);
     setError(null);
     try {
       const result = await action();
       setResolution(result);
       if (result.status === "RESOLVED") await onResolved();
+      return true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The request could not be completed.");
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -62,8 +64,7 @@ export function AIResolutionPanel({ ticketId, onResolved }: AIResolutionPanelPro
     event.preventDefault();
     const body = message.trim();
     if (!body) return;
-    setMessage("");
-    await runAction(() => sendAIResolutionMessage(ticketId, body));
+    if (await runAction(() => sendAIResolutionMessage(ticketId, body))) setMessage("");
   }
 
   return (

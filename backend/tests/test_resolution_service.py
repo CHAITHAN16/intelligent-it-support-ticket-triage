@@ -46,6 +46,7 @@ def test_eligible_software_requires_both_independent_scores():
         ({"category": "Security"}, "SECURITY_SENSITIVE"),
         ({"description": "I received a suspicious phishing message."}, "SECURITY_SENSITIVE"),
         ({"description": "The laptop has a cracked display."}, "HARDWARE_REPAIR"),
+        ({"description": "The laptop display is physically damaged."}, "HARDWARE_REPAIR"),
         ({"description": "The keyboard is not working."}, "HARDWARE_REPAIR"),
         ({"category": "Network"}, "NON_SOFTWARE_ISSUE"),
         ({"classification_confidence": 0.74}, "LOW_CLASSIFICATION_CONFIDENCE"),
