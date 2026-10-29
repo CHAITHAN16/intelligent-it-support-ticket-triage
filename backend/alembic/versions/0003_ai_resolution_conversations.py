@@ -7,7 +7,7 @@ import sqlalchemy as sa
 
 
 revision: str = "0003_ai_resolution_conversations"
-down_revision: Union[str, None] = "0002_user_authentication"
+down_revision: Union[str, None] = "a18b7c9d2e41"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
