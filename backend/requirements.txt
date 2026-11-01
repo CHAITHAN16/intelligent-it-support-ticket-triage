@@ -9,3 +9,5 @@ redis>=5,<7
 scikit-learn==1.8.0
 
 pytest
+
+httpx2
