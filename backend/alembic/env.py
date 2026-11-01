@@ -45,7 +45,7 @@ def run_migrations_online() -> None:
             target_metadata=target_metadata,
             version_table_pk=False,
             version_num_column_type=String(length=128),
-)
+        )
         with context.begin_transaction():
             context.run_migrations()
 
