@@ -2,7 +2,7 @@ from logging.config import fileConfig
 import os
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import String, engine_from_config, pool
 from sqlalchemy.engine import make_url
 
 from models import Base
@@ -41,9 +41,10 @@ def run_migrations_online() -> None:
     )
     with connectable.connect() as connection:
         context.configure(
-    connection=connection,
-    target_metadata=target_metadata,
-    version_table_pk=False,
+            connection=connection,
+            target_metadata=target_metadata,
+            version_table_pk=False,
+            version_num_column_type=String(length=128),
 )
         with context.begin_transaction():
             context.run_migrations()
