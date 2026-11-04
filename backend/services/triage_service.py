@@ -1,4 +1,5 @@
 from pathlib import Path
+import math
 from typing import Any
 
 import joblib
@@ -16,9 +17,13 @@ class TriageResult(BaseModel):
     category: str
     subcategory: str | None
     priority: TicketPriority
-    classification_confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    classification_confidence: float = Field(ge=0.0, le=1.0)
     confidence: float = Field(ge=0.0, le=1.0)
     model_version: str
+
+
+class ConfidencePredictionMismatchError(ValueError):
+    """Raised when the configured category model disagrees with a stored prediction."""
 
 
 class TriageService:
@@ -48,10 +53,43 @@ class TriageService:
 
     @staticmethod
     def _predict_with_confidence(model: Any, text: str) -> tuple[str, float]:
-        prediction = model.predict([text])[0]
-        probabilities = model.predict_proba([text])[0]
-        predicted_class_index = list(model.classes_).index(prediction)
-        return str(prediction), float(probabilities[predicted_class_index])
+        predictions = model.predict([text])
+        probability_rows = model.predict_proba([text])
+        classes = list(model.classes_)
+        if len(predictions) != 1 or len(probability_rows) != 1:
+            raise ValueError("ML model must return one prediction and probability row")
+
+        prediction = predictions[0]
+        probabilities = [float(value) for value in probability_rows[0]]
+        if not classes or len(probabilities) != len(classes):
+            raise ValueError("ML probability count does not match the model classes")
+        if any(not math.isfinite(value) or not 0.0 <= value <= 1.0 for value in probabilities):
+            raise ValueError("ML model returned a probability outside the range [0, 1]")
+        if not math.isclose(sum(probabilities), 1.0, rel_tol=0.0, abs_tol=1e-6):
+            raise ValueError("ML model probabilities must sum to 1")
+        try:
+            predicted_class_index = classes.index(prediction)
+        except ValueError as error:
+            raise ValueError("ML prediction is not present in the model classes") from error
+        return str(prediction), probabilities[predicted_class_index]
+
+    def classification_confidence_for_category(
+        self, title: str, description: str, expected_category: str
+    ) -> float:
+        text = f"{title or ''} {description or ''}".strip()
+        predicted_category, confidence = self._predict_with_confidence(
+            self.category_model, text
+        )
+        if predicted_category != expected_category:
+            raise ConfidencePredictionMismatchError(
+                "Configured category model predicted "
+                f"{predicted_category!r}, but the stored prediction is {expected_category!r}"
+            )
+        if predicted_category not in EXPECTED_CATEGORIES:
+            raise ValueError(
+                f"ML category model returned unsupported category: {predicted_category!r}"
+            )
+        return confidence
 
     def triage(self, title: str, description: str) -> TriageResult:
         text = f"{title or ''} {description or ''}".strip()
