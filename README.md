@@ -112,6 +112,24 @@ HIGH
 
 The current implementation uses TF-IDF-based machine-learning models with Logistic Regression and stores the AI predictions separately from authoritative ticket fields.
 
+### Repairing missing classification confidence
+
+The confidence backfill is a dry run unless `--apply` is explicitly supplied. It only considers triaged tickets with the configured model version and updates only `ai_classification_confidence` when the current category model reproduces the stored predicted category. It skips untriaged tickets, unsupported model versions, and category mismatches. The stored model version is a version label, not a checksum of the exact historical model artifact.
+
+Run a dry run in the backend container:
+
+```powershell
+docker compose exec backend python scripts/backfill_classification_confidence.py
+```
+
+After reviewing the dry-run output and obtaining approval for the database write, apply eligible confidence-only updates:
+
+```powershell
+docker compose exec backend python scripts/backfill_classification_confidence.py --apply
+```
+
+Tickets that were never triaged are not processed by this backfill; they require normal ticket processing.
+
 ---
 
 ## 5. Automatic Team Routing

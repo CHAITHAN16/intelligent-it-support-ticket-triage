@@ -4,12 +4,17 @@ import logging
 from datetime import datetime, timezone
 
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError
 
 from celery_app import celery_app
 from database import SessionLocal
 from models import AssignmentSource, Ticket, TicketAssignment
 from services.routing_service import RoutingService
-from services.triage_service import TriageService
+from services.triage_service import (
+    MODEL_VERSION,
+    ConfidencePredictionMismatchError,
+    TriageService,
+)
 from services.knowledge_base_service import KnowledgeBaseService
 
 
@@ -20,42 +25,108 @@ def create_task_session():
     return SessionLocal()
 
 
-def _has_completed_ai_processing(db, ticket_id: int) -> bool:
-    ticket = db.get(Ticket, ticket_id)
-    if ticket is None or not (
+def _has_completed_core_ai_processing(
+    ticket: Ticket, assignment: TicketAssignment | None
+) -> bool:
+    return bool(
         ticket.ai_predicted_category
         and ticket.category
+        and ticket.ai_model_version
+        and ticket.ai_triaged_at is not None
         and ticket.assigned_team_id is not None
         and ticket.solution_status in {"MATCHED", "NO_MATCH"}
-    ):
-        return False
-
-    assignment = db.scalar(
-        select(TicketAssignment.id).where(
-            TicketAssignment.ticket_id == ticket_id,
-            TicketAssignment.source == AssignmentSource.AI,
-        )
+        and assignment is not None
     )
-    return assignment is not None
 
 
-@celery_app.task(name="it_support.process_ticket")
+def _has_completed_ai_processing(
+    ticket: Ticket, assignment: TicketAssignment | None
+) -> bool:
+    return (
+        _has_completed_core_ai_processing(ticket, assignment)
+        and ticket.ai_classification_confidence is not None
+    )
+
+
+@celery_app.task(
+    name="it_support.process_ticket",
+    autoretry_for=(OperationalError, ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_backoff_max=60,
+    retry_jitter=True,
+    max_retries=3,
+)
 def process_ticket(ticket_id: int) -> dict[str, int | str]:
     """Run AI triage and routing for a persisted ticket."""
     db = create_task_session()
     logger.info("Starting ticket processing: ticket_id=%s", ticket_id)
 
     try:
-        ticket = db.get(Ticket, ticket_id)
+        ticket = db.scalar(
+            select(Ticket)
+            .where(Ticket.id == ticket_id)
+            .with_for_update()
+        )
         if ticket is None:
             logger.info("Skipping missing ticket: ticket_id=%s", ticket_id)
             return {"status": "missing", "ticket_id": ticket_id}
 
-        if _has_completed_ai_processing(db, ticket_id):
-            logger.info("Skipping already processed ticket: ticket_id=%s", ticket_id)
-            return {"status": "already_processed", "ticket_id": ticket_id}
+        existing_assignment = db.scalar(
+            select(TicketAssignment).where(
+                TicketAssignment.ticket_id == ticket_id,
+                TicketAssignment.source == AssignmentSource.AI,
+            )
+        )
+        if _has_completed_core_ai_processing(ticket, existing_assignment):
+            if _has_completed_ai_processing(ticket, existing_assignment):
+                logger.info("Skipping already processed ticket: ticket_id=%s", ticket_id)
+                return {"status": "already_processed", "ticket_id": ticket_id}
+
+            if ticket.ai_model_version != MODEL_VERSION:
+                logger.warning(
+                    "Cannot repair classification confidence with an unavailable "
+                    "model version: ticket_id=%s model_version=%s",
+                    ticket_id,
+                    ticket.ai_model_version,
+                )
+                return {"status": "confidence_unavailable", "ticket_id": ticket_id}
+            if not ticket.ai_predicted_category:
+                logger.warning(
+                    "Cannot repair classification confidence without a stored "
+                    "category prediction: ticket_id=%s",
+                    ticket_id,
+                )
+                return {"status": "confidence_unavailable", "ticket_id": ticket_id}
+
+            try:
+                confidence = TriageService().classification_confidence_for_category(
+                    ticket.title,
+                    ticket.description,
+                    ticket.ai_predicted_category,
+                )
+            except ConfidencePredictionMismatchError:
+                logger.exception(
+                    "Configured model does not reproduce the stored category; "
+                    "leaving ticket unchanged: ticket_id=%s",
+                    ticket_id,
+                )
+                return {"status": "confidence_unavailable", "ticket_id": ticket_id}
+
+            ticket.ai_classification_confidence = confidence
+            db.commit()
+            logger.info(
+                "Repaired classification confidence without rerunning triage: "
+                "ticket_id=%s",
+                ticket_id,
+            )
+            return {"status": "confidence_repaired", "ticket_id": ticket_id}
 
         triage_result = TriageService().triage(ticket.title, ticket.description)
+        if triage_result.classification_confidence is None:
+            raise RuntimeError(
+                "Triage model returned no classification confidence for "
+                f"ticket_id={ticket_id}"
+            )
         ticket.category = triage_result.category
         if triage_result.subcategory is not None:
             ticket.subcategory = triage_result.subcategory
@@ -71,12 +142,6 @@ def process_ticket(ticket_id: int) -> dict[str, int | str]:
         ticket.ai_triaged_at = max(datetime.now(timezone.utc), created_at)
         ticket.updated_at = datetime.now(timezone.utc)
 
-        existing_assignment = db.scalar(
-            select(TicketAssignment).where(
-                TicketAssignment.ticket_id == ticket_id,
-                TicketAssignment.source == AssignmentSource.AI,
-            )
-        )
         if existing_assignment is None:
             RoutingService().route_and_assign(db, ticket, triage_result)
         else:

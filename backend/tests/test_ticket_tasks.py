@@ -4,18 +4,26 @@ from datetime import datetime, timezone
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 
 import pytest
+from celery.exceptions import Retry
 from sqlalchemy import create_engine, event
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from database import SessionLocal
 from models import AssignmentSource, Base, KnowledgeBaseArticle, Team, Ticket, TicketAssignment, TicketPriority, TicketStatus, User, UserRole
-from services.triage_service import TriageResult
+from services.triage_service import MODEL_VERSION, TriageResult
 from tasks import ticket_tasks
 
 
 def test_task_uses_project_database_session_factory():
     assert ticket_tasks.SessionLocal is SessionLocal
+    assert ticket_tasks.process_ticket.max_retries == 3
+    assert ticket_tasks.process_ticket.autoretry_for == (
+        OperationalError,
+        ConnectionError,
+        TimeoutError,
+    )
 
 
 @pytest.fixture
@@ -62,8 +70,9 @@ def fake_triage_result():
         category="Network",
         subcategory=None,
         priority=TicketPriority.HIGH,
+        classification_confidence=0.84,
         confidence=0.91,
-        model_version="test-model",
+        model_version=MODEL_VERSION,
     )
 
 
@@ -79,6 +88,7 @@ def test_process_ticket_success(task_database, monkeypatch):
     assert ticket.ai_predicted_category == "Network"
     assert ticket.category == "Network"
     assert ticket.ai_predicted_priority == TicketPriority.HIGH
+    assert float(ticket.ai_classification_confidence) == pytest.approx(0.84)
     assert ticket.solution_status == "NO_MATCH"
     assert ticket.suggested_solution is None
     assert ticket.knowledge_article_id is None
@@ -94,12 +104,25 @@ def test_process_ticket_missing_ticket(task_database):
 
 def test_process_ticket_rolls_back_on_triage_failure(task_database, monkeypatch):
     def fail_triage(self, title, description):
-        raise RuntimeError("triage failed")
+        raise OperationalError("triage", {}, RuntimeError("database temporarily unavailable"))
 
     monkeypatch.setattr(ticket_tasks.TriageService, "triage", fail_triage)
+    retry_requests = []
 
-    with pytest.raises(RuntimeError, match="triage failed"):
+    def request_retry(**kwargs):
+        retry_requests.append(kwargs)
+        raise Retry(exc=kwargs["exc"])
+
+    monkeypatch.setattr(
+        ticket_tasks.process_ticket,
+        "retry",
+        request_retry,
+    )
+
+    with pytest.raises(Retry):
         ticket_tasks.process_ticket.run(1)
+    assert len(retry_requests) == 1
+    assert isinstance(retry_requests[0]["exc"], OperationalError)
 
     task_database.expire_all()
     ticket = task_database.get(Ticket, 1)
@@ -112,18 +135,41 @@ def test_process_ticket_rolls_back_on_routing_failure(task_database, monkeypatch
     monkeypatch.setattr(ticket_tasks.TriageService, "triage", lambda self, title, description: fake_triage_result())
 
     def fail_routing(self, db, ticket, triage_result):
-        raise RuntimeError("routing failed")
+        raise OperationalError("routing", {}, RuntimeError("database temporarily unavailable"))
 
     monkeypatch.setattr(ticket_tasks.RoutingService, "route_and_assign", fail_routing)
+    retry_requests = []
 
-    with pytest.raises(RuntimeError, match="routing failed"):
+    def request_retry(**kwargs):
+        retry_requests.append(kwargs)
+        raise Retry(exc=kwargs["exc"])
+
+    monkeypatch.setattr(
+        ticket_tasks.process_ticket,
+        "retry",
+        request_retry,
+    )
+
+    with pytest.raises(Retry):
         ticket_tasks.process_ticket.run(1)
+    assert len(retry_requests) == 1
+    assert isinstance(retry_requests[0]["exc"], OperationalError)
 
     task_database.expire_all()
     ticket = task_database.get(Ticket, 1)
     assert ticket.ai_predicted_category is None
     assert ticket.assigned_team_id is None
     assert task_database.query(TicketAssignment).count() == 0
+
+
+def test_process_ticket_does_not_retry_permanent_model_errors(task_database, monkeypatch):
+    def fail_triage(self, title, description):
+        raise ValueError("unsupported model output")
+
+    monkeypatch.setattr(ticket_tasks.TriageService, "triage", fail_triage)
+
+    with pytest.raises(ValueError, match="unsupported model output"):
+        ticket_tasks.process_ticket.run(1)
 
 
 def test_process_ticket_is_idempotent(task_database, monkeypatch):
@@ -147,8 +193,9 @@ def test_process_ticket_persists_subcategory(task_database, monkeypatch):
         category="Network",
         subcategory="VPN",
         priority=TicketPriority.HIGH,
+        classification_confidence=0.84,
         confidence=0.91,
-        model_version="test-model",
+        model_version=MODEL_VERSION,
     )
     monkeypatch.setattr(ticket_tasks.TriageService, "triage", lambda self, title, description: result)
     assert ticket_tasks.process_ticket.run(1)["status"] == "processed"
@@ -170,6 +217,105 @@ def test_process_ticket_repairs_partial_ticket_without_duplicate_assignment(task
     ticket = task_database.get(Ticket, 1)
     assert ticket.category == "Network"
     assert ticket.solution_status == "NO_MATCH"
+    assert task_database.query(TicketAssignment).count() == 1
+
+
+def test_process_ticket_repairs_only_missing_confidence(task_database, monkeypatch):
+    monkeypatch.setattr(
+        ticket_tasks.TriageService,
+        "triage",
+        lambda self, title, description: fake_triage_result(),
+    )
+    assert ticket_tasks.process_ticket.run(1)["status"] == "processed"
+    task_database.expire_all()
+    ticket = task_database.get(Ticket, 1)
+    before = {
+        "category": ticket.category,
+        "subcategory": ticket.subcategory,
+        "priority": ticket.priority,
+        "status": ticket.status,
+        "assigned_team_id": ticket.assigned_team_id,
+        "assigned_agent_id": ticket.assigned_agent_id,
+        "predicted_category": ticket.ai_predicted_category,
+        "predicted_priority": ticket.ai_predicted_priority,
+        "combined_confidence": ticket.ai_confidence,
+        "model_version": ticket.ai_model_version,
+        "triaged_at": ticket.ai_triaged_at,
+        "routing_reason": ticket.routing_reason,
+        "solution_status": ticket.solution_status,
+        "suggested_solution": ticket.suggested_solution,
+        "knowledge_article_id": ticket.knowledge_article_id,
+        "solution_confidence": ticket.solution_confidence,
+        "updated_at": ticket.updated_at,
+    }
+    ticket.ai_classification_confidence = None
+    task_database.commit()
+
+    def unexpected_full_triage(self, title, description):
+        raise AssertionError("confidence-only repair must not rerun triage")
+
+    monkeypatch.setattr(ticket_tasks.TriageService, "triage", unexpected_full_triage)
+    monkeypatch.setattr(
+        ticket_tasks.TriageService,
+        "classification_confidence_for_category",
+        lambda self, title, description, expected_category: 0.63,
+    )
+
+    assert ticket_tasks.process_ticket.run(1) == {
+        "status": "confidence_repaired",
+        "ticket_id": 1,
+    }
+    task_database.expire_all()
+    ticket = task_database.get(Ticket, 1)
+    assert float(ticket.ai_classification_confidence) == pytest.approx(0.63)
+    assert {
+        "category": ticket.category,
+        "subcategory": ticket.subcategory,
+        "priority": ticket.priority,
+        "status": ticket.status,
+        "assigned_team_id": ticket.assigned_team_id,
+        "assigned_agent_id": ticket.assigned_agent_id,
+        "predicted_category": ticket.ai_predicted_category,
+        "predicted_priority": ticket.ai_predicted_priority,
+        "combined_confidence": ticket.ai_confidence,
+        "model_version": ticket.ai_model_version,
+        "triaged_at": ticket.ai_triaged_at,
+        "routing_reason": ticket.routing_reason,
+        "solution_status": ticket.solution_status,
+        "suggested_solution": ticket.suggested_solution,
+        "knowledge_article_id": ticket.knowledge_article_id,
+        "solution_confidence": ticket.solution_confidence,
+        "updated_at": ticket.updated_at,
+    } == before
+    assert task_database.query(TicketAssignment).count() == 1
+
+
+def test_process_ticket_does_not_substitute_a_different_model_version(
+    task_database, monkeypatch
+):
+    monkeypatch.setattr(
+        ticket_tasks.TriageService,
+        "triage",
+        lambda self, title, description: fake_triage_result(),
+    )
+    assert ticket_tasks.process_ticket.run(1)["status"] == "processed"
+    task_database.expire_all()
+    ticket = task_database.get(Ticket, 1)
+    ticket.ai_classification_confidence = None
+    ticket.ai_model_version = "unavailable-model"
+    task_database.commit()
+
+    monkeypatch.setattr(
+        ticket_tasks.TriageService,
+        "triage",
+        lambda *args: (_ for _ in ()).throw(AssertionError("must not retriage")),
+    )
+    assert ticket_tasks.process_ticket.run(1) == {
+        "status": "confidence_unavailable",
+        "ticket_id": 1,
+    }
+    task_database.expire_all()
+    assert task_database.get(Ticket, 1).ai_classification_confidence is None
     assert task_database.query(TicketAssignment).count() == 1
 
 
@@ -254,7 +400,7 @@ def test_process_ticket_continues_when_knowledge_base_fails(task_database, monke
     assert ticket.ai_predicted_category == "Network"
     assert ticket.ai_predicted_priority == TicketPriority.HIGH
     assert float(ticket.ai_confidence) == pytest.approx(0.91)
-    assert ticket.ai_model_version == "test-model"
+    assert ticket.ai_model_version == MODEL_VERSION
     assert ticket.ai_triaged_at is not None
     assert ticket.assigned_team_id == assignment.team_id
     assert assignment.source == AssignmentSource.AI

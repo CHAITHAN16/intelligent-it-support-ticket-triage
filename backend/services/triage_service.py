@@ -1,5 +1,5 @@
-from pathlib import Path
 import math
+from pathlib import Path
 from typing import Any
 
 import joblib
@@ -60,7 +60,14 @@ class TriageService:
             raise ValueError("ML model must return one prediction and probability row")
 
         prediction = predictions[0]
-        probabilities = [float(value) for value in probability_rows[0]]
+        try:
+            probability_row = probability_rows[0]
+            row_length = len(probability_row)
+        except (IndexError, TypeError) as error:
+            raise ValueError("ML model returned an invalid probability row") from error
+        if row_length != len(classes):
+            raise ValueError("ML probability count does not match the model classes")
+        probabilities = [float(value) for value in probability_row]
         if not classes or len(probabilities) != len(classes):
             raise ValueError("ML probability count does not match the model classes")
         if any(not math.isfinite(value) or not 0.0 <= value <= 1.0 for value in probabilities):
