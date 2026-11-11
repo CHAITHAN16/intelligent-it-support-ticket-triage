@@ -72,7 +72,8 @@ export default function AgentTicketDetailPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const origin = searchParams.get("from");
-  const returnTo = origin === "all" ? "/agent/tickets" : origin === "overview" ? "/agent" : "/agent/team-queue";
+  const originatingTeamId = Number(searchParams.get("teamId"));
+  const returnTo = origin === "all" ? "/agent/tickets" : origin === "overview" ? "/agent" : origin === "team" && Number.isInteger(originatingTeamId) && originatingTeamId > 0 ? `/agent/team-queue?teamId=${originatingTeamId}` : "/agent/team-queue";
   const returnLabel = origin === "all" ? "All tickets" : origin === "overview" ? "Overview" : "Team queue";
   const activeSection = origin === "all" ? "all" : origin === "overview" ? "overview" : "team";
   const ticketId = Number(params.id);
