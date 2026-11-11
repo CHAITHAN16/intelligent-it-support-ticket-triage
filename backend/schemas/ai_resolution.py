@@ -30,8 +30,10 @@ class AIResolutionMessageResponse(BaseModel):
 
 
 class AIResolutionResponse(BaseModel):
+    mode: Literal["BASIC", "GUIDED"]
     status: str
     eligible: bool
+    eligibility_reason: str | None
     escalation_reason: str | None
     classification_confidence: float | None
     knowledge_match_confidence: float | None

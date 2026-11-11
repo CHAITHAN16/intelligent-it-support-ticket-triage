@@ -27,6 +27,7 @@ from schemas.ai_resolution import (
 )
 from services.ai_provider import AIProviderError
 from services.ai_resolution_service import AIResolutionService
+from services.basic_assistance_service import BasicAssistanceService
 from services.resolution_service import ResolutionDecision, evaluate_resolution_eligibility
 
 
@@ -101,12 +102,14 @@ def _response(
             .order_by(AIResolutionMessage.created_at.asc(), AIResolutionMessage.id.asc())
         ).all()
     return AIResolutionResponse(
+        mode="GUIDED" if decision.eligible else "BASIC",
         status=conversation.status if conversation is not None else "NOT_STARTED",
         eligible=decision.eligible,
+        eligibility_reason=None if decision.eligible else decision.reason,
         escalation_reason=(
             conversation.escalation_reason
             if conversation is not None and conversation.escalation_reason
-            else None if decision.eligible else decision.reason
+            else None
         ),
         classification_confidence=decision.classification_confidence,
         knowledge_match_confidence=decision.knowledge_match_confidence,
@@ -125,6 +128,37 @@ def _persist_escalation(
     conversation.escalation_reason = reason
     conversation.updated_at = datetime.now(timezone.utc)
     db.commit()
+    return _response(ticket, conversation, db)
+
+
+def _require_unresolved_ticket(ticket: Ticket) -> None:
+    if ticket.status in {TicketStatus.RESOLVED, TicketStatus.CLOSED}:
+        raise HTTPException(status_code=409, detail="This ticket is already resolved. Review its resolution summary instead.")
+
+
+def _start_basic_assistance(
+    ticket: Ticket,
+    conversation: AIResolutionConversation,
+    article: KnowledgeBaseArticle | None,
+    db: Session,
+) -> AIResolutionResponse:
+    existing_ai_message = db.scalar(
+        select(AIResolutionMessage.id).where(
+            AIResolutionMessage.conversation_id == conversation.id,
+            AIResolutionMessage.speaker == "AI",
+        )
+    )
+    if existing_ai_message is None:
+        db.add(
+            AIResolutionMessage(
+                conversation_id=conversation.id,
+                speaker="AI",
+                body=BasicAssistanceService.reply(ticket, article, first_message=True),
+            )
+        )
+        conversation.status = "ACTIVE"
+        conversation.updated_at = datetime.now(timezone.utc)
+        db.commit()
     return _response(ticket, conversation, db)
 
 
@@ -174,7 +208,7 @@ def get_ai_resolution(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AIResolutionResponse:
-    ticket = _require_ticket(ticket_id, db, current_user, employee_action=False)
+    ticket = _require_ticket(ticket_id, db, current_user, employee_action=True)
     return _response(ticket, _find_conversation(ticket_id, db), db)
 
 
@@ -189,8 +223,9 @@ def start_ai_resolution(
     db: Session = Depends(get_db),
 ) -> AIResolutionResponse:
     ticket = _require_ticket(ticket_id, db, current_user, employee_action=True)
+    _require_unresolved_ticket(ticket)
     article, decision = _article_and_decision(ticket, db)
-    if ticket.ai_triaged_at is None:
+    if decision.eligible and ticket.ai_triaged_at is None:
         raise HTTPException(status_code=409, detail="Ticket triage is still processing")
 
     conversation = _find_conversation(ticket_id, db)
@@ -198,7 +233,11 @@ def start_ai_resolution(
         conversation = AIResolutionConversation(ticket_id=ticket.id)
         db.add(conversation)
         db.flush()
-    if conversation.status != "ACTIVE" or db.scalar(
+    if conversation.status != "ACTIVE" and conversation.status in {"ESCALATED", "RESOLVED"}:
+        return _response(ticket, conversation, db)
+    if not decision.eligible:
+        return _start_basic_assistance(ticket, conversation, article, db)
+    if db.scalar(
         select(AIResolutionMessage.id).where(
             AIResolutionMessage.conversation_id == conversation.id,
             AIResolutionMessage.speaker == "AI",
@@ -221,22 +260,33 @@ def add_ai_resolution_message(
     db: Session = Depends(get_db),
 ) -> AIResolutionResponse:
     ticket = _require_ticket(ticket_id, db, current_user, employee_action=True)
+    _require_unresolved_ticket(ticket)
     conversation = _find_conversation(ticket_id, db)
     if conversation is None or conversation.status != "ACTIVE":
         raise HTTPException(status_code=409, detail="This AI conversation is not active")
     article, decision = _article_and_decision(ticket, db)
-    if not decision.eligible or article is None:
-        return _persist_escalation(ticket, conversation, decision.reason, db)
-
-    db.add(
-        AIResolutionMessage(
-            conversation_id=conversation.id,
-            speaker="EMPLOYEE",
-            author_id=current_user.id,
-            body=payload.body,
+    prior_employee_message = db.scalar(
+        select(AIResolutionMessage.id)
+        .where(
+            AIResolutionMessage.conversation_id == conversation.id,
+            AIResolutionMessage.speaker == "EMPLOYEE",
         )
+        .limit(1)
     )
+    db.add(AIResolutionMessage(conversation_id=conversation.id, speaker="EMPLOYEE", author_id=current_user.id, body=payload.body))
     conversation.updated_at = datetime.now(timezone.utc)
+    if not decision.eligible:
+        db.add(
+            AIResolutionMessage(
+                conversation_id=conversation.id,
+                speaker="AI",
+                body=BasicAssistanceService.reply(ticket, article, first_message=prior_employee_message is None),
+            )
+        )
+        db.commit()
+        return _response(ticket, conversation, db)
+    if article is None:
+        return _persist_escalation(ticket, conversation, decision.reason, db)
     db.commit()
     return _generate_assistant_reply(ticket, conversation, article, db)
 
@@ -249,6 +299,7 @@ def confirm_ai_resolution(
     db: Session = Depends(get_db),
 ) -> AIResolutionResponse:
     ticket = _require_ticket(ticket_id, db, current_user, employee_action=True)
+    _require_unresolved_ticket(ticket)
     conversation = _find_conversation(ticket_id, db)
     has_ai_reply = conversation is not None and db.scalar(
         select(AIResolutionMessage.id).where(
@@ -290,6 +341,7 @@ def escalate_ai_resolution(
     db: Session = Depends(get_db),
 ) -> AIResolutionResponse:
     ticket = _require_ticket(ticket_id, db, current_user, employee_action=True)
+    _require_unresolved_ticket(ticket)
     conversation = _find_conversation(ticket_id, db)
     if conversation is None or conversation.status != "ACTIVE":
         raise HTTPException(status_code=409, detail="This AI conversation is not active")
