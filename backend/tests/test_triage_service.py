@@ -26,6 +26,12 @@ def test_category_predictions(triage_service, title, description, expected_categ
     assert result.category == expected_category
     assert result.subcategory is None
     assert result.model_version == "category-v1+priority-v2"
+    assert result.category_model_version == "category-v1"
+    assert result.priority_model_version == "priority-v2"
+    assert sum(result.category_probabilities.values()) == pytest.approx(1.0)
+    assert sum(result.priority_probabilities.values()) == pytest.approx(1.0)
+    assert result.category_probabilities[result.category] == pytest.approx(result.classification_confidence)
+    assert result.category_probabilities.keys() == {"Network", "Other", "Security", "Software"}
     assert 0.0 <= result.classification_confidence <= 1.0
     assert 0.0 <= result.confidence <= 1.0
 
@@ -115,12 +121,13 @@ def test_model_accepts_probability_sum_with_small_rounding_error():
         def predict_proba(self, _texts):
             return [[0.2, 0.8000005]]
 
-    prediction, confidence = TriageService._predict_with_confidence(
+    prediction, confidence, probabilities = TriageService._predict_with_confidence(
         FixedModel(), "App issue"
     )
 
     assert prediction == "Software"
     assert confidence == pytest.approx(0.8000005)
+    assert probabilities == {"Other": pytest.approx(0.2), "Software": pytest.approx(0.8000005)}
 
 
 def test_confidence_repair_requires_model_to_reproduce_stored_category():
