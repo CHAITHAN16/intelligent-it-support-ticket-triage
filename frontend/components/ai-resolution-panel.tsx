@@ -140,19 +140,13 @@ export function AIResolutionPanel({ ticket, resolutionSummary, onResolved }: AIR
                 </button>
               </form>
               <div className="mt-5 flex flex-wrap gap-3 border-t border-slate-200 pt-5">
-                {resolution.mode === "GUIDED" && <button
+                <button
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => void runAction(() => escalateAIResolution(ticketId))}
                   className="rounded-full border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >Contact IT Support</button>}
-                {resolution.mode === "GUIDED" && <span className="basis-full text-xs text-slate-500">Contacting IT hands the issue back to {resolution.assigned_team_name ?? "your assigned support team"}.</span>}
-                {resolution.mode === "BASIC" && <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => void runAction(() => escalateAIResolution(ticketId))}
-                  className="rounded-full border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >Contact IT Support</button>}
+                >Contact IT Support</button>
+                <span className="basis-full text-xs text-slate-500">This hands the issue back to {resolution.assigned_team_name ?? "your assigned support team"}.</span>
                 {resolution.mode === "GUIDED" && <>
                 <button
                   type="button"
@@ -162,20 +156,11 @@ export function AIResolutionPanel({ ticket, resolutionSummary, onResolved }: AIR
                 >
                   This fixed my issue
                 </button>
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => void runAction(() => escalateAIResolution(ticketId))}
-                  className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Still not fixed; contact IT
-                </button>
                 </>}
               </div>
             </>
           )}
 
-          {resolution.status === "ESCALATED" && <EscalationNotice reason={resolution.escalation_reason} team={resolution.assigned_team_name} />}
           {resolution.status === "ESCALATED" && <EscalationNotice reason={resolution.escalation_reason} team={resolution.assigned_team_name} />}
           {resolution.status === "RESOLVED" && ticket.status !== "RESOLVED" && ticket.status !== "CLOSED" && (
             <p role="status" className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900">
