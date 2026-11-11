@@ -182,6 +182,10 @@ def test_basic_follow_up_persists_messages_without_provider(
 ):
     ticket = resolution_session.get(Ticket, 1)
     ticket.ai_classification_confidence = 0.20
+    ticket.title = "VPN connection issue"
+    ticket.description = "VPN fails to connect."
+    ticket.category = "Network"
+    ticket.ai_predicted_category = "Network"
     resolution_session.commit()
     monkeypatch.setattr(
         "routers.ai_resolution.AIResolutionService",
@@ -191,12 +195,18 @@ def test_basic_follow_up_persists_messages_without_provider(
 
     response = resolution_client.post(
         "/api/tickets/1/ai-resolution/messages",
-        json={"body": "The application closed after sign-in."},
+        json={"body": "The VPN issue started this morning. Only my laptop is affected. I get a connection timed out error whenever I try to connect."},
     )
 
     assert response.status_code == 200
     assert response.json()["mode"] == "BASIC"
     assert [message["speaker"] for message in response.json()["messages"]] == ["AI", "EMPLOYEE", "AI"]
+    context = response.json()["basic_context"]
+    assert context["start_time"] == "this morning"
+    assert context["affected_devices_users"] == "One device: laptop"
+    assert context["affected_service"] == "VPN"
+    assert context["exact_error"] == "connection timed out"
+    assert context["next_recommended_question"] == "Can you access the internet when you are not connected to the VPN?"
     assert resolution_session.query(AIResolutionMessage).count() == 3
 
 
