@@ -114,6 +114,7 @@ export function AIResolutionPanel({ ticket, resolutionSummary, onResolved }: AIR
                   ["Affected devices or users", resolution.basic_context.affected_devices_users],
                   ["Service", resolution.basic_context.affected_service],
                   ["Error", resolution.basic_context.exact_error],
+                  ["Internet without VPN", resolution.basic_context.connectivity_without_vpn],
                 ] as const).map(([label, value]) => value && <div key={label}><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt><dd className="mt-1 text-slate-800">{value}</dd></div>)}
                 {resolution.basic_context.known_troubleshooting_steps.length > 0 && <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Steps already tried</dt><dd className="mt-1 text-slate-800">{resolution.basic_context.known_troubleshooting_steps.join("; ")}</dd></div>}
               </dl>

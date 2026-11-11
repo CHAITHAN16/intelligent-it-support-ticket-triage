@@ -141,6 +141,7 @@ export type AIResolutionContext = {
   affected_service: string | null;
   exact_error: string | null;
   known_troubleshooting_steps: string[];
+  connectivity_without_vpn: string | null;
   missing_information: string[];
   next_recommended_question: string;
 };

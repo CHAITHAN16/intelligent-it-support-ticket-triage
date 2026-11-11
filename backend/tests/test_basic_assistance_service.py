@@ -64,6 +64,20 @@ def test_context_retains_details_across_multiple_employee_messages():
     assert context.next_recommended_question == "Can you access the internet when you are not connected to the VPN?"
 
 
+def test_answering_vpn_connectivity_question_moves_to_a_new_question():
+    history = [
+        message("EMPLOYEE", "The VPN issue started this morning. Only my laptop is affected. The connection timed out."),
+        message("AI", "Can you access the internet when you are not connected to the VPN?"),
+        message("EMPLOYEE", "Yes, I can access the internet without connecting to the VPN. I restarted the VPN client."),
+    ]
+
+    context = BasicAssistanceService.build_context(ticket(), None, history)
+
+    assert context.connectivity_without_vpn == "Yes, internet works without the VPN"
+    assert context.next_recommended_question == "When the VPN times out, does it happen immediately or after it connects for a while?"
+    assert context.next_recommended_question != "Can you access the internet when you are not connected to the VPN?"
+
+
 def test_new_information_changes_the_next_question_without_reasking_known_details():
     before = [message("EMPLOYEE", "The VPN issue started this morning.")]
     after = before + [message("EMPLOYEE", "Only my laptop is affected.")]
