@@ -9,6 +9,8 @@ from models import TicketPriority
 
 
 MODEL_VERSION = "category-v1+priority-v2"
+CATEGORY_MODEL_VERSION = "category-v1"
+PRIORITY_MODEL_VERSION = "priority-v2"
 EXPECTED_CATEGORIES = {"Network", "Security", "Software", "Other"}
 EXPECTED_PRIORITIES = {TicketPriority.LOW, TicketPriority.MEDIUM, TicketPriority.HIGH}
 
@@ -20,6 +22,10 @@ class TriageResult(BaseModel):
     classification_confidence: float = Field(ge=0.0, le=1.0)
     confidence: float = Field(ge=0.0, le=1.0)
     model_version: str
+    category_model_version: str
+    priority_model_version: str
+    category_probabilities: dict[str, float]
+    priority_probabilities: dict[str, float]
 
 
 class ConfidencePredictionMismatchError(ValueError):
@@ -52,7 +58,7 @@ class TriageService:
             ) from error
 
     @staticmethod
-    def _predict_with_confidence(model: Any, text: str) -> tuple[str, float]:
+    def _predict_with_confidence(model: Any, text: str) -> tuple[str, float, dict[str, float]]:
         predictions = model.predict([text])
         probability_rows = model.predict_proba([text])
         classes = list(model.classes_)
@@ -78,13 +84,16 @@ class TriageService:
             predicted_class_index = classes.index(prediction)
         except ValueError as error:
             raise ValueError("ML prediction is not present in the model classes") from error
-        return str(prediction), probabilities[predicted_class_index]
+        probability_map = {
+            str(label): probability for label, probability in zip(classes, probabilities)
+        }
+        return str(prediction), probabilities[predicted_class_index], probability_map
 
     def classification_confidence_for_category(
         self, title: str, description: str, expected_category: str
     ) -> float:
         text = f"{title or ''} {description or ''}".strip()
-        predicted_category, confidence = self._predict_with_confidence(
+        predicted_category, confidence, _ = self._predict_with_confidence(
             self.category_model, text
         )
         if predicted_category != expected_category:
@@ -100,10 +109,10 @@ class TriageService:
 
     def triage(self, title: str, description: str) -> TriageResult:
         text = f"{title or ''} {description or ''}".strip()
-        predicted_category, category_confidence = self._predict_with_confidence(
+        predicted_category, category_confidence, category_probabilities = self._predict_with_confidence(
             self.category_model, text
         )
-        predicted_priority, priority_confidence = self._predict_with_confidence(
+        predicted_priority, priority_confidence, priority_probabilities = self._predict_with_confidence(
             self.priority_model, text
         )
 
@@ -131,4 +140,8 @@ class TriageService:
             # The mean is deterministic and gives equal weight to both model signals.
             confidence=(category_confidence + priority_confidence) / 2,
             model_version=MODEL_VERSION,
+            category_model_version=CATEGORY_MODEL_VERSION,
+            priority_model_version=PRIORITY_MODEL_VERSION,
+            category_probabilities=category_probabilities,
+            priority_probabilities=priority_probabilities,
         )
