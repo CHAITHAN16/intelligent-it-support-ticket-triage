@@ -54,6 +54,12 @@ _SECRET_RE = re.compile(
     r"api[ _-]?key|access[ _-]?token|token)\b",
     re.IGNORECASE,
 )
+_SECRET_VALUE_RE = re.compile(
+    r"\b(password|passcode|one[ -]?time(?: password)?(?: code)?|otp|"
+    r"api[ _-]?key|access[ _-]?token|token)\b\s*(?:(?:is|was)\s+|[:=]\s*|\s+)"
+    r"[^\s,;]+",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -95,7 +101,7 @@ class BasicAssistanceService:
             if getattr(message, "speaker", None) == "EMPLOYEE"
         )
         source_text = " ".join(part for part in (ticket.title, ticket.description, employee_text) if part)
-        safe_text = _SECRET_RE.sub(" ", source_text)
+        safe_text = _SECRET_RE.sub(" ", _SECRET_VALUE_RE.sub("[REDACTED]", source_text))
         lowered = safe_text.lower()
         category = (ticket.ai_predicted_category or ticket.category or "").strip().lower()
         issue_summary = ticket.title.strip()
@@ -137,7 +143,7 @@ class BasicAssistanceService:
         for message in history:
             if getattr(message, "speaker", None) != "EMPLOYEE":
                 continue
-            body = str(getattr(message, "body", ""))
+            body = _SECRET_VALUE_RE.sub("[REDACTED]", str(getattr(message, "body", "")))
             for match in _STEP_RE.finditer(body):
                 step = match.group(1).strip(" ,;:")
                 if step and step not in steps:
@@ -163,7 +169,7 @@ class BasicAssistanceService:
             exact_error=exact_error,
             steps=steps,
         )
-        if category == "network" and affected_service == "VPN":
+        if affected_service == "VPN":
             missing.append("whether internet works without the VPN")
         return BasicAssistanceContext(
             issue_summary=issue_summary,
