@@ -341,7 +341,7 @@ export default function AgentTicketDetailPage() {
               <AgentAIEvidencePanel
                 currentCategory={ticket.category}
                 currentPriority={ticket.priority}
-                currentTeamName={ticket.assigned_team_name}
+                currentTeamName={ticket.assigned_team_name ?? null}
                 currentTeamId={ticket.assigned_team_id}
                 teams={teams}
                 assignments={assignmentHistory}

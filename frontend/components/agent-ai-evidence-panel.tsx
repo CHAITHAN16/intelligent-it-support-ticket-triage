@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
 import type {
   Team,
@@ -96,16 +96,7 @@ export function AgentAIEvidencePanel({
 }) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const latestEvidence = evidence[evidence.length - 1] ?? null;
-  useEffect(() => {
-    if (latestEvidence && (selectedId === null || !evidence.some((item) => item.id === selectedId))) {
-      setSelectedId(latestEvidence.id);
-    }
-  }, [evidence, latestEvidence, selectedId]);
-
-  const selectedEvidence = useMemo(
-    () => evidence.find((item) => item.id === selectedId) ?? latestEvidence,
-    [evidence, latestEvidence, selectedId],
-  );
+  const selectedEvidence = evidence.find((item) => item.id === selectedId) ?? latestEvidence;
   const selectedReviews = selectedEvidence
     ? reviews.filter((review) => review.prediction_evidence_id === selectedEvidence.id)
     : [];
