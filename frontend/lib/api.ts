@@ -135,8 +135,10 @@ export type AIResolutionMessage = {
 };
 
 export type AIResolutionResponse = {
+  mode: "BASIC" | "GUIDED";
   status: "NOT_STARTED" | "ACTIVE" | "ESCALATED" | "RESOLVED";
   eligible: boolean;
+  eligibility_reason: string | null;
   escalation_reason: string | null;
   classification_confidence: number | null;
   knowledge_match_confidence: number | null;
