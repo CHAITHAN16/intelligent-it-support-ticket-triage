@@ -58,7 +58,7 @@ export default function AgentDashboardPage() {
 
         <section className="space-y-3">
           <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end"><div><h2 className="text-lg font-semibold text-slate-950">Recent tickets</h2><p className="mt-1 text-sm text-slate-500">Latest tickets available to you, searchable by ID or subject.</p></div><Link href="/agent/tickets" className="text-sm font-medium text-sky-800 hover:underline">View all tickets <span aria-hidden="true">→</span></Link></div>
-          <AgentTicketTable tickets={recentTickets} source="all" limit={6} emptyTitle="No tickets yet" emptyDescription="Tickets available to your account will appear here." />
+          <AgentTicketTable tickets={recentTickets} source="overview" limit={6} emptyTitle="No tickets yet" emptyDescription="Tickets available to your account will appear here." />
         </section>
       </>}
     </div>

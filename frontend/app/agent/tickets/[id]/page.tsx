@@ -30,7 +30,7 @@ function differsFromPrediction(currentValue: string | null, prediction: string |
 export default function AgentTicketDetailPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get("from") === "all" ? "/agent/tickets" : "/agent";
+  const returnTo = searchParams.get("from") === "all" ? "/agent/tickets" : searchParams.get("from") === "overview" ? "/agent" : "/agent/team-queue";
   const ticketId = Number(params.id);
   const [ticket, setTicket] = useState<TicketResponse | null>(null);
   const [category, setCategory] = useState("");
@@ -201,7 +201,7 @@ export default function AgentTicketDetailPage() {
 
   return <AgentShell selectedTeamName={ticket?.assigned_team_name ?? "General IT Support"}>
     <div className="mx-auto max-w-5xl">
-      <Link href={returnTo} className="text-sm font-semibold text-sky-700 hover:text-sky-900">&larr; Back to {returnTo === "/agent/tickets" ? "all tickets" : "team queue"}</Link>
+      <Link href={returnTo} className="text-sm font-semibold text-sky-700 hover:text-sky-900">&larr; Back to {returnTo === "/agent/tickets" ? "all tickets" : returnTo === "/agent" ? "overview" : "team queue"}</Link>
       {isLoading ? <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">Loading ticket...</div> : error && !ticket ? <div role="alert" className="mt-8 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div> : ticket ? <div className="mt-6 space-y-6">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start"><div><p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Ticket #{ticket.id}</p><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] text-slate-950">{ticket.title}</h1></div><span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">{ticket.status.replaceAll("_", " ")}</span></div>
         {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div>}

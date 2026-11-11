@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 
 import type { TicketPriority, TicketResponse, TicketStatus } from "@/lib/api";
 
-type TicketSource = "team" | "all";
+type TicketSource = "overview" | "team" | "all";
 type AssignmentFilter = "ALL" | "ASSIGNED" | "UNASSIGNED";
 
 const STATUSES: TicketStatus[] = ["NEW", "ASSIGNED", "IN_PROGRESS", "WAITING_FOR_USER", "RESOLVED", "CLOSED"];
