@@ -36,6 +36,7 @@ function Badge({ children, className }: { children: React.ReactNode; className: 
 export function AgentTicketTable({
   tickets,
   source = "team",
+  teamId,
   limit,
   showFilters = true,
   emptyTitle = "No tickets found",
@@ -43,6 +44,7 @@ export function AgentTicketTable({
 }: {
   tickets: TicketResponse[];
   source?: TicketSource;
+  teamId?: number | null;
   limit?: number;
   showFilters?: boolean;
   emptyTitle?: string;
@@ -68,6 +70,7 @@ export function AgentTicketTable({
     });
   }, [tickets, query, status, priority, category, assignment]);
   const visibleTickets = limit === undefined ? filteredTickets : filteredTickets.slice(0, limit);
+  const ticketHref = (ticketId: number) => `/agent/tickets/${ticketId}?from=${source}${source === "team" && teamId ? `&teamId=${teamId}` : ""}`;
 
   return <section aria-label="Ticket list" className="overflow-hidden rounded-lg border border-slate-200 bg-white">
     {showFilters && <div className="flex flex-col gap-3 border-b border-slate-200 p-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -85,7 +88,7 @@ export function AgentTicketTable({
           <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500"><tr>{["ID", "Ticket", "Category", "Priority", "Status", "Assigned team / agent", "Created"].map((label) => <th key={label} scope="col" className="px-4 py-3">{label}</th>)}</tr></thead>
           <tbody className="divide-y divide-slate-100">{visibleTickets.map((ticket) => <tr key={ticket.id} className="hover:bg-slate-50">
             <td className="whitespace-nowrap px-4 py-3 text-xs font-medium text-slate-500">#{ticket.id}</td>
-            <td className="max-w-[300px] px-4 py-3"><Link href={`/agent/tickets/${ticket.id}?from=${source}`} className="block truncate font-medium text-sky-800 hover:underline focus-visible:outline-2 focus-visible:outline-sky-600">{ticket.title}</Link></td>
+            <td className="max-w-[300px] px-4 py-3"><Link href={ticketHref(ticket.id)} className="block truncate font-medium text-sky-800 hover:underline focus-visible:outline-2 focus-visible:outline-sky-600">{ticket.title}</Link></td>
             <td className="px-4 py-3 text-slate-600">{ticket.category ?? "Uncategorized"}</td>
             <td className="px-4 py-3"><Badge className={priorityClass(ticket.priority)}>{ticket.priority}</Badge></td>
             <td className="px-4 py-3"><Badge className={statusClass(ticket.status)}>{ticket.status.replaceAll("_", " ")}</Badge></td>
@@ -94,7 +97,7 @@ export function AgentTicketTable({
           </tr>)}</tbody>
         </table>
       </div>
-      <div className="divide-y divide-slate-100 md:hidden">{visibleTickets.map((ticket) => <Link key={ticket.id} href={`/agent/tickets/${ticket.id}?from=${source}`} className="block px-4 py-4 hover:bg-slate-50 focus-visible:bg-sky-50 focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-sky-600">
+      <div className="divide-y divide-slate-100 md:hidden">{visibleTickets.map((ticket) => <Link key={ticket.id} href={ticketHref(ticket.id)} className="block px-4 py-4 hover:bg-slate-50 focus-visible:bg-sky-50 focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-sky-600">
         <div className="flex items-start justify-between gap-3"><span className="min-w-0"><span className="block text-xs font-medium text-slate-500">Ticket #{ticket.id}</span><span className="mt-1 block text-sm font-semibold text-slate-950">{ticket.title}</span></span><Badge className={priorityClass(ticket.priority)}>{ticket.priority}</Badge></div>
         <div className="mt-3 flex flex-wrap items-center gap-2"><Badge className={statusClass(ticket.status)}>{ticket.status.replaceAll("_", " ")}</Badge><span className="text-xs text-slate-600">{ticket.category ?? "Uncategorized"}</span><span className="text-xs text-slate-500">{ticket.assigned_team_name ?? "Unassigned team"}</span></div>
         <time dateTime={ticket.created_at} className="mt-2 block text-xs text-slate-500">{dateLabel(ticket.created_at)}</time>
