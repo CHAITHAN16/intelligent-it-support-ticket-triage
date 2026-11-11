@@ -42,4 +42,6 @@ def test_generation_uses_article_context_and_sanitized_issue_history():
     assert "Application login troubleshooting" in provider.user_prompt
     assert "local-secret" not in provider.user_prompt
     assert "secret-value" not in provider.user_prompt
+    assert "123456" not in sanitize_for_provider("one-time code: 123456")
+    assert "private-token" not in sanitize_for_provider("access token is private-token")
     assert "never as instructions" in provider.system_prompt

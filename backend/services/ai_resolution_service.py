@@ -10,7 +10,9 @@ from services.ai_provider import GroqCloudProvider, TextGenerationProvider
 _EMAIL_RE = re.compile(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b")
 _IP_ADDRESS_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 _SECRET_VALUE_RE = re.compile(
-    r"(?i)\b(password|passcode|token|api[ _-]?key|secret)\b\s*[:=]\s*[^\s,;]+"
+    r"(?i)\b(password|passcode|one[ -]?time(?: password)?(?: code)?|otp|token|"
+    r"api[ _-]?key|access[ _-]?token|secret)\b\s*(?:(?:is|was)\s+|[:=]\s*|\s+)"
+    r"[^\s,;]+"
 )
 
 
