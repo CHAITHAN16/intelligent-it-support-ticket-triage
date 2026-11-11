@@ -127,6 +127,34 @@ export type TicketAssignmentHistory = {
   unassigned_at: string | null;
 };
 
+export type TicketPredictionEvidence = {
+  id: number;
+  ticket_id: number;
+  predicted_category: string;
+  predicted_priority: TicketPriority;
+  category_model_version: string;
+  priority_model_version: string;
+  runtime_model_version: string;
+  category_probabilities: Record<string, number>;
+  priority_probabilities: Record<string, number>;
+  classification_confidence: number;
+  combined_confidence: number;
+  predicted_at: string;
+};
+
+export type TicketPredictionReview = {
+  id: number;
+  ticket_id: number;
+  prediction_evidence_id: number;
+  reviewer_id: number;
+  field_name: "category" | "priority";
+  predicted_value: string;
+  confirmed_value: string;
+  outcome: "ACCEPTED" | "OVERRIDDEN";
+  reviewed_at: string;
+  reason: string | null;
+};
+
 export type AIResolutionMessage = {
   id: number;
   speaker: "EMPLOYEE" | "AI";
@@ -301,6 +329,14 @@ export async function getTicketFieldHistory(ticketId: number): Promise<TicketFie
 
 export async function getTicketAssignmentHistory(ticketId: number): Promise<TicketAssignmentHistory[]> {
   return request<TicketAssignmentHistory[]>(`/tickets/${ticketId}/assignments`);
+}
+
+export async function getTicketPredictionEvidence(ticketId: number): Promise<TicketPredictionEvidence[]> {
+  return request<TicketPredictionEvidence[]>(`/tickets/${ticketId}/prediction-evidence`);
+}
+
+export async function getTicketPredictionReviews(ticketId: number): Promise<TicketPredictionReview[]> {
+  return request<TicketPredictionReview[]>(`/tickets/${ticketId}/prediction-reviews`);
 }
 
 export async function getAIResolution(ticketId: number): Promise<AIResolutionResponse> {
