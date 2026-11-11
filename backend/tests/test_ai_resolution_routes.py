@@ -116,6 +116,7 @@ def test_start_persists_assistant_reply_without_resolving_ticket(
 
     assert response.status_code == 200
     assert response.json()["status"] == "ACTIVE"
+    assert response.json()["mode"] == "GUIDED"
     assert response.json()["messages"][0]["speaker"] == "AI"
     ticket = resolution_session.get(Ticket, 1)
     assert ticket.status == TicketStatus.NEW
@@ -130,7 +131,7 @@ def test_start_persists_assistant_reply_without_resolving_ticket(
         ({"ai_predicted_category": "Security", "category": "Security"}, "SECURITY_SENSITIVE"),
     ],
 )
-def test_ineligible_ticket_escalates_without_calling_provider(
+def test_ineligible_ticket_starts_provider_free_basic_assistance(
     resolution_client, resolution_session, monkeypatch, ticket_updates, expected_reason
 ):
     ticket = resolution_session.get(Ticket, 1)
@@ -145,10 +146,58 @@ def test_ineligible_ticket_escalates_without_calling_provider(
     response = resolution_client.post("/api/tickets/1/ai-resolution/start")
 
     assert response.status_code == 200
-    assert response.json()["status"] == "ESCALATED"
-    assert response.json()["escalation_reason"] == expected_reason
-    assert response.json()["messages"] == []
+    assert response.json()["status"] == "ACTIVE"
+    assert response.json()["mode"] == "BASIC"
+    assert response.json()["eligibility_reason"] == expected_reason
+    assert "Current status: NEW" in response.json()["messages"][0]["body"]
+    assert "Predicted category:" in response.json()["messages"][0]["body"]
     assert resolution_session.get(Ticket, 1).status == TicketStatus.NEW
+
+
+def test_basic_assistance_is_available_before_triage_and_never_calls_provider(
+    resolution_client, resolution_session, monkeypatch
+):
+    ticket = resolution_session.get(Ticket, 1)
+    ticket.ai_triaged_at = None
+    ticket.ai_classification_confidence = None
+    ticket.ai_predicted_category = None
+    ticket.ai_predicted_priority = None
+    ticket.solution_status = None
+    ticket.knowledge_article_id = None
+    resolution_session.commit()
+    monkeypatch.setattr(
+        "routers.ai_resolution.AIResolutionService",
+        lambda: pytest.fail("basic assistance must not create a provider"),
+    )
+
+    response = resolution_client.post("/api/tickets/1/ai-resolution/start")
+
+    assert response.status_code == 200
+    assert response.json()["mode"] == "BASIC"
+    assert "not available yet" in response.json()["messages"][0]["body"]
+
+
+def test_basic_follow_up_persists_messages_without_provider(
+    resolution_client, resolution_session, monkeypatch
+):
+    ticket = resolution_session.get(Ticket, 1)
+    ticket.ai_classification_confidence = 0.20
+    resolution_session.commit()
+    monkeypatch.setattr(
+        "routers.ai_resolution.AIResolutionService",
+        lambda: pytest.fail("basic assistance must not create a provider"),
+    )
+    resolution_client.post("/api/tickets/1/ai-resolution/start")
+
+    response = resolution_client.post(
+        "/api/tickets/1/ai-resolution/messages",
+        json={"body": "The application closed after sign-in."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["mode"] == "BASIC"
+    assert [message["speaker"] for message in response.json()["messages"]] == ["AI", "EMPLOYEE", "AI"]
+    assert resolution_session.query(AIResolutionMessage).count() == 3
 
 
 def test_employee_reply_is_persisted_and_sent_for_follow_up(
@@ -183,6 +232,21 @@ def test_provider_failure_escalates_and_preserves_unresolved_ticket(
     response = resolution_client.post("/api/tickets/1/ai-resolution/start")
 
     assert response.status_code == 200
+    assert response.json()["status"] == "ESCALATED"
+    assert response.json()["escalation_reason"] == "AI_PROVIDER_UNAVAILABLE"
+    assert resolution_session.get(Ticket, 1).status == TicketStatus.NEW
+
+
+def test_provider_disabled_escalates_without_external_call(
+    resolution_client, resolution_session, monkeypatch
+):
+    monkeypatch.setenv("GROQ_DATA_PROCESSING_APPROVED", "false")
+    monkeypatch.setenv("GROQ_API_KEY", "test-only-not-a-real-key")
+
+    response = resolution_client.post("/api/tickets/1/ai-resolution/start")
+
+    assert response.status_code == 200
+    assert response.json()["mode"] == "GUIDED"
     assert response.json()["status"] == "ESCALATED"
     assert response.json()["escalation_reason"] == "AI_PROVIDER_UNAVAILABLE"
     assert resolution_session.get(Ticket, 1).status == TicketStatus.NEW
@@ -235,9 +299,63 @@ def test_confirmation_is_rejected_without_prior_ai_guidance(resolution_client, r
     assert resolution_session.get(Ticket, 1).status == TicketStatus.NEW
 
 
+def test_basic_conversation_cannot_resolve_ticket(resolution_client, resolution_session):
+    resolution_session.get(Ticket, 1).ai_classification_confidence = 0.1
+    resolution_session.commit()
+    resolution_client.post("/api/tickets/1/ai-resolution/start")
+
+    response = resolution_client.post(
+        "/api/tickets/1/ai-resolution/confirm",
+        json={"confirmed": True},
+    )
+
+    assert response.status_code == 409
+    assert resolution_session.get(Ticket, 1).status == TicketStatus.NEW
+
+
 def test_another_employee_cannot_use_ticket_resolution(resolution_client, resolution_session):
     app.dependency_overrides[get_current_user] = lambda: resolution_session.get(User, 2)
 
     response = resolution_client.post("/api/tickets/1/ai-resolution/start")
 
     assert response.status_code == 403
+
+
+@pytest.mark.parametrize(
+    "method,path,json_body",
+    [
+        ("get", "/api/tickets/1/ai-resolution", None),
+        ("post", "/api/tickets/1/ai-resolution/start", None),
+        ("post", "/api/tickets/1/ai-resolution/messages", {"body": "Update"}),
+        ("post", "/api/tickets/1/ai-resolution/escalate", None),
+    ],
+)
+def test_every_conversation_endpoint_requires_ticket_ownership(
+    resolution_client, resolution_session, method, path, json_body
+):
+    app.dependency_overrides[get_current_user] = lambda: resolution_session.get(User, 2)
+
+    response = getattr(resolution_client, method)(path, json=json_body)
+
+    assert response.status_code == 403
+
+
+@pytest.mark.parametrize("action", ["start", "messages"])
+def test_resolved_ticket_rejects_troubleshooting_actions(resolution_client, resolution_session, action):
+    ticket = resolution_session.get(Ticket, 1)
+    ticket.status = TicketStatus.RESOLVED
+    resolution_session.commit()
+    if action == "start":
+        response = resolution_client.post("/api/tickets/1/ai-resolution/start")
+    else:
+        # Create an active conversation first, then resolve the ticket.
+        conversation = AIResolutionConversation(ticket_id=1, status="ACTIVE")
+        resolution_session.add(conversation)
+        resolution_session.commit()
+        response = resolution_client.post(
+            "/api/tickets/1/ai-resolution/messages",
+            json={"body": "I still need help"},
+        )
+
+    assert response.status_code == 409
+    assert "already resolved" in response.json()["detail"]
