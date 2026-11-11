@@ -30,7 +30,7 @@ export function AgentTicketTable({ tickets }: { tickets: TicketResponse[] }) {
       </div>
       <div className="divide-y divide-slate-100">
         {tickets.map((ticket) => (
-          <Link key={ticket.id} href={`/agent/tickets/${ticket.id}`} className="block px-5 py-5 transition hover:bg-sky-50/50 focus-visible:bg-sky-50 focus-visible:outline-none">
+          <Link key={ticket.id} href={`/agent/tickets/${ticket.id}?from=team`} className="block px-5 py-5 transition hover:bg-sky-50/50 focus-visible:bg-sky-50 focus-visible:outline-none">
             <div className="grid gap-4 lg:grid-cols-[0.45fr_2fr_0.8fr_0.75fr_0.9fr_0.75fr_1.1fr] lg:items-center lg:gap-4">
               <span className="text-xs font-semibold text-slate-500">#{ticket.id}</span>
               <span className="min-w-0"><span className="block truncate text-sm font-semibold text-slate-900">{ticket.title}</span><span className="mt-1 block truncate text-xs text-slate-500">{ticket.assigned_team_name ?? "Unassigned"}</span></span>

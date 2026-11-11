@@ -31,6 +31,7 @@ export default function AgentTicketsPage() {
   const [assignment, setAssignment] = useState<AssignmentFilter>("ALL");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,7 +42,7 @@ export default function AgentTicketsPage() {
       })
       .finally(() => { if (!cancelled) setIsLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [retryCount]);
 
   const filteredTickets = useMemo(() => tickets.filter((ticket) => {
     if (status !== "ALL" && ticket.status !== status) return false;
@@ -61,8 +62,7 @@ export default function AgentTicketsPage() {
           <p className="mt-2 text-sm text-slate-600">Tickets assigned to you or teams you belong to.</p>
         </div>
 
-        {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div>}
-
+        {!isLoading && error ? <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-800"><p>{error}</p><button type="button" onClick={() => { setIsLoading(true); setError(null); setRetryCount((count) => count + 1); }} className="mt-3 rounded-full bg-rose-800 px-4 py-2 font-semibold text-white hover:bg-rose-900">Retry loading tickets</button></div> : <>
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex flex-wrap gap-3">
             <select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value as "ALL" | TicketStatus)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
@@ -80,7 +80,7 @@ export default function AgentTicketsPage() {
           </div>
         </section>
 
-        {isLoading ? <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">Loading tickets...</div> : filteredTickets.length === 0 ? (
+        {isLoading ? <div role="status" className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">Loading tickets...</div> : filteredTickets.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center"><p className="font-semibold text-slate-800">No tickets match these filters</p><p className="mt-1 text-sm text-slate-500">Try changing one or more filters.</p></div>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -107,6 +107,7 @@ export default function AgentTicketsPage() {
           </div>
         )}
         {!isLoading && <p className="text-xs text-slate-500">Showing {filteredTickets.length} of {tickets.length} tickets available to you.</p>}
+        </>}
       </div>
     </AgentShell>
   );
