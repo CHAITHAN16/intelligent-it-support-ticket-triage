@@ -93,7 +93,7 @@ def _response(
     conversation: AIResolutionConversation | None,
     db: Session,
 ) -> AIResolutionResponse:
-    _, decision = _article_and_decision(ticket, db)
+    article, decision = _article_and_decision(ticket, db)
     messages = []
     if conversation is not None:
         messages = db.scalars(
@@ -101,6 +101,11 @@ def _response(
             .where(AIResolutionMessage.conversation_id == conversation.id)
             .order_by(AIResolutionMessage.created_at.asc(), AIResolutionMessage.id.asc())
         ).all()
+    basic_context = (
+        BasicAssistanceService.build_context(ticket, article, messages).as_dict()
+        if not decision.eligible
+        else None
+    )
     return AIResolutionResponse(
         mode="GUIDED" if decision.eligible else "BASIC",
         status=conversation.status if conversation is not None else "NOT_STARTED",
@@ -115,6 +120,7 @@ def _response(
         knowledge_match_confidence=decision.knowledge_match_confidence,
         assigned_team_name=ticket.assigned_team_name,
         messages=messages,
+        basic_context=basic_context,
     )
 
 
@@ -149,11 +155,16 @@ def _start_basic_assistance(
         )
     )
     if existing_ai_message is None:
+        history = db.scalars(
+            select(AIResolutionMessage)
+            .where(AIResolutionMessage.conversation_id == conversation.id)
+            .order_by(AIResolutionMessage.created_at.asc(), AIResolutionMessage.id.asc())
+        ).all()
         db.add(
             AIResolutionMessage(
                 conversation_id=conversation.id,
                 speaker="AI",
-                body=BasicAssistanceService.reply(ticket, article),
+                body=BasicAssistanceService.reply(ticket, article, history),
             )
         )
         conversation.status = "ACTIVE"
@@ -268,11 +279,16 @@ def add_ai_resolution_message(
     db.add(AIResolutionMessage(conversation_id=conversation.id, speaker="EMPLOYEE", author_id=current_user.id, body=payload.body))
     conversation.updated_at = datetime.now(timezone.utc)
     if not decision.eligible:
+        history = db.scalars(
+            select(AIResolutionMessage)
+            .where(AIResolutionMessage.conversation_id == conversation.id)
+            .order_by(AIResolutionMessage.created_at.asc(), AIResolutionMessage.id.asc())
+        ).all()
         db.add(
             AIResolutionMessage(
                 conversation_id=conversation.id,
                 speaker="AI",
-                body=BasicAssistanceService.reply(ticket, article, employee_message=payload.body),
+                body=BasicAssistanceService.reply(ticket, article, history),
             )
         )
         db.commit()

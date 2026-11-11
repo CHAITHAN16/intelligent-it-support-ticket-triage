@@ -29,6 +29,17 @@ class AIResolutionMessageResponse(BaseModel):
     created_at: datetime
 
 
+class AIResolutionContextResponse(BaseModel):
+    issue_summary: str
+    start_time: str | None
+    affected_devices_users: str | None
+    affected_service: str | None
+    exact_error: str | None
+    known_troubleshooting_steps: list[str]
+    missing_information: list[str]
+    next_recommended_question: str
+
+
 class AIResolutionResponse(BaseModel):
     mode: Literal["BASIC", "GUIDED"]
     status: str
@@ -39,3 +50,4 @@ class AIResolutionResponse(BaseModel):
     knowledge_match_confidence: float | None
     assigned_team_name: str | None
     messages: list[AIResolutionMessageResponse]
+    basic_context: AIResolutionContextResponse | None = None
