@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from database import SessionLocal
-from models import AssignmentSource, Base, KnowledgeBaseArticle, Team, Ticket, TicketAssignment, TicketPriority, TicketStatus, User, UserRole
-from services.triage_service import MODEL_VERSION, TriageResult
+from models import AssignmentSource, Base, KnowledgeBaseArticle, Team, Ticket, TicketAssignment, TicketPredictionEvidence, TicketPriority, TicketStatus, User, UserRole
+from services.triage_service import CATEGORY_MODEL_VERSION, MODEL_VERSION, PRIORITY_MODEL_VERSION, TriageResult
 from tasks import ticket_tasks
 
 
@@ -32,11 +32,11 @@ def task_database(monkeypatch):
     Base.metadata.create_all(engine)
     session_factory = sessionmaker(bind=engine)
     session = session_factory()
-    next_ids = {Team: 1, TicketAssignment: 1, KnowledgeBaseArticle: 1}
+    next_ids = {Team: 1, TicketAssignment: 1, KnowledgeBaseArticle: 1, TicketPredictionEvidence: 1}
 
     def assign_sqlite_ids(db_session, flush_context, instances):
         for value in db_session.new:
-            if isinstance(value, (Team, TicketAssignment, KnowledgeBaseArticle)) and value.id is None:
+            if isinstance(value, (Team, TicketAssignment, KnowledgeBaseArticle, TicketPredictionEvidence)) and value.id is None:
                 value.id = next_ids[type(value)]
                 next_ids[type(value)] += 1
 
@@ -73,6 +73,10 @@ def fake_triage_result():
         classification_confidence=0.84,
         confidence=0.91,
         model_version=MODEL_VERSION,
+        category_model_version=CATEGORY_MODEL_VERSION,
+        priority_model_version=PRIORITY_MODEL_VERSION,
+        category_probabilities={"Network": 0.84, "Other": 0.04, "Security": 0.07, "Software": 0.05},
+        priority_probabilities={"LOW": 0.03, "MEDIUM": 0.12, "HIGH": 0.85},
     )
 
 
@@ -83,6 +87,7 @@ def test_process_ticket_success(task_database, monkeypatch):
     task_database.expire_all()
     ticket = task_database.get(Ticket, 1)
     assignment = task_database.query(TicketAssignment).one()
+    evidence = task_database.query(TicketPredictionEvidence).one()
 
     assert result == {"status": "processed", "ticket_id": 1}
     assert ticket.ai_predicted_category == "Network"
@@ -96,6 +101,17 @@ def test_process_ticket_success(task_database, monkeypatch):
     assert ticket.ai_triaged_at is not None
     assert ticket.assigned_team_id == assignment.team_id
     assert assignment.source == AssignmentSource.AI
+    assert evidence.ticket_id == 1
+    assert evidence.predicted_category == "Network"
+    assert evidence.predicted_priority == TicketPriority.HIGH
+    assert evidence.category_model_version == CATEGORY_MODEL_VERSION
+    assert evidence.priority_model_version == PRIORITY_MODEL_VERSION
+    assert evidence.runtime_model_version == MODEL_VERSION
+    assert evidence.category_probabilities == {"Network": 0.84, "Other": 0.04, "Security": 0.07, "Software": 0.05}
+    assert evidence.priority_probabilities == {"LOW": 0.03, "MEDIUM": 0.12, "HIGH": 0.85}
+    assert float(evidence.classification_confidence) == pytest.approx(0.84)
+    assert float(evidence.combined_confidence) == pytest.approx(0.91)
+    assert evidence.predicted_at == ticket.ai_triaged_at
 
 
 def test_process_ticket_missing_ticket(task_database):
@@ -186,6 +202,46 @@ def test_process_ticket_is_idempotent(task_database, monkeypatch):
     assert ticket_tasks.process_ticket.run(1) == {"status": "already_processed", "ticket_id": 1}
     assert triage_calls == 1
     assert task_database.query(TicketAssignment).count() == 1
+    assert task_database.query(TicketPredictionEvidence).count() == 1
+
+
+def test_process_ticket_appends_new_evidence_without_overwriting_previous(
+    task_database, monkeypatch
+):
+    original = fake_triage_result()
+    monkeypatch.setattr(ticket_tasks.TriageService, "triage", lambda self, title, description: original)
+    assert ticket_tasks.process_ticket.run(1)["status"] == "processed"
+    task_database.expire_all()
+    first = task_database.query(TicketPredictionEvidence).one()
+    first_id = first.id
+    first_probabilities = dict(first.category_probabilities)
+
+    ticket = task_database.get(Ticket, 1)
+    ticket.solution_status = None
+    task_database.commit()
+    second = TriageResult(
+        category="Security",
+        subcategory=None,
+        priority=TicketPriority.MEDIUM,
+        classification_confidence=0.72,
+        confidence=0.68,
+        model_version=MODEL_VERSION,
+        category_model_version=CATEGORY_MODEL_VERSION,
+        priority_model_version=PRIORITY_MODEL_VERSION,
+        category_probabilities={"Network": 0.10, "Other": 0.08, "Security": 0.72, "Software": 0.10},
+        priority_probabilities={"LOW": 0.10, "MEDIUM": 0.68, "HIGH": 0.22},
+    )
+    monkeypatch.setattr(ticket_tasks.TriageService, "triage", lambda self, title, description: second)
+
+    assert ticket_tasks.process_ticket.run(1)["status"] == "processed"
+    task_database.expire_all()
+    evidence = task_database.query(TicketPredictionEvidence).order_by(TicketPredictionEvidence.id).all()
+    assert len(evidence) == 2
+    assert evidence[0].id == first_id
+    assert evidence[0].predicted_category == "Network"
+    assert evidence[0].category_probabilities == first_probabilities
+    assert evidence[1].predicted_category == "Security"
+    assert evidence[1].category_probabilities == second.category_probabilities
 
 
 def test_process_ticket_persists_subcategory(task_database, monkeypatch):
