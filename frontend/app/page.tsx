@@ -1,8 +1,14 @@
+"use client";
+
 import Link from "next/link";
 
 import { SiteHeader } from "@/components/site-header";
+import { useAuth } from "@/lib/auth";
 
 export default function Home() {
+  const { user, isLoading } = useAuth();
+  const destination = user?.role === "EMPLOYEE" ? "/tickets/new" : user?.role === "AGENT" ? "/agent" : !user ? "/login" : null;
+  const actionLabel = user?.role === "EMPLOYEE" ? "Submit a ticket" : user?.role === "AGENT" ? "Open agent dashboard" : !user ? "Sign in to continue" : null;
   return (
     <div className="min-h-screen bg-[#f6f8fb] text-slate-950">
       <SiteHeader />
@@ -11,7 +17,7 @@ export default function Home() {
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-600">A clearer path to support</p>
           <h1 className="mt-5 max-w-3xl text-5xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-6xl">Tell us what is getting in your way.</h1>
           <p className="mt-6 max-w-xl text-lg leading-8 text-slate-600">Submit an IT support request and our triage service will identify the right category, priority, and support team.</p>
-          <Link href="/tickets/new" className="mt-9 inline-flex items-center rounded-full bg-sky-500 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500">Submit a ticket <span className="ml-3 text-lg" aria-hidden="true">&rarr;</span></Link>
+          {isLoading ? <p role="status" className="mt-9 text-sm text-slate-500">Checking your account...</p> : destination && actionLabel ? <Link href={destination} className="mt-9 inline-flex items-center rounded-full bg-sky-500 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500">{actionLabel} <span className="ml-3 text-lg" aria-hidden="true">&rarr;</span></Link> : <p className="mt-9 text-sm text-slate-600">Your account does not have access to this employee or agent workspace.</p>}
         </section>
         <aside className="relative overflow-hidden rounded-[2rem] bg-slate-950 p-7 text-white shadow-2xl shadow-slate-900/15 sm:p-9">
           <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-sky-400/20 blur-2xl" aria-hidden="true" />
