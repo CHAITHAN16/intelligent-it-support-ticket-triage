@@ -8,7 +8,7 @@ from sqlalchemy.exc import OperationalError
 
 from celery_app import celery_app
 from database import SessionLocal
-from models import AssignmentSource, Ticket, TicketAssignment
+from models import AssignmentSource, Ticket, TicketAssignment, TicketPredictionEvidence
 from services.routing_service import RoutingService
 from services.triage_service import (
     MODEL_VERSION,
@@ -141,6 +141,21 @@ def process_ticket(ticket_id: int) -> dict[str, int | str]:
             created_at = created_at.replace(tzinfo=timezone.utc)
         ticket.ai_triaged_at = max(datetime.now(timezone.utc), created_at)
         ticket.updated_at = datetime.now(timezone.utc)
+        db.add(
+            TicketPredictionEvidence(
+                ticket_id=ticket.id,
+                predicted_category=triage_result.category,
+                predicted_priority=triage_result.priority,
+                category_model_version=triage_result.category_model_version,
+                priority_model_version=triage_result.priority_model_version,
+                runtime_model_version=triage_result.model_version,
+                category_probabilities=triage_result.category_probabilities,
+                priority_probabilities=triage_result.priority_probabilities,
+                classification_confidence=triage_result.classification_confidence,
+                combined_confidence=triage_result.confidence,
+                predicted_at=ticket.ai_triaged_at,
+            )
+        )
 
         if existing_assignment is None:
             RoutingService().route_and_assign(db, ticket, triage_result)
