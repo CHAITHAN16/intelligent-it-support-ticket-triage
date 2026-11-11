@@ -240,17 +240,16 @@ export default function EmployeeTicketDetailPage() {
                 </section>
               )}
 
-              {triageComplete && ticket.status !== "RESOLVED" && ticket.status !== "CLOSED" && (
-                <AIResolutionPanel
-                  ticketId={ticket.id}
-                  onResolved={async () => {
-                    const updatedTicket = await getTicket(ticket.id);
-                    setTicket(updatedTicket);
-                    const updatedHistory = await getTicketHistory(ticket.id);
-                    setHistory(updatedHistory);
-                  }}
-                />
-              )}
+              <AIResolutionPanel
+                ticket={ticket}
+                resolutionSummary={[...history].reverse().find((entry) => entry.new_status === "RESOLVED" && entry.note)?.note}
+                onResolved={async () => {
+                  const updatedTicket = await getTicket(ticket.id);
+                  setTicket(updatedTicket);
+                  const updatedHistory = await getTicketHistory(ticket.id);
+                  setHistory(updatedHistory);
+                }}
+              />
 
               <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Comments</p>
