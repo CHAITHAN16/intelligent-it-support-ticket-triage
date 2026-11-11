@@ -200,6 +200,24 @@ def test_basic_follow_up_persists_messages_without_provider(
     assert resolution_session.query(AIResolutionMessage).count() == 3
 
 
+def test_basic_assistance_can_be_escalated_to_assigned_team(
+    resolution_client, resolution_session, monkeypatch
+):
+    resolution_session.get(Ticket, 1).ai_classification_confidence = 0.1
+    resolution_session.commit()
+    monkeypatch.setattr(
+        "routers.ai_resolution.AIResolutionService",
+        lambda: pytest.fail("basic assistance must not create a provider"),
+    )
+    resolution_client.post("/api/tickets/1/ai-resolution/start")
+
+    response = resolution_client.post("/api/tickets/1/ai-resolution/escalate")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "ESCALATED"
+    assert response.json()["escalation_reason"] == "EMPLOYEE_REQUESTED_HUMAN_SUPPORT"
+
+
 def test_employee_reply_is_persisted_and_sent_for_follow_up(
     resolution_client, resolution_session, monkeypatch
 ):
