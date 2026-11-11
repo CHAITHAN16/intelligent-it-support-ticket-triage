@@ -222,9 +222,7 @@ class TicketPredictionReview(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
-    prediction_evidence_id: Mapped[int] = mapped_column(
-        ForeignKey("ticket_prediction_evidence.id", ondelete="CASCADE"), nullable=False
-    )
+    prediction_evidence_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     reviewer_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     field_name: Mapped[str] = mapped_column(String(20), nullable=False)
     predicted_value: Mapped[str] = mapped_column(String(100), nullable=False)
