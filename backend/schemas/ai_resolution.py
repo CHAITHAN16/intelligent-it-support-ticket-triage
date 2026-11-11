@@ -36,6 +36,7 @@ class AIResolutionContextResponse(BaseModel):
     affected_service: str | None
     exact_error: str | None
     known_troubleshooting_steps: list[str]
+    connectivity_without_vpn: str | None
     missing_information: list[str]
     next_recommended_question: str
 

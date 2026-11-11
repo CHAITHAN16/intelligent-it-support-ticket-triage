@@ -70,6 +70,7 @@ class BasicAssistanceContext:
     affected_service: str | None
     exact_error: str | None
     known_troubleshooting_steps: list[str]
+    connectivity_without_vpn: str | None
     missing_information: list[str]
     next_recommended_question: str
 
@@ -81,6 +82,7 @@ class BasicAssistanceContext:
             "affected_service": self.affected_service,
             "exact_error": self.exact_error,
             "known_troubleshooting_steps": self.known_troubleshooting_steps,
+            "connectivity_without_vpn": self.connectivity_without_vpn,
             "missing_information": self.missing_information,
             "next_recommended_question": self.next_recommended_question,
         }
@@ -149,6 +151,31 @@ class BasicAssistanceService:
                 if step and step not in steps:
                     steps.append(step)
 
+        employee_lower = employee_text.lower()
+        if not steps and re.search(
+            r"\b(?:haven't|have not|did not|didn't|not)\s+(?:tried|tested|changed)|\bnothing\s+(?:tried|tested)\b",
+            employee_lower,
+        ):
+            steps.append("No troubleshooting steps have been tried yet")
+
+        connectivity_without_vpn = None
+        if re.search(
+            r"\b(?:can't|cannot|unable to|no)\b.{0,50}\binternet\b.{0,60}\bwithout\b.{0,20}\bvpn\b",
+            employee_lower,
+        ) or re.search(
+            r"\binternet\b.{0,40}\b(?:doesn't work|does not work|is unavailable)\b.{0,40}\bwithout\b.{0,20}\bvpn\b",
+            employee_lower,
+        ):
+            connectivity_without_vpn = "No, internet is unavailable without the VPN"
+        elif re.search(
+            r"\b(?:can|able to)\b.{0,50}\b(?:access|use|browse)\b.{0,30}\binternet\b.{0,60}\bwithout\b.{0,20}\bvpn\b",
+            employee_lower,
+        ) or re.search(
+            r"\binternet\b.{0,40}\bworks\b.{0,40}\bwithout\b.{0,20}\bvpn\b",
+            employee_lower,
+        ):
+            connectivity_without_vpn = "Yes, internet works without the VPN"
+
         missing: list[str] = []
         if start_time is None:
             missing.append("when the issue started")
@@ -168,8 +195,9 @@ class BasicAssistanceService:
             affected=affected,
             exact_error=exact_error,
             steps=steps,
+            connectivity_without_vpn=connectivity_without_vpn,
         )
-        if affected_service == "VPN":
+        if affected_service == "VPN" and connectivity_without_vpn is None:
             missing.append("whether internet works without the VPN")
         return BasicAssistanceContext(
             issue_summary=issue_summary,
@@ -178,6 +206,7 @@ class BasicAssistanceService:
             affected_service=affected_service,
             exact_error=exact_error,
             known_troubleshooting_steps=steps,
+            connectivity_without_vpn=connectivity_without_vpn,
             missing_information=missing,
             next_recommended_question=question,
         )
@@ -191,6 +220,7 @@ class BasicAssistanceService:
         affected: str | None,
         exact_error: str | None,
         steps: list[str],
+        connectivity_without_vpn: str | None,
     ) -> str:
         if category == "security":
             return "Please use your organization's approved security reporting channel immediately. Do not investigate further or share sensitive details here."
@@ -203,8 +233,14 @@ class BasicAssistanceService:
                 return "Is this affecting only your device, or are other people or devices affected too?"
             if exact_error is None:
                 return "What exact error message appears when you connect?"
-            if service == "VPN":
+            if service == "VPN" and connectivity_without_vpn is None:
                 return "Can you access the internet when you are not connected to the VPN?"
+            if service == "VPN" and not steps:
+                return "What have you already tried, if anything? Please avoid changing network settings."
+            if service == "VPN" and connectivity_without_vpn and connectivity_without_vpn.startswith("No"):
+                return "Does the same laptop have access to any other approved network, or is all internet access unavailable?"
+            if service == "VPN":
+                return "When the VPN times out, does it happen immediately or after it connects for a while?"
             if service == "Wi-Fi":
                 return "Can another device connect to the same Wi-Fi network?"
             if not steps:
@@ -260,6 +296,8 @@ class BasicAssistanceService:
             known.append(f"error: {context.exact_error}")
         if context.known_troubleshooting_steps:
             known.append("steps tried: " + "; ".join(context.known_troubleshooting_steps))
+        if context.connectivity_without_vpn:
+            known.append(context.connectivity_without_vpn)
         if known:
             lines.append("What I have so far: " + "; ".join(known) + ".")
 
