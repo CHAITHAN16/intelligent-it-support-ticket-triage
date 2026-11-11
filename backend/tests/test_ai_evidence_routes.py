@@ -103,14 +103,14 @@ def test_category_override_updates_ticket_and_records_field_history(evidence_cli
     response = evidence_client.post(
         "/api/tickets/1/prediction-reviews",
         headers=headers(evidence_db, 2),
-        json=review(category="Software", reason="Agent confirmed application issue"),
+        json=review(category="Security", reason="Agent confirmed security issue"),
     )
     assert response.status_code == 201
     assert response.json()[0]["outcome"] == "OVERRIDDEN"
-    assert response.json()[0]["confirmed_value"] == "Software"
-    assert evidence_db.get(Ticket, 1).category == "Software"
+    assert response.json()[0]["confirmed_value"] == "Security"
+    assert evidence_db.get(Ticket, 1).category == "Security"
     history = evidence_db.query(TicketFieldHistory).one()
-    assert (history.field_name, history.old_value, history.new_value, history.changed_by_id) == ("category", "Software", "Software", 2)
+    assert (history.field_name, history.old_value, history.new_value, history.changed_by_id) == ("category", "Software", "Security", 2)
 
 
 def test_priority_partial_review_records_only_priority_and_applies_override(evidence_client, evidence_db):
@@ -159,7 +159,7 @@ def test_review_transaction_rolls_back_ticket_history_and_review(evidence_client
     response = evidence_client.post(
         "/api/tickets/1/prediction-reviews",
         headers=headers(evidence_db, 2),
-        json=review(category="Network"),
+        json=review(category="Security"),
     )
     assert response.status_code == 500
     evidence_db.rollback()
