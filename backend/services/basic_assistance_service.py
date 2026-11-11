@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from models import KnowledgeBaseArticle, Ticket
+from services.knowledge_base_service import LOW_CONFIDENCE_THRESHOLD
 
 
 _QUESTIONS_BY_CATEGORY = {
@@ -18,6 +19,7 @@ class BasicAssistanceService:
     def reply(
         ticket: Ticket,
         article: KnowledgeBaseArticle | None,
+        employee_message: str | None = None,
     ) -> str:
         category = ticket.ai_predicted_category or ticket.category
         priority = ticket.ai_predicted_priority
@@ -33,7 +35,11 @@ class BasicAssistanceService:
         else:
             lines.append("The issue description alone is not enough to confirm its cause.")
 
-        if article is not None and ticket.solution_status == "MATCHED":
+        article_match_is_sufficient = (
+            ticket.solution_confidence is not None
+            and float(ticket.solution_confidence) >= LOW_CONFIDENCE_THRESHOLD
+        )
+        if article is not None and ticket.solution_status == "MATCHED" and article_match_is_sufficient:
             lines.append(f"Relevant knowledge guidance: {article.title}. {article.summary}")
             sensitive_category = article.category.strip().lower() in {"security", "hardware"}
             if sensitive_category:
@@ -46,10 +52,21 @@ class BasicAssistanceService:
         elif article is None:
             lines.append("Approved knowledge guidance is not available yet. Your assigned IT team can help if the issue is urgent.")
 
+        if risk_category not in {"security", "hardware"}:
+            lines.append("Safe next step: note the exact error, when it began, and whether other people or devices are affected. Avoid changing system or network settings or installing unapproved tools.")
+
         question = _QUESTIONS_BY_CATEGORY.get(
             risk_category,
             "When did this start, what were you doing just before it happened, and what exact error or behavior do you see?",
         )
+        if employee_message:
+            normalized_message = employee_message.lower()
+            if "status" in normalized_message:
+                question = f"The latest ticket status is {ticket.status.value.replace('_', ' ')}. {question}"
+            elif any(term in normalized_message for term in ("why", "cause", "meaning", "what happened")):
+                question = f"I cannot confirm the cause from a ticket description. The current predicted category is {category or 'not available yet'}; that prediction identifies a support area, not a diagnosis. {question}"
+            else:
+                question = f"Thanks for the update. I have recorded it in this ticket conversation. {question}"
         lines.append(f"To help narrow down what to check next: {question}")
         lines.append("Do not share passwords, one-time codes, API keys, access tokens, or other secrets here.")
         return "\n\n".join(lines)

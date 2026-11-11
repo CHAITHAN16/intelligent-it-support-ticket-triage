@@ -272,7 +272,7 @@ def add_ai_resolution_message(
             AIResolutionMessage(
                 conversation_id=conversation.id,
                 speaker="AI",
-                body=BasicAssistanceService.reply(ticket, article),
+                body=BasicAssistanceService.reply(ticket, article, employee_message=payload.body),
             )
         )
         db.commit()
