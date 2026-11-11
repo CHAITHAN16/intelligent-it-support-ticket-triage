@@ -28,6 +28,8 @@ export default function AgentDashboardPage() {
   const [isTeamsLoading, setIsTeamsLoading] = useState(true);
   const [isQueueLoading, setIsQueueLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [teamRetryCount, setTeamRetryCount] = useState(0);
+  const [queueRetryCount, setQueueRetryCount] = useState(0);
 
   useEffect(() => {
     getTeams()
@@ -37,7 +39,7 @@ export default function AgentDashboardPage() {
       })
       .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Teams could not be loaded."))
       .finally(() => setIsTeamsLoading(false));
-  }, []);
+  }, [teamRetryCount]);
 
   const selectedTeam = useMemo(() => teams.find((team) => team.id === selectedTeamId), [teams, selectedTeamId]);
 
@@ -69,7 +71,7 @@ export default function AgentDashboardPage() {
     }
 
     void loadQueue();
-  }, [selectedTeamId, status, priority, category, sort]);
+  }, [selectedTeamId, status, priority, category, sort, queueRetryCount]);
 
   const openCount = statsTickets.filter((ticket) => !["IN_PROGRESS", "RESOLVED", "CLOSED"].includes(ticket.status)).length;
   const inProgressCount = statsTickets.filter((ticket) => ticket.status === "IN_PROGRESS").length;
@@ -78,8 +80,8 @@ export default function AgentDashboardPage() {
   return <AgentShell selectedTeamName={selectedTeam?.name ?? (isTeamsLoading ? "Loading teams..." : "No teams available")} selectedTeamId={selectedTeamId} teams={teams} onTeamChange={setSelectedTeamId}>
     <div className="flex flex-col gap-8">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Operations overview</p><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] text-slate-950">{selectedTeam?.name ?? "Team queue"}</h1><p className="mt-2 text-sm text-slate-600">Live queue from the support ticket service.</p></div><span className="w-fit rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">Temporary team view</span></div>
-      {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div>}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Stat label="Open tickets" value={openCount} accent="text-sky-700" /><Stat label="In progress" value={inProgressCount} accent="text-amber-600" /><Stat label="Resolved" value={resolvedCount} accent="text-emerald-600" /><Stat label="Total tickets" value={statsTickets.length} accent="text-slate-950" /></div>
+      {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-800"><p>{error}</p><button type="button" onClick={() => { if (selectedTeamId === null) { setIsTeamsLoading(true); setTeamRetryCount((count) => count + 1); } else { setIsQueueLoading(true); setQueueRetryCount((count) => count + 1); } }} className="mt-3 rounded-full bg-rose-800 px-4 py-2 font-semibold text-white hover:bg-rose-900">Retry loading {selectedTeamId === null ? "teams" : "queue"}</button></div>}
+      {!error && <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Stat label="Open tickets" value={openCount} accent="text-sky-700" /><Stat label="In progress" value={inProgressCount} accent="text-amber-600" /><Stat label="Resolved" value={resolvedCount} accent="text-emerald-600" /><Stat label="Total tickets" value={statsTickets.length} accent="text-slate-950" /></div>}
       <section><div className="mb-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><h2 className="text-xl font-semibold text-slate-950">Ticket queue</h2><p className="mt-1 text-sm text-slate-500">{queueTickets.length} matching ticket{queueTickets.length === 1 ? "" : "s"}</p></div><div className="flex flex-wrap gap-2"><select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value as "ALL" | TicketStatus)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"><option value="ALL">All statuses</option>{STATUS_OPTIONS.slice(1).map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}</select><select aria-label="Filter by priority" value={priority} onChange={(event) => setPriority(event.target.value as "ALL" | TicketPriority)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"><option value="ALL">All priorities</option>{PRIORITY_OPTIONS.slice(1).map((item) => <option key={item} value={item}>{item}</option>)}</select><select aria-label="Filter by category" value={category} onChange={(event) => setCategory(event.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">{CATEGORY_OPTIONS.map((item) => <option key={item} value={item}>{item === "ALL" ? "All categories" : item}</option>)}</select><select aria-label="Sort tickets" value={sort} onChange={(event) => setSort(event.target.value as SortMode)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="priority">Priority</option></select></div></div>{isTeamsLoading || isQueueLoading ? <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">Loading ticket queue...</div> : queueTickets.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center"><p className="font-semibold text-slate-800">No tickets match this view</p><p className="mt-1 text-sm text-slate-500">Try another team or filter.</p></div> : <AgentTicketTable tickets={queueTickets} />}</section>
     </div>
   </AgentShell>;
