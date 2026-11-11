@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AgentShell } from "@/components/agent-shell";
 import { AgentTicketTable } from "@/components/agent-ticket-table";
@@ -21,19 +21,19 @@ export default function AgentDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const loadTickets = useCallback(async () => {
+  useEffect(() => {
+    let cancelled = false;
+    getTickets().then((result) => { if (!cancelled) setTickets(result); })
+      .catch((reason: unknown) => { if (!cancelled) setError(reason instanceof Error ? reason.message : "Dashboard tickets could not be loaded."); })
+      .finally(() => { if (!cancelled) setIsLoading(false); });
+    return () => { cancelled = true; };
+  }, [refreshKey]);
+
+  function refreshTickets() {
     setIsLoading(true);
     setError(null);
-    try {
-      setTickets(await getTickets());
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Dashboard tickets could not be loaded.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { void loadTickets(); }, [loadTickets, refreshKey]);
+    setRefreshKey((key) => key + 1);
+  }
 
   const openCount = tickets.filter((ticket) => !["RESOLVED", "CLOSED"].includes(ticket.status)).length;
   const urgentCount = tickets.filter((ticket) => ticket.priority === "URGENT" && !["RESOLVED", "CLOSED"].includes(ticket.status)).length;
@@ -45,10 +45,10 @@ export default function AgentDashboardPage() {
     <div className="mx-auto max-w-[1320px] space-y-7">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Support operations</p><h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">Agent overview</h1><p className="mt-1.5 text-sm text-slate-600">A current view of tickets available to your account.</p></div>
-        <button type="button" onClick={() => setRefreshKey((key) => key + 1)} disabled={isLoading} className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{isLoading ? "Refreshing..." : "Refresh"}</button>
+        <button type="button" onClick={refreshTickets} disabled={isLoading} className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{isLoading ? "Refreshing..." : "Refresh"}</button>
       </div>
 
-      {error ? <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"><p className="font-medium">Could not load dashboard tickets</p><p className="mt-1">{error}</p><button type="button" onClick={() => setRefreshKey((key) => key + 1)} className="mt-3 rounded-md bg-rose-800 px-3 py-2 font-medium text-white hover:bg-rose-900">Retry</button></div> : isLoading ? <div role="status" className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">Loading overview...</div> : <>
+      {error ? <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"><p className="font-medium">Could not load dashboard tickets</p><p className="mt-1">{error}</p><button type="button" onClick={refreshTickets} className="mt-3 rounded-md bg-rose-800 px-3 py-2 font-medium text-white hover:bg-rose-900">Retry</button></div> : isLoading ? <div role="status" className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">Loading overview...</div> : <>
         <section aria-label="Ticket metrics" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Metric label="Open" value={openCount} description="Not resolved or closed" />
           <Metric label="Urgent" value={urgentCount} description="Open urgent priority" />
