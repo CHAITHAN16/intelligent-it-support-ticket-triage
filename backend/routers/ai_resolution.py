@@ -153,7 +153,7 @@ def _start_basic_assistance(
             AIResolutionMessage(
                 conversation_id=conversation.id,
                 speaker="AI",
-                body=BasicAssistanceService.reply(ticket, article, first_message=True),
+                body=BasicAssistanceService.reply(ticket, article),
             )
         )
         conversation.status = "ACTIVE"
@@ -265,14 +265,6 @@ def add_ai_resolution_message(
     if conversation is None or conversation.status != "ACTIVE":
         raise HTTPException(status_code=409, detail="This AI conversation is not active")
     article, decision = _article_and_decision(ticket, db)
-    prior_employee_message = db.scalar(
-        select(AIResolutionMessage.id)
-        .where(
-            AIResolutionMessage.conversation_id == conversation.id,
-            AIResolutionMessage.speaker == "EMPLOYEE",
-        )
-        .limit(1)
-    )
     db.add(AIResolutionMessage(conversation_id=conversation.id, speaker="EMPLOYEE", author_id=current_user.id, body=payload.body))
     conversation.updated_at = datetime.now(timezone.utc)
     if not decision.eligible:
@@ -280,7 +272,7 @@ def add_ai_resolution_message(
             AIResolutionMessage(
                 conversation_id=conversation.id,
                 speaker="AI",
-                body=BasicAssistanceService.reply(ticket, article, first_message=prior_employee_message is None),
+                body=BasicAssistanceService.reply(ticket, article),
             )
         )
         db.commit()
@@ -309,6 +301,9 @@ def confirm_ai_resolution(
     ) is not None
     if conversation is None or conversation.status != "ACTIVE" or not has_ai_reply:
         raise HTTPException(status_code=409, detail="An active AI-guided resolution is required")
+    article, decision = _article_and_decision(ticket, db)
+    if not decision.eligible or article is None or conversation.provider_model is None:
+        raise HTTPException(status_code=409, detail="Only an eligible guided-resolution conversation can resolve a ticket")
     if ticket.status not in _RESOLVABLE_STATUSES:
         raise HTTPException(status_code=409, detail="Ticket cannot be resolved from its current status")
 

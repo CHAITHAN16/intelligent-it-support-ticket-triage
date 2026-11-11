@@ -18,8 +18,6 @@ class BasicAssistanceService:
     def reply(
         ticket: Ticket,
         article: KnowledgeBaseArticle | None,
-        *,
-        first_message: bool,
     ) -> str:
         category = ticket.ai_predicted_category or ticket.category
         priority = ticket.ai_predicted_priority
