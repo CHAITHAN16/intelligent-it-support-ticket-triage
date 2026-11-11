@@ -336,7 +336,10 @@ def test_every_conversation_endpoint_requires_ticket_ownership(
 ):
     app.dependency_overrides[get_current_user] = lambda: resolution_session.get(User, 2)
 
-    response = getattr(resolution_client, method)(path, json=json_body)
+    if method == "get":
+        response = resolution_client.get(path)
+    else:
+        response = resolution_client.post(path, json=json_body)
 
     assert response.status_code == 403
 
