@@ -242,7 +242,7 @@ export default function AgentTicketDetailPage() {
               <Section title="Conversation" description="Ticket request and team discussion, in chronological order.">
                 <article className="border-b border-slate-100 pb-5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div><p className="text-sm font-semibold text-slate-900">Employee request</p><p className="mt-0.5 text-xs text-slate-500">Ticket creator · {ticket.creator_id === undefined ? "" : `User #${ticket.creator_id}`}</p></div>
+                    <div><p className="text-sm font-semibold text-slate-900">Employee request</p><p className="mt-0.5 text-xs text-slate-500">Ticket creator · User #{ticket.creator_id}</p></div>
                     <time dateTime={ticket.created_at} className="text-xs text-slate-500">{formattedDate(ticket.created_at)}</time>
                   </div>
                   <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-700">{ticket.description}</p>
@@ -255,7 +255,7 @@ export default function AgentTicketDetailPage() {
                       : commentsError ? <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{commentsError}<button type="button" onClick={() => void refreshComments()} className="ml-2 font-semibold underline">Retry</button></div>
                         : comments.length === 0 ? <p className="rounded-md border border-dashed border-slate-200 px-3 py-5 text-center text-sm text-slate-500">No team comments yet.</p>
                           : comments.map((comment) => <article key={comment.id} className="rounded-md border border-slate-200 bg-slate-50/70 p-3.5">
-                            <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-semibold text-slate-700">Agent · User #{comment.author_id}</p><time dateTime={comment.created_at} className="text-xs text-slate-500">{formattedDate(comment.created_at)}</time></div>
+                            <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-semibold text-slate-700">Team comment · User #{comment.author_id}</p><time dateTime={comment.created_at} className="text-xs text-slate-500">{formattedDate(comment.created_at)}</time></div>
                             <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{comment.body}</p>
                           </article>)}
                   </div>
@@ -323,12 +323,13 @@ export default function AgentTicketDetailPage() {
               </Section>
 
               <Section title="Suggested resolution" description="Knowledge-base recommendation for agent review.">
+                <p className="mb-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">Guided-resolution eligibility and the employee AI conversation are not exposed to the agent API. This view shows only ticket triage and knowledge-match data.</p>
                 {ticket.solution_status === "MATCHED" && ticket.suggested_solution ? <>
                   <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{ticket.suggested_solution}</p>
                   <dl className="mt-3 border-t border-slate-100 pt-2">
                     <Detail label="Article" value={ticket.knowledge_article_title ?? "Available article"} />
                     <Detail label="Match confidence" value={confidenceLabel(ticket.solution_confidence ?? null)} />
-                    <Detail label="Eligibility" value={ticket.solution_confidence_level === "HIGH" ? "Strong match" : ticket.solution_confidence_level === "MEDIUM" ? "Review match" : "Not eligible for guided resolution"} />
+                    <Detail label="Guided resolution" value="Eligibility not available in agent view" />
                   </dl>
                 </> : ticket.solution_status === "NO_MATCH" ? <p className="text-sm leading-5 text-amber-800">No sufficiently relevant knowledge-base solution was found. Continue with the assigned support team.</p>
                   : <p className="text-sm text-slate-500">No recommendation is available yet.</p>}
