@@ -62,7 +62,7 @@ function FieldReviews({ field, reviews }: { field: "category" | "priority"; revi
     {!latest ? <p className="mt-1 text-xs text-slate-500">No human review recorded for this prediction.</p> : <ul className="mt-2 space-y-2">
       {fieldReviews.map((review) => <li key={review.id} className="rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-700">
         <p><span className="font-medium">{review.outcome === "ACCEPTED" ? "Accepted" : "Overridden"}:</span> {review.predicted_value} → {review.confirmed_value}</p>
-        <p className="text-slate-500">Agent #{review.reviewer_id} · {dateLabel(review.reviewed_at)}</p>
+        <p className="text-slate-500">Reviewer #{review.reviewer_id} · {dateLabel(review.reviewed_at)}</p>
         {review.reason && <p className="mt-1 whitespace-pre-wrap text-slate-600">{review.reason}</p>}
       </li>)}
     </ul>}
@@ -175,7 +175,7 @@ export function AgentAIEvidencePanel({
             const teamName = teams.find((team) => team.id === assignment.team_id)?.name ?? (assignment.team_id ? `Team #${assignment.team_id}` : "No team");
             return <li key={assignment.id} className="border-l-2 border-slate-200 pl-3 text-xs leading-5 text-slate-700">
               <p className="font-medium">{teamName} · {assignment.source}</p>
-              <p className="text-slate-500">{dateLabel(assignment.assigned_at)}{assignment.assigned_by_id ? ` · Agent #${assignment.assigned_by_id}` : ""}</p>
+              <p className="text-slate-500">{dateLabel(assignment.assigned_at)}{assignment.assigned_by_id ? ` · User #${assignment.assigned_by_id}` : ""}</p>
               {assignment.routing_reason && <p className="mt-1 text-slate-600">{assignment.routing_reason}</p>}
             </li>;
           })}
