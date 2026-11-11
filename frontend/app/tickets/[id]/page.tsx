@@ -163,12 +163,13 @@ export default function EmployeeTicketDetailPage() {
             </div>
           ) : ticket ? (
             <div className="mt-6 space-y-6">
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+              <div className="flex flex-col justify-between gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5 sm:flex-row sm:items-start sm:p-8">
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Ticket #{ticket.id}</p>
-                  <h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] text-slate-950">{ticket.title}</h1>
+                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-700">Ticket overview · #{ticket.id}</p>
+                  <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-4xl">{ticket.title}</h1>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">{ticket.description}</p>
                 </div>
-                <span className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] ring-1 ring-inset ${statusClass(ticket.status)}`}>
+                <span className={`inline-flex shrink-0 self-start rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] ring-1 ring-inset ${statusClass(ticket.status)}`}>
                   {ticket.status.replaceAll("_", " ")}
                 </span>
               </div>
@@ -176,9 +177,8 @@ export default function EmployeeTicketDetailPage() {
               {error && <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div>}
 
               <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-900/5 sm:p-8">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Request</p>
-                <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-700">{ticket.description}</p>
-                <dl className="mt-8 grid gap-5 sm:grid-cols-2">
+                <h2 className="text-xl font-semibold text-slate-950">Ticket overview</h2>
+                <dl className="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
                   <Field label="Ticket ID" value={`#${ticket.id}`} />
                   <Field label="Category" value={ticket.category ?? "Not assigned"} />
                   <Field label="Priority" value={ticket.priority} />
@@ -197,8 +197,8 @@ export default function EmployeeTicketDetailPage() {
                     <dl className="mt-6 grid gap-5 sm:grid-cols-2">
                       <Field label="AI predicted category" value={ticket.ai_predicted_category!} />
                       <Field label="AI predicted priority" value={ticket.ai_predicted_priority!} />
-                      <Field label="Classification model score (not calibrated)" value={confidenceLabel(ticket.ai_classification_confidence)} />
-                      <Field label="Combined triage score (not calibrated)" value={confidenceLabel(ticket.ai_confidence)} />
+                      <Field label="Classification confidence" value={confidenceLabel(ticket.ai_classification_confidence)} />
+                      <Field label="Combined triage score" value={confidenceLabel(ticket.ai_confidence)} />
                       <Field label="AI model version" value={ticket.ai_model_version ?? "Not available"} />
                     </dl>
                   </>
