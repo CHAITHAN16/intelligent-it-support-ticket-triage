@@ -57,6 +57,7 @@ export default function EmployeeTicketDetailPage() {
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [triageDelayed, setTriageDelayed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const triageComplete = ticket ? isTicketProcessingComplete(ticket) : false;
 
   useEffect(() => {
@@ -101,6 +102,8 @@ export default function EmployeeTicketDetailPage() {
         } else {
           setHistoryError(historyResult.reason instanceof Error ? historyResult.reason.message : "Status history could not be loaded.");
         }
+      } catch (reason) {
+        if (!cancelled) setError(reason instanceof Error ? reason.message : "Ticket could not be loaded.");
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -114,7 +117,7 @@ export default function EmployeeTicketDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [ticketId]);
+  }, [ticketId, retryCount]);
 
   useEffect(() => {
     if (!ticket || triageComplete) return;
@@ -159,7 +162,8 @@ export default function EmployeeTicketDetailPage() {
             <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500 shadow-xl shadow-slate-900/5">Loading ticket details...</div>
           ) : error && !ticket ? (
             <div role="alert" className="mt-8 rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm leading-6 text-rose-800">
-              {error}
+              <p>{error}</p>
+              <button type="button" onClick={() => setRetryCount((count) => count + 1)} className="mt-4 rounded-full bg-rose-800 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-800">Retry loading ticket</button>
             </div>
           ) : ticket ? (
             <div className="mt-6 space-y-6">
