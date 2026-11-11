@@ -49,6 +49,8 @@ class BasicAssistanceService:
             lines.append("Avoid changing security or network settings, installing tools, opening equipment, or sharing sensitive information. Contact your assigned IT team for next steps.")
         elif ticket.solution_status == "NO_MATCH":
             lines.append("I could not find sufficiently relevant approved knowledge guidance. Your assigned IT team can investigate.")
+        elif ticket.solution_status == "MATCHED":
+            lines.append("The stored knowledge match is below the approved relevance level, so I will not present it as guidance. Your assigned IT team can investigate.")
         elif article is None:
             lines.append("Approved knowledge guidance is not available yet. Your assigned IT team can help if the issue is urgent.")
 
