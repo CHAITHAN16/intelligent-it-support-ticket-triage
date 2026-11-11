@@ -91,7 +91,7 @@ export default function AgentTicketsPage() {
               <tbody className="divide-y divide-slate-100">
                 {filteredTickets.map((ticket) => (
                   <tr key={ticket.id} className="hover:bg-sky-50/50">
-                    <td className="px-4 py-4"><Link href={`/agent/tickets/${ticket.id}`} className="font-semibold text-sky-800 hover:underline">#{ticket.id} · {ticket.title}</Link></td>
+                    <td className="px-4 py-4"><Link href={`/agent/tickets/${ticket.id}?from=all`} className="font-semibold text-sky-800 hover:underline">#{ticket.id} · {ticket.title}</Link></td>
                     <td className="px-4 py-4"><span className={pillClass(ticket.status)}>{ticket.status.replaceAll("_", " ")}</span></td>
                     <td className="px-4 py-4">{ticket.priority}</td>
                     <td className="px-4 py-4">{ticket.ai_predicted_category ?? "—"}</td>

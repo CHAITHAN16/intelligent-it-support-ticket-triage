@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { AgentShell } from "@/components/agent-shell";
@@ -29,6 +29,8 @@ function differsFromPrediction(currentValue: string | null, prediction: string |
 
 export default function AgentTicketDetailPage() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("from") === "all" ? "/agent/tickets" : "/agent";
   const ticketId = Number(params.id);
   const [ticket, setTicket] = useState<TicketResponse | null>(null);
   const [category, setCategory] = useState("");
@@ -199,7 +201,7 @@ export default function AgentTicketDetailPage() {
 
   return <AgentShell selectedTeamName={ticket?.assigned_team_name ?? "General IT Support"}>
     <div className="mx-auto max-w-5xl">
-      <Link href="/agent" className="text-sm font-semibold text-sky-700 hover:text-sky-900">&larr; Back to queue</Link>
+      <Link href={returnTo} className="text-sm font-semibold text-sky-700 hover:text-sky-900">&larr; Back to {returnTo === "/agent/tickets" ? "all tickets" : "team queue"}</Link>
       {isLoading ? <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">Loading ticket...</div> : error && !ticket ? <div role="alert" className="mt-8 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div> : ticket ? <div className="mt-6 space-y-6">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start"><div><p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Ticket #{ticket.id}</p><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] text-slate-950">{ticket.title}</h1></div><span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">{ticket.status.replaceAll("_", " ")}</span></div>
         {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div>}
@@ -214,7 +216,7 @@ export default function AgentTicketDetailPage() {
             <label className="text-sm font-semibold text-slate-700">Category<select value={category} onChange={(event) => setCategory(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal text-slate-900"><option value="">Select category</option>{CATEGORIES.map((item) => <option key={item}>{item}</option>)}</select></label>
             <label className="text-sm font-semibold text-slate-700">Subcategory<input value={subcategory} onChange={(event) => setSubcategory(event.target.value)} maxLength={100} placeholder="Optional subcategory" className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal text-slate-900" /></label>
             <label className="text-sm font-semibold text-slate-700">Priority<select value={priority} onChange={(event) => setPriority(event.target.value as TicketPriority)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal text-slate-900">{PRIORITIES.map((item) => <option key={item}>{item}</option>)}</select></label>
-            <label className="text-sm font-semibold text-slate-700">Assigned team<select value={assignedTeamId} onChange={(event) => setAssignedTeamId(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal text-slate-900"><option value="">Select team</option>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
+            <label className="text-sm font-semibold text-slate-700">Assigned team<select value={assignedTeamId} onChange={(event) => setAssignedTeamId(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal text-slate-900">{!assignedTeamId && <option value="">Select a team to assign</option>}{assignedTeamId && !teams.some((team) => team.id.toString() === assignedTeamId) && <option value={assignedTeamId} disabled>{ticket.assigned_team_name ?? `Team #${assignedTeamId}`} (current assignment)</option>}{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
             <label className="text-sm font-semibold text-slate-700">Status<select value={status} disabled={ticket.status === "CLOSED" || isSaving} onChange={(event) => setStatus(event.target.value as TicketStatus)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal text-slate-900 disabled:bg-slate-100">{ACTION_STATUSES.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}</select></label>
             {status === "RESOLVED" && ticket.status !== "RESOLVED" && <label className="text-sm font-semibold text-slate-700 sm:col-span-2">Resolution note<textarea value={resolutionNote} onChange={(event) => setResolutionNote(event.target.value)} minLength={10} maxLength={5000} rows={4} placeholder="Describe the fix and how it was verified (at least 10 characters)." disabled={isSaving} className="mt-2 w-full resize-y rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-normal text-slate-900 disabled:bg-slate-100" /></label>}
           </div>
