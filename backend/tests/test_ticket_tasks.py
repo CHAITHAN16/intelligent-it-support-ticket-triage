@@ -252,6 +252,10 @@ def test_process_ticket_persists_subcategory(task_database, monkeypatch):
         classification_confidence=0.84,
         confidence=0.91,
         model_version=MODEL_VERSION,
+        category_model_version=CATEGORY_MODEL_VERSION,
+        priority_model_version=PRIORITY_MODEL_VERSION,
+        category_probabilities={"Network": 0.84, "Other": 0.04, "Security": 0.07, "Software": 0.05},
+        priority_probabilities={"LOW": 0.03, "MEDIUM": 0.12, "HIGH": 0.85},
     )
     monkeypatch.setattr(ticket_tasks.TriageService, "triage", lambda self, title, description: result)
     assert ticket_tasks.process_ticket.run(1)["status"] == "processed"
