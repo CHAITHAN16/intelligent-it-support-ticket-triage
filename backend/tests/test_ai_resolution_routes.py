@@ -264,8 +264,9 @@ def test_invalid_threshold_fails_closed_to_human_team(
     response = resolution_client.post("/api/tickets/1/ai-resolution/start")
 
     assert response.status_code == 200
-    assert response.json()["status"] == "ESCALATED"
-    assert response.json()["escalation_reason"] == "AI_CONFIGURATION_INVALID"
+    assert response.json()["status"] == "ACTIVE"
+    assert response.json()["mode"] == "BASIC"
+    assert response.json()["eligibility_reason"] == "AI_CONFIGURATION_INVALID"
     assert resolution_session.get(Ticket, 1).status == TicketStatus.NEW
 
 
