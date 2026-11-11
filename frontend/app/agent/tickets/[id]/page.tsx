@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { AgentShell } from "@/components/agent-shell";
+import { AgentAIEvidencePanel } from "@/components/agent-ai-evidence-panel";
 import {
   createTicketComment,
   getTeams,
@@ -13,12 +14,16 @@ import {
   getTicketComments,
   getTicketFieldHistory,
   getTicketHistory,
+  getTicketPredictionEvidence,
+  getTicketPredictionReviews,
   updateTicket,
   type Team,
   type TicketAssignmentHistory,
   type TicketComment,
   type TicketFieldHistory,
   type TicketPriority,
+  type TicketPredictionEvidence,
+  type TicketPredictionReview,
   type TicketResponse,
   type TicketStatus,
   type TicketStatusHistory,
@@ -93,12 +98,16 @@ export default function AgentTicketDetailPage() {
   const [history, setHistory] = useState<TicketStatusHistory[]>([]);
   const [fieldHistory, setFieldHistory] = useState<TicketFieldHistory[]>([]);
   const [assignmentHistory, setAssignmentHistory] = useState<TicketAssignmentHistory[]>([]);
+  const [predictionEvidence, setPredictionEvidence] = useState<TicketPredictionEvidence[]>([]);
+  const [predictionReviews, setPredictionReviews] = useState<TicketPredictionReview[]>([]);
   const [isCommentsLoading, setIsCommentsLoading] = useState(true);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [commentsError, setCommentsError] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [auditError, setAuditError] = useState<string | null>(null);
   const [isAuditLoading, setIsAuditLoading] = useState(true);
+  const [isEvidenceLoading, setIsEvidenceLoading] = useState(true);
+  const [evidenceError, setEvidenceError] = useState<string | null>(null);
   const [commentBody, setCommentBody] = useState("");
   const [isCommentPosting, setIsCommentPosting] = useState(false);
   const [commentSubmitError, setCommentSubmitError] = useState<string | null>(null);
@@ -143,6 +152,23 @@ export default function AgentTicketDetailPage() {
     finally { setIsAuditLoading(false); }
   }, [ticketId]);
 
+  const refreshPredictionEvidence = useCallback(async () => {
+    setIsEvidenceLoading(true);
+    setEvidenceError(null);
+    try {
+      const [evidence, reviews] = await Promise.all([
+        getTicketPredictionEvidence(ticketId),
+        getTicketPredictionReviews(ticketId),
+      ]);
+      setPredictionEvidence(evidence);
+      setPredictionReviews(reviews);
+    } catch (reason) {
+      setEvidenceError(reason instanceof Error ? reason.message : "AI prediction evidence could not be loaded.");
+    } finally {
+      setIsEvidenceLoading(false);
+    }
+  }, [ticketId]);
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -169,10 +195,11 @@ export default function AgentTicketDetailPage() {
       setIsHistoryLoading(false);
       if (teamsResult.status === "fulfilled") setTeams(teamsResult.value);
       void refreshAuditHistory();
+      void refreshPredictionEvidence();
     }
     void load();
     return () => { cancelled = true; };
-  }, [ticketId, retryCount, refreshAuditHistory, refreshTicket]);
+  }, [ticketId, retryCount, refreshAuditHistory, refreshPredictionEvidence, refreshTicket]);
 
   async function saveChanges() {
     if (!ticket) return;
@@ -311,17 +338,19 @@ export default function AgentTicketDetailPage() {
                 </div>
               </Section>
 
-              <Section title="AI triage" description="Model predictions are shown separately from current ticket values.">
-                <dl>
-                  <Detail label="Predicted category" value={ticket.ai_predicted_category ?? "Not available"} />
-                  <Detail label="Predicted priority" value={ticket.ai_predicted_priority ?? "Not available"} />
-                  <Detail label="Classification confidence" value={confidenceLabel(ticket.ai_classification_confidence)} />
-                  <Detail label="Combined triage score" value={confidenceLabel(ticket.ai_confidence)} />
-                  <Detail label="Model version" value={ticket.ai_model_version ?? "Not available"} />
-                  <Detail label="Routing explanation" value={ticket.routing_reason ?? "Not available"} />
-                  <Detail label="AI assigned team" value={ticket.assigned_team_name ?? "Not assigned"} />
-                </dl>
-              </Section>
+              <AgentAIEvidencePanel
+                currentCategory={ticket.category}
+                currentPriority={ticket.priority}
+                currentTeamName={ticket.assigned_team_name}
+                currentTeamId={ticket.assigned_team_id}
+                teams={teams}
+                assignments={assignmentHistory}
+                evidence={predictionEvidence}
+                reviews={predictionReviews}
+                isLoading={isEvidenceLoading}
+                error={evidenceError}
+                onRetry={() => void refreshPredictionEvidence()}
+              />
 
               <Section title="Suggested resolution" description="Knowledge-base recommendation for agent review.">
                 <p className="mb-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">Guided-resolution eligibility and the employee AI conversation are not exposed to the agent API. This view shows only ticket triage and knowledge-match data.</p>
