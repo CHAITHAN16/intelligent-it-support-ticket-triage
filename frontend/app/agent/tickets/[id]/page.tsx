@@ -199,7 +199,7 @@ export default function AgentTicketDetailPage() {
 
   const latestResolution = [...history].reverse().find((entry) => entry.new_status === "RESOLVED");
 
-  return <AgentShell selectedTeamName={ticket?.assigned_team_name ?? "General IT Support"}>
+  return <AgentShell activeSection={returnTo === "/agent/tickets" ? "all" : returnTo === "/agent" ? "overview" : "team"} selectedTeamName={ticket?.assigned_team_name ?? "General IT Support"}>
     <div className="mx-auto max-w-5xl">
       <Link href={returnTo} className="text-sm font-semibold text-sky-700 hover:text-sky-900">&larr; Back to {returnTo === "/agent/tickets" ? "all tickets" : returnTo === "/agent" ? "overview" : "team queue"}</Link>
       {isLoading ? <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">Loading ticket...</div> : error && !ticket ? <div role="alert" className="mt-8 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div> : ticket ? <div className="mt-6 space-y-6">
