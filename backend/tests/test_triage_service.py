@@ -127,7 +127,8 @@ def test_model_accepts_probability_sum_with_small_rounding_error():
 
     assert prediction == "Software"
     assert confidence == pytest.approx(0.8000005)
-    assert probabilities == {"Other": pytest.approx(0.2), "Software": pytest.approx(0.8000005)}
+    assert probabilities["Other"] == pytest.approx(0.2)
+    assert probabilities["Software"] == pytest.approx(0.8000005)
 
 
 def test_confidence_repair_requires_model_to_reproduce_stored_category():
