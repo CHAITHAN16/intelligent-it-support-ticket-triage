@@ -110,11 +110,15 @@ export default function NewTicketPage() {
               </div>
               {processingState === "delayed" && <div role="status" className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">Your ticket is saved, but triage has not finished yet. You can check its status later from My Tickets.</div>}
               {processingState === "connection_issue" && <div role="status" className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">Your ticket is saved. We temporarily cannot refresh its triage status and will keep trying.</div>}
-              <p className="mb-4 text-sm font-semibold text-slate-700" aria-live="polite">
+                <p className="mb-4 flex items-center gap-2 text-sm font-semibold text-emerald-800" aria-live="polite">
+                <span aria-hidden="true" className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100">✓</span>
                 {processingState === "completed" ? "Ticket submitted and AI triage completed" : processingState === "delayed" ? "Ticket submitted. AI triage is still pending." : "Ticket submitted successfully. AI triage is processing..."}
               </p>
               <TicketResultCard ticket={ticket} />
-              <button type="button" onClick={startAnotherTicket} className="mt-6 text-sm font-semibold text-sky-700 underline decoration-sky-300 underline-offset-4 hover:text-sky-900">Submit another ticket</button>
+              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button type="button" onClick={startAnotherTicket} className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-600">Submit Another Ticket</button>
+                <a href={`/tickets/${ticket.id}`} className="inline-flex min-h-11 items-center justify-center rounded-full bg-sky-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600">View Ticket Details</a>
+              </div>
             </>
           ) : (
             <>

@@ -1,4 +1,5 @@
 import { isTicketProcessingComplete, type TicketResponse } from "@/lib/api";
+import Link from "next/link";
 
 function displayTeam(ticket: TicketResponse): string {
   return ticket.assigned_team_name ?? ticket.assigned_team?.name ?? "Not available";
@@ -50,7 +51,7 @@ export function TicketResultCard({ ticket }: { ticket: TicketResponse }) {
                 {processingComplete ? "AI triage completed" : "AI triage is processing..."}
               </p>
             </div>
-            <span className="hidden h-10 w-10 items-center justify-center rounded-full bg-white text-sky-700 shadow-sm sm:flex" aria-hidden="true">&rarr;</span>
+          <Link href={`/tickets/${ticket.id}`} className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-sky-800 shadow-sm transition hover:bg-sky-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-700">View Ticket Details <span className="ml-2" aria-hidden="true">&rarr;</span></Link>
           </div>
           {processingComplete ? (
             <dl className="mt-6 grid gap-5 sm:grid-cols-2">
