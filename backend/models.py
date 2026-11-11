@@ -13,6 +13,7 @@ from sqlalchemy import (
     ForeignKeyConstraint,
     Identity,
     Index,
+    JSON,
     Numeric,
     Boolean,
     String,
@@ -187,6 +188,67 @@ class TicketAssignment(Base):
         Index("idx_ticket_assignments_agent", "agent_id", "assigned_at"),
         Index("idx_ticket_assignments_team", "team_id", "assigned_at"),
         Index("idx_ticket_assignments_source", "source", "assigned_at"),
+    )
+
+
+class TicketPredictionEvidence(Base):
+    __tablename__ = "ticket_prediction_evidence"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
+    predicted_category: Mapped[str] = mapped_column(String(100), nullable=False)
+    predicted_priority: Mapped[TicketPriority] = mapped_column(
+        SqlEnum(TicketPriority, name="ticket_priority", create_type=False), nullable=False
+    )
+    category_model_version: Mapped[str] = mapped_column(String(100), nullable=False)
+    priority_model_version: Mapped[str] = mapped_column(String(100), nullable=False)
+    runtime_model_version: Mapped[str] = mapped_column(String(150), nullable=False)
+    category_probabilities: Mapped[dict[str, float]] = mapped_column(JSON, nullable=False)
+    priority_probabilities: Mapped[dict[str, float]] = mapped_column(JSON, nullable=False)
+    classification_confidence: Mapped[Decimal] = mapped_column(Numeric(5, 4), nullable=False)
+    combined_confidence: Mapped[Decimal] = mapped_column(Numeric(5, 4), nullable=False)
+    predicted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("classification_confidence BETWEEN 0 AND 1", name="chk_evidence_classification_confidence"),
+        CheckConstraint("combined_confidence BETWEEN 0 AND 1", name="chk_evidence_combined_confidence"),
+        UniqueConstraint("id", "ticket_id", name="uq_ticket_prediction_evidence_id_ticket"),
+        Index("idx_ticket_prediction_evidence_ticket", "ticket_id", "predicted_at", "id"),
+    )
+
+
+class TicketPredictionReview(Base):
+    __tablename__ = "ticket_prediction_reviews"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
+    prediction_evidence_id: Mapped[int] = mapped_column(
+        ForeignKey("ticket_prediction_evidence.id", ondelete="CASCADE"), nullable=False
+    )
+    reviewer_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    field_name: Mapped[str] = mapped_column(String(20), nullable=False)
+    predicted_value: Mapped[str] = mapped_column(String(100), nullable=False)
+    confirmed_value: Mapped[str] = mapped_column(String(100), nullable=False)
+    outcome: Mapped[str] = mapped_column(String(20), nullable=False)
+    reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["prediction_evidence_id", "ticket_id"],
+            ["ticket_prediction_evidence.id", "ticket_prediction_evidence.ticket_id"],
+            name="fk_prediction_review_evidence_ticket",
+            ondelete="CASCADE",
+        ),
+        CheckConstraint("field_name IN ('category', 'priority')", name="chk_prediction_review_field"),
+        CheckConstraint("outcome IN ('ACCEPTED', 'OVERRIDDEN')", name="chk_prediction_review_outcome"),
+        CheckConstraint(
+            "(outcome = 'ACCEPTED' AND predicted_value = confirmed_value) OR "
+            "(outcome = 'OVERRIDDEN' AND predicted_value <> confirmed_value)",
+            name="chk_prediction_review_outcome_value",
+        ),
+        Index("idx_ticket_prediction_reviews_ticket", "ticket_id", "reviewed_at", "id"),
+        Index("idx_ticket_prediction_reviews_evidence", "prediction_evidence_id"),
     )
 
 
