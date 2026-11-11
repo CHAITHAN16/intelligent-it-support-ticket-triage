@@ -134,6 +134,17 @@ export type AIResolutionMessage = {
   created_at: string;
 };
 
+export type AIResolutionContext = {
+  issue_summary: string;
+  start_time: string | null;
+  affected_devices_users: string | null;
+  affected_service: string | null;
+  exact_error: string | null;
+  known_troubleshooting_steps: string[];
+  missing_information: string[];
+  next_recommended_question: string;
+};
+
 export type AIResolutionResponse = {
   mode: "BASIC" | "GUIDED";
   status: "NOT_STARTED" | "ACTIVE" | "ESCALATED" | "RESOLVED";
@@ -144,6 +155,7 @@ export type AIResolutionResponse = {
   knowledge_match_confidence: number | null;
   assigned_team_name: string | null;
   messages: AIResolutionMessage[];
+  basic_context: AIResolutionContext | null;
 };
 
 type ApiErrorPayload = {

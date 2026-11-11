@@ -104,6 +104,23 @@ export function AIResolutionPanel({ ticket, resolutionSummary, onResolved }: AIR
             </div>
           ) : null}
 
+          {resolution.mode === "BASIC" && resolution.basic_context && ticket.status !== "RESOLVED" && ticket.status !== "CLOSED" && (
+            <section aria-label="Details collected by the assistant" className="mt-5 rounded-2xl border border-sky-100 bg-sky-50/70 p-4">
+              <h3 className="text-sm font-semibold text-slate-900">What I have understood so far</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-700">{resolution.basic_context.issue_summary}</p>
+              <dl className="mt-4 grid gap-x-5 gap-y-3 text-sm sm:grid-cols-2">
+                {([
+                  ["Started", resolution.basic_context.start_time],
+                  ["Affected devices or users", resolution.basic_context.affected_devices_users],
+                  ["Service", resolution.basic_context.affected_service],
+                  ["Error", resolution.basic_context.exact_error],
+                ] as const).map(([label, value]) => value && <div key={label}><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt><dd className="mt-1 text-slate-800">{value}</dd></div>)}
+                {resolution.basic_context.known_troubleshooting_steps.length > 0 && <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Steps already tried</dt><dd className="mt-1 text-slate-800">{resolution.basic_context.known_troubleshooting_steps.join("; ")}</dd></div>}
+              </dl>
+              {resolution.basic_context.missing_information.length > 0 && <p className="mt-3 text-xs leading-5 text-slate-600"><span className="font-semibold">Still useful to know:</span> {resolution.basic_context.missing_information.join(" · ")}</p>}
+            </section>
+          )}
+
           {resolution.messages.length > 0 && (
             <div aria-live="polite" aria-label="Assistant conversation" className="mt-6 max-h-[32rem] space-y-3 overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
               {resolution.messages.map((entry) => (
