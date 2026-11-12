@@ -82,9 +82,9 @@ export function AgentShell({
 
       <header className="fixed inset-x-0 top-0 z-20 h-16 border-b border-slate-800 bg-[#111827] text-white md:left-60">
         <div className="flex h-full min-w-0 items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/agent" className="flex items-center gap-3" aria-label="Support agent overview">
+          <Link href="/agent" className="flex min-w-0 items-center gap-3" aria-label="Support agent overview">
             <span className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-xs font-bold text-white">IT</span>
-            <span className="truncate text-sm font-semibold tracking-tight">IT Support <span className="font-normal text-slate-400">/ Agent workspace</span></span>
+            <span className="min-w-0 truncate text-sm font-semibold tracking-tight">IT Support <span className="font-normal text-slate-400">/ Agent workspace</span></span>
           </Link>
           <div className="flex items-center gap-3"><div className="hidden text-right sm:block"><p className="text-xs font-medium">{user?.name ?? "Support user"}</p><p className="text-[11px] text-slate-400">{user?.role === "ADMIN" ? "Administrator" : "Support agent"}</p></div><button type="button" onClick={logout} className="rounded-md border border-slate-600 px-3 py-2 text-sm font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400">Log out</button></div>
         </div>
@@ -93,7 +93,7 @@ export function AgentShell({
       <nav aria-label="Agent workspace navigation" className="fixed inset-x-0 top-16 z-20 flex h-12 items-center gap-1 overflow-x-auto border-b border-slate-800 bg-[#111827] px-3 md:hidden">
         {renderNavigation(true)}
       </nav>
-      <main className="fixed inset-x-0 bottom-0 top-28 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-6 focus:outline-none sm:px-6 sm:py-8 md:left-60 md:top-16 md:px-8" tabIndex={-1}>
+      <main id="agent-main" aria-label="Agent workspace content" className="fixed inset-x-0 bottom-0 top-28 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-6 focus:outline-none sm:px-6 sm:py-8 md:left-60 md:top-16 md:px-8" tabIndex={-1}>
         {children}
       </main>
     </div>
