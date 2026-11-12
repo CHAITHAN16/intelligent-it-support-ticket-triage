@@ -163,6 +163,23 @@ export type TicketPredictionReviewInput = {
   reason?: string;
 };
 
+export type AIAnalyticsResponse = {
+  from: string;
+  to: string;
+  model_version_filter: string | null;
+  total_prediction_tickets: number;
+  reviewed_prediction_tickets: number;
+  unreviewed_prediction_tickets: number;
+  review_coverage: number | null;
+  category: { reviewed: number; accepted: number; overridden: number; acceptance_rate: number | null; override_rate: number | null };
+  priority: { reviewed: number; accepted: number; overridden: number; acceptance_rate: number | null; override_rate: number | null };
+  review_activity: Array<{ date: string; reviews: number; tickets: number }>;
+  category_model_versions: Array<{ model_version: string; reviewed_tickets: number; reviews: number; accepted: number; overridden: number }>;
+  priority_model_versions: Array<{ model_version: string; reviewed_tickets: number; reviews: number; accepted: number; overridden: number }>;
+  ai_routing_distribution: Array<{ team: string; tickets: number }>;
+  limitations: string;
+};
+
 export type AIResolutionMessage = {
   id: number;
   speaker: "EMPLOYEE" | "AI";
@@ -345,6 +362,12 @@ export async function getTicketPredictionEvidence(ticketId: number): Promise<Tic
 
 export async function getTicketPredictionReviews(ticketId: number): Promise<TicketPredictionReview[]> {
   return request<TicketPredictionReview[]>(`/tickets/${ticketId}/prediction-reviews`);
+}
+
+export async function getAIAnalytics(from: string, to: string, modelVersion?: string): Promise<AIAnalyticsResponse> {
+  const query = new URLSearchParams({ from, to });
+  if (modelVersion) query.set("model_version", modelVersion);
+  return request<AIAnalyticsResponse>(`/analytics/ai?${query.toString()}`);
 }
 
 export async function createTicketPredictionReview(
