@@ -90,6 +90,16 @@ def ai_analytics(
       .where(TicketPredictionReview.reviewed_at >= start, TicketPredictionReview.reviewed_at < end)
       .group_by(func.date(TicketPredictionReview.reviewed_at)).order_by(func.date(TicketPredictionReview.reviewed_at))).all()
 
+    outcome_breakdown = db.execute(select(
+        TicketPredictionReview.field_name,
+        TicketPredictionReview.predicted_value,
+        TicketPredictionReview.outcome,
+        func.count(TicketPredictionReview.id),
+    ).select_from(cohort.join(TicketPredictionReview, TicketPredictionReview.prediction_evidence_id == cohort.c.id))
+      .where(TicketPredictionReview.field_name.in_(["category", "priority"]))
+      .group_by(TicketPredictionReview.field_name, TicketPredictionReview.predicted_value, TicketPredictionReview.outcome)
+      .order_by(TicketPredictionReview.field_name, TicketPredictionReview.predicted_value, TicketPredictionReview.outcome)).all()
+
     category_versions = db.execute(select(
         cohort.c.category_model_version,
         func.count(func.distinct(case((TicketPredictionReview.field_name == "category", TicketPredictionReview.ticket_id)))).label("reviewed_tickets"),
@@ -137,6 +147,8 @@ def ai_analytics(
         "review_coverage": reviewed_tickets / total_tickets if total_tickets else None,
         "category": cat, "priority": pri,
         "review_activity": [{"date": str(row.day), "reviews": int(row.reviews), "tickets": int(row.tickets)} for row in daily],
+        "category_review_breakdown": [{"prediction": row.predicted_value, "outcome": row.outcome, "reviews": int(row[3])} for row in outcome_breakdown if row.field_name == "category"],
+        "priority_review_breakdown": [{"prediction": row.predicted_value, "outcome": row.outcome, "reviews": int(row[3])} for row in outcome_breakdown if row.field_name == "priority"],
         "category_model_versions": [{"model_version": row.category_model_version, "reviewed_tickets": int(row.reviewed_tickets), "reviews": int(row.reviews), "accepted": int(row.category_accepted), "overridden": int(row.category_overridden)} for row in category_versions],
         "priority_model_versions": [{"model_version": row.priority_model_version, "reviewed_tickets": int(row.reviewed_tickets), "reviews": int(row.reviews), "accepted": int(row.accepted), "overridden": int(row.overridden)} for row in priority_versions],
         "ai_routing_distribution": [{"team": row.name or "Unassigned", "tickets": int(row[1])} for row in route_rows],

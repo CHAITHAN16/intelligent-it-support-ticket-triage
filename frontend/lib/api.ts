@@ -175,6 +175,8 @@ export type AIAnalyticsResponse = {
   category: { reviewed: number; accepted: number; overridden: number; acceptance_rate: number | null; override_rate: number | null };
   priority: { reviewed: number; accepted: number; overridden: number; acceptance_rate: number | null; override_rate: number | null };
   review_activity: Array<{ date: string; reviews: number; tickets: number }>;
+  category_review_breakdown: Array<{ prediction: string; outcome: "ACCEPTED" | "OVERRIDDEN"; reviews: number }>;
+  priority_review_breakdown: Array<{ prediction: string; outcome: "ACCEPTED" | "OVERRIDDEN"; reviews: number }>;
   category_model_versions: Array<{ model_version: string; reviewed_tickets: number; reviews: number; accepted: number; overridden: number }>;
   priority_model_versions: Array<{ model_version: string; reviewed_tickets: number; reviews: number; accepted: number; overridden: number }>;
   ai_routing_distribution: Array<{ team: string; tickets: number }>;
