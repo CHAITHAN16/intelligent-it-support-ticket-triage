@@ -54,6 +54,7 @@ class TicketPredictionReviewResponse(BaseModel):
     ticket_id: int
     prediction_evidence_id: int
     reviewer_id: int
+    reviewer_name: str | None = None
     field_name: str
     predicted_value: str
     confirmed_value: str
