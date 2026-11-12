@@ -126,6 +126,30 @@ def test_priority_partial_review_records_only_priority_and_applies_override(evid
     assert evidence_db.query(TicketPredictionReview).count() == 1
 
 
+def test_review_is_bound_to_snapshot_and_duplicate_field_review_is_rejected(evidence_client, evidence_db):
+    first = evidence_client.post(
+        "/api/tickets/1/prediction-reviews",
+        headers=headers(evidence_db, 2),
+        json=review(category="Network"),
+    )
+    assert first.status_code == 201
+    duplicate = evidence_client.post(
+        "/api/tickets/1/prediction-reviews",
+        headers=headers(evidence_db, 2),
+        json=review(category="Security"),
+    )
+    assert duplicate.status_code == 409
+    assert evidence_db.query(TicketPredictionReview).count() == 1
+    assert evidence_db.get(Ticket, 1).category == "Software"
+
+    history = evidence_client.get(
+        "/api/tickets/1/prediction-reviews", headers=headers(evidence_db, 2)
+    )
+    assert history.status_code == 200
+    assert history.json()[0]["prediction_evidence_id"] == 1
+    assert history.json()[0]["reviewer_name"] == "Agent"
+
+
 @pytest.mark.parametrize("payload", [
     {"prediction_evidence_id": 1, "category": "Unknown"},
     {"prediction_evidence_id": 1, "priority": "P0"},

@@ -147,12 +147,20 @@ export type TicketPredictionReview = {
   ticket_id: number;
   prediction_evidence_id: number;
   reviewer_id: number;
+  reviewer_name?: string | null;
   field_name: "category" | "priority";
   predicted_value: string;
   confirmed_value: string;
   outcome: "ACCEPTED" | "OVERRIDDEN";
   reviewed_at: string;
   reason: string | null;
+};
+
+export type TicketPredictionReviewInput = {
+  prediction_evidence_id: number;
+  category?: string;
+  priority?: TicketPriority;
+  reason?: string;
 };
 
 export type AIResolutionMessage = {
@@ -337,6 +345,16 @@ export async function getTicketPredictionEvidence(ticketId: number): Promise<Tic
 
 export async function getTicketPredictionReviews(ticketId: number): Promise<TicketPredictionReview[]> {
   return request<TicketPredictionReview[]>(`/tickets/${ticketId}/prediction-reviews`);
+}
+
+export async function createTicketPredictionReview(
+  ticketId: number,
+  input: TicketPredictionReviewInput,
+): Promise<TicketPredictionReview[]> {
+  return request<TicketPredictionReview[]>(`/tickets/${ticketId}/prediction-reviews`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export async function getAIResolution(ticketId: number): Promise<AIResolutionResponse> {
