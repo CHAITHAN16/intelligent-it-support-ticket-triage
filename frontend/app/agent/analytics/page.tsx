@@ -37,6 +37,17 @@ function ReviewBreakdown({ title, data }: { title: string; data: NonNullable<AIA
   </section>;
 }
 
+function DecisionBreakdown({ title, rows }: { title: string; rows: AIAnalyticsResponse["category_review_breakdown"] }) {
+  const values = [...new Set(rows.map((row) => row.prediction))];
+  return <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/40"><h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+    {!values.length ? <p className="mt-3 text-sm text-slate-500">No reviewed records in this range.</p> : <ul className="mt-3 divide-y divide-slate-100">{values.map((value) => {
+      const accepted = rows.find((row) => row.prediction === value && row.outcome === "ACCEPTED")?.reviews ?? 0;
+      const overridden = rows.find((row) => row.prediction === value && row.outcome === "OVERRIDDEN")?.reviews ?? 0;
+      return <li key={value} className="flex items-center justify-between gap-3 py-2 text-xs"><span className="font-medium text-slate-700">{value}</span><span className="text-right text-slate-500">{accepted} accepted · {overridden} overridden · {accepted + overridden} total</span></li>;
+    })}</ul>}
+  </section>;
+}
+
 export default function AIAnalyticsPage() {
   const [from, setFrom] = useState(defaultDate(-89));
   const [to, setTo] = useState(defaultDate(0));
@@ -82,6 +93,7 @@ export default function AIAnalyticsPage() {
                 <Metric title="Category / priority decisions" value={`${data.category.reviewed} / ${data.priority.reviewed}`} note="Separate field-level denominators" />
               </div>
               <div className="grid gap-4 lg:grid-cols-2"><ReviewBreakdown title="Category review outcomes" data={data.category} /><ReviewBreakdown title="Priority review outcomes" data={data.priority} /></div>
+              <div className="grid gap-4 lg:grid-cols-2"><DecisionBreakdown title="Outcomes by predicted category" rows={data.category_review_breakdown} /><DecisionBreakdown title="Outcomes by predicted priority" rows={data.priority_review_breakdown} /></div>
               <div className="grid gap-4 lg:grid-cols-2">
                 <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/40"><h2 className="text-sm font-semibold text-slate-900">Review activity over time</h2><p className="mb-4 mt-1 text-xs text-slate-500">Reviews by day, limited to the selected prediction cohort and date range.</p><BarRows rows={data.review_activity.map((item) => ({ date: item.date, reviews: item.reviews }))} labelKey="date" countKey="reviews" /></section>
                 <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/40"><h2 className="text-sm font-semibold text-slate-900">AI team-routing distribution</h2><p className="mb-4 mt-1 text-xs text-slate-500">Distinct tickets with AI assignment events in this date range.</p><BarRows rows={data.ai_routing_distribution.map((item) => ({ team: item.team, tickets: item.tickets }))} labelKey="team" countKey="tickets" /></section>
