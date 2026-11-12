@@ -169,9 +169,21 @@ def test_employee_cannot_read_or_submit_agent_reviews(evidence_client, evidence_
 
 def test_ai_analytics_uses_latest_snapshot_and_agent_ticket_scope(evidence_client, evidence_db):
     now = datetime.now(timezone.utc)
+    latest = TicketPredictionEvidence(
+        id=3, ticket_id=1, predicted_category="Software", predicted_priority=TicketPriority.MEDIUM,
+        category_model_version="category-v2", priority_model_version="priority-v3",
+        runtime_model_version="category-v2+priority-v3", category_probabilities={"Software": 1.0},
+        priority_probabilities={"MEDIUM": 1.0}, classification_confidence=1.0,
+        combined_confidence=1.0, predicted_at=now,
+    )
+    evidence_db.add(latest)
     evidence_db.add(TicketPredictionReview(
         ticket_id=1, prediction_evidence_id=1, reviewer_id=2, field_name="category",
         predicted_value="Network", confirmed_value="Network", outcome="ACCEPTED", reviewed_at=now,
+    ))
+    evidence_db.add(TicketPredictionReview(
+        ticket_id=1, prediction_evidence_id=3, reviewer_id=2, field_name="category",
+        predicted_value="Software", confirmed_value="Software", outcome="ACCEPTED", reviewed_at=now,
     ))
     evidence_db.commit()
     date_value = now.date().isoformat()
@@ -182,6 +194,7 @@ def test_ai_analytics_uses_latest_snapshot_and_agent_ticket_scope(evidence_clien
     body = response.json()
     # The agent only sees team 1; ticket 2 belongs to another team.
     assert body["total_prediction_tickets"] == 1
+    assert body["total_prediction_snapshots"] == 1
     assert body["reviewed_prediction_tickets"] == 1
     assert body["category"] == {"reviewed": 1, "accepted": 1, "overridden": 0, "acceptance_rate": 1.0, "override_rate": 0.0}
     assert body["priority"]["reviewed"] == 0
