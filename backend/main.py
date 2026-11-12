@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from routers.auth import router as auth_router
 from routers.ai_resolution import router as ai_resolution_router
 from routers.ai_evidence import router as ai_evidence_router
+from routers.ai_analytics import router as ai_analytics_router
 from routers.collaboration import router as collaboration_router
 from routers.teams import router as teams_router
 from routers.tickets import router as tickets_router
@@ -12,6 +13,7 @@ app = FastAPI(title="Intelligent IT Support Ticket Triage and Routing")
 app.include_router(tickets_router)
 app.include_router(ai_resolution_router)
 app.include_router(ai_evidence_router)
+app.include_router(ai_analytics_router)
 app.include_router(teams_router)
 app.include_router(collaboration_router)
 app.include_router(auth_router)

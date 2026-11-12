@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from auth import require_agent
 from database import get_db
-from models import TeamMember, Ticket, TicketAssignment, TicketPredictionEvidence, TicketPredictionReview, User, UserRole
+from models import Team, TeamMember, Ticket, TicketAssignment, TicketPredictionEvidence, TicketPredictionReview, User, UserRole
 
 router = APIRouter(prefix="/api/analytics", tags=["ai-analytics"])
 
@@ -24,12 +24,12 @@ def ai_analytics(
     start = datetime.combine(from_date, time.min, tzinfo=timezone.utc)
     end = datetime.combine(to_date + timedelta(days=1), time.min, tzinfo=timezone.utc)
 
-    visible_ticket = select(Ticket.id).where(
-        or_(
+    visible_ticket = select(Ticket.id)
+    if current_user.role != UserRole.ADMIN:
+        visible_ticket = visible_ticket.where(or_(
             Ticket.assigned_agent_id == current_user.id,
             Ticket.assigned_team_id.in_(select(TeamMember.team_id).where(TeamMember.user_id == current_user.id)),
-        )
-    )
+        ))
     latest_ids = (
         select(
             TicketPredictionEvidence.id.label("evidence_id"),
@@ -92,8 +92,8 @@ def ai_analytics(
 
     category_versions = db.execute(select(
         cohort.c.category_model_version,
-        func.count(func.distinct(case((TicketPredictionReview.id.is_not(None), cohort.c.ticket_id)))).label("reviewed_tickets"),
-        func.count(TicketPredictionReview.id).label("reviews"),
+        func.count(func.distinct(case((TicketPredictionReview.field_name == "category", TicketPredictionReview.ticket_id)))).label("reviewed_tickets"),
+        func.count(TicketPredictionReview.id).filter(TicketPredictionReview.field_name == "category").label("reviews"),
         func.coalesce(func.sum(case((and_(TicketPredictionReview.field_name == "category", TicketPredictionReview.outcome == "ACCEPTED"), 1), else_=0)), 0).label("category_accepted"),
         func.coalesce(func.sum(case((and_(TicketPredictionReview.field_name == "category", TicketPredictionReview.outcome == "OVERRIDDEN"), 1), else_=0)), 0).label("category_overridden"),
     ).select_from(cohort.outerjoin(TicketPredictionReview, TicketPredictionReview.prediction_evidence_id == cohort.c.id))
@@ -107,17 +107,9 @@ def ai_analytics(
     ).select_from(cohort.outerjoin(TicketPredictionReview, TicketPredictionReview.prediction_evidence_id == cohort.c.id))
       .group_by(cohort.c.priority_model_version).order_by(cohort.c.priority_model_version)).all()
 
-    routes = db.execute(select(
-        TicketAssignment.team_id, func.count(func.distinct(TicketAssignment.ticket_id)),
-    ).where(
-        TicketAssignment.source == "AI", TicketAssignment.assigned_at >= start, TicketAssignment.assigned_at < end,
-        TicketAssignment.ticket_id.in_(visible_ticket),
-    ).group_by(TicketAssignment.team_id).order_by(TicketAssignment.team_id)).all()
-    team_names = dict(db.execute(select(Ticket.id, Ticket.assigned_team_id).where(Ticket.id.in_(visible_ticket))).all()) if False else {}
     # Resolve team labels in one aggregate query; no ticket bodies or employee conversation data are selected.
-    from models import Team
     route_rows = db.execute(select(Team.name, func.count(func.distinct(TicketAssignment.ticket_id)))
-        .select_from(TicketAssignment.outerjoin(Team, Team.id == TicketAssignment.team_id))
+        .select_from(TicketAssignment).outerjoin(Team, Team.id == TicketAssignment.team_id)
         .where(TicketAssignment.source == "AI", TicketAssignment.assigned_at >= start,
                TicketAssignment.assigned_at < end, TicketAssignment.ticket_id.in_(visible_ticket))
         .group_by(Team.name).order_by(Team.name)).all()
