@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -61,15 +61,18 @@ def list_prediction_reviews(
     ticket_id: int,
     current_user: User = Depends(require_agent),
     db: Session = Depends(get_db),
-) -> list[TicketPredictionReview]:
+) -> list[dict[str, object]]:
     _authorized_ticket(ticket_id, current_user, db)
-    return list(
-        db.scalars(
-            select(TicketPredictionReview)
-            .where(TicketPredictionReview.ticket_id == ticket_id)
-            .order_by(TicketPredictionReview.reviewed_at.asc(), TicketPredictionReview.id.asc())
-        ).all()
-    )
+    rows = db.execute(
+        select(TicketPredictionReview, User.name)
+        .join(User, User.id == TicketPredictionReview.reviewer_id)
+        .where(TicketPredictionReview.ticket_id == ticket_id)
+        .order_by(TicketPredictionReview.reviewed_at.asc(), TicketPredictionReview.id.asc())
+    ).all()
+    return [{**{column: getattr(review, column) for column in (
+        "id", "ticket_id", "prediction_evidence_id", "reviewer_id", "field_name",
+        "predicted_value", "confirmed_value", "outcome", "reviewed_at", "reason",
+    )}, "reviewer_name": reviewer_name} for review, reviewer_name in rows]
 
 
 @router.post(
@@ -84,7 +87,10 @@ def review_ticket_prediction(
     current_user: User = Depends(require_agent),
     db: Session = Depends(get_db),
 ) -> list[TicketPredictionReview]:
-    ticket = _authorized_ticket(ticket_id, current_user, db)
+    ticket = db.scalar(select(Ticket).where(Ticket.id == ticket_id).with_for_update(of=Ticket))
+    if ticket is None:
+        raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
+    _require_ticket_access(ticket, current_user, db, allow_employee=False)
     evidence = db.scalar(
         select(TicketPredictionEvidence).where(
             TicketPredictionEvidence.id == payload.prediction_evidence_id,
@@ -93,6 +99,20 @@ def review_ticket_prediction(
     )
     if evidence is None:
         raise HTTPException(status_code=404, detail="Prediction evidence was not found for this ticket")
+
+    requested_fields = [name for name, value in (("category", payload.category), ("priority", payload.priority)) if value is not None]
+    existing_fields = set(db.scalars(
+        select(TicketPredictionReview.field_name).where(
+            TicketPredictionReview.prediction_evidence_id == evidence.id,
+            TicketPredictionReview.field_name.in_(requested_fields),
+        )
+    ).all())
+    if existing_fields:
+        fields = ", ".join(sorted(existing_fields))
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"This prediction already has a review for: {fields}",
+        )
 
     reviewed_at = datetime.now(timezone.utc)
     reviews: list[TicketPredictionReview] = []
