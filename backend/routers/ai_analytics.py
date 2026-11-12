@@ -107,11 +107,21 @@ def ai_analytics(
     ).select_from(cohort.outerjoin(TicketPredictionReview, TicketPredictionReview.prediction_evidence_id == cohort.c.id))
       .group_by(cohort.c.priority_model_version).order_by(cohort.c.priority_model_version)).all()
 
-    # Resolve team labels in one aggregate query; no ticket bodies or employee conversation data are selected.
+    ai_route_rank = select(
+        TicketAssignment.ticket_id.label("ticket_id"),
+        TicketAssignment.team_id.label("team_id"),
+        func.row_number().over(
+            partition_by=TicketAssignment.ticket_id,
+            order_by=(TicketAssignment.assigned_at.desc(), TicketAssignment.id.desc()),
+        ).label("row_num"),
+    ).where(
+        TicketAssignment.source == "AI", TicketAssignment.assigned_at >= start,
+        TicketAssignment.assigned_at < end, TicketAssignment.ticket_id.in_(visible_ticket),
+    ).subquery()
+    # Resolve the latest AI route per ticket in one aggregate query; no ticket text is selected.
     route_rows = db.execute(select(Team.name, func.count(func.distinct(TicketAssignment.ticket_id)))
-        .select_from(TicketAssignment).outerjoin(Team, Team.id == TicketAssignment.team_id)
-        .where(TicketAssignment.source == "AI", TicketAssignment.assigned_at >= start,
-               TicketAssignment.assigned_at < end, TicketAssignment.ticket_id.in_(visible_ticket))
+        .select_from(ai_route_rank).outerjoin(Team, Team.id == ai_route_rank.c.team_id)
+        .where(ai_route_rank.c.row_num == 1)
         .group_by(Team.name).order_by(Team.name)).all()
 
     total_tickets = int(totals_row[0])
@@ -121,6 +131,7 @@ def ai_analytics(
     return {
         "from": from_date.isoformat(), "to": to_date.isoformat(), "model_version_filter": model_version,
         "total_prediction_tickets": total_tickets,
+        "total_prediction_snapshots": total_tickets,
         "reviewed_prediction_tickets": reviewed_tickets,
         "unreviewed_prediction_tickets": max(0, total_tickets - reviewed_tickets),
         "review_coverage": reviewed_tickets / total_tickets if total_tickets else None,

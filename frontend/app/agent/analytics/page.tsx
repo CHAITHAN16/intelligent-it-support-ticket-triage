@@ -75,7 +75,7 @@ export default function AIAnalyticsPage() {
           : data && data.total_prediction_tickets === 0 ? <section className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-14 text-center"><h2 className="text-base font-semibold text-slate-900">No prediction records in this range</h2><p className="mx-auto mt-2 max-w-lg text-sm text-slate-500">Choose a wider date range or check back after ticket predictions have been recorded. Analytics never fills missing records with estimates.</p></section>
             : data && <>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <Metric title="Prediction tickets" value={String(data.total_prediction_tickets)} note="Latest in-range snapshot per ticket" />
+                <Metric title="Prediction snapshots" value={String(data.total_prediction_snapshots)} note="Latest in-range snapshot per ticket" />
                 <Metric title="Reviewed tickets" value={String(data.reviewed_prediction_tickets)} note={`${data.unreviewed_prediction_tickets} without a recorded review`} />
                 <Metric title="Review coverage" value={rate(data.review_coverage)} note={`${data.reviewed_prediction_tickets} / ${data.total_prediction_tickets} tickets`} />
                 <Metric title="Category / priority decisions" value={`${data.category.reviewed} / ${data.priority.reviewed}`} note="Separate field-level denominators" />

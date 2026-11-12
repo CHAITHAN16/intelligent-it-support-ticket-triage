@@ -168,6 +168,7 @@ export type AIAnalyticsResponse = {
   to: string;
   model_version_filter: string | null;
   total_prediction_tickets: number;
+  total_prediction_snapshots: number;
   reviewed_prediction_tickets: number;
   unreviewed_prediction_tickets: number;
   review_coverage: number | null;
