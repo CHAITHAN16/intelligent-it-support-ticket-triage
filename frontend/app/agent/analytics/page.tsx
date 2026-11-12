@@ -52,7 +52,7 @@ export default function AIAnalyticsPage() {
       .then((data) => { if (active) { setResult({ key: requestKey, data }); setFailure(null); } })
       .catch((reason: unknown) => { if (active) setFailure({ key: requestKey, message: reason instanceof Error ? reason.message : "AI analytics could not be loaded." }); });
     return () => { active = false; };
-  }, [from, to, modelVersion, refresh]);
+  }, [from, to, modelVersion, refresh, requestKey]);
 
   const data = result?.key === requestKey ? result.data : null;
   const error = failure?.key === requestKey ? failure.message : null;
