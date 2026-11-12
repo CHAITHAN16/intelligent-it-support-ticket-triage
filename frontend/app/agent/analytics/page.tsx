@@ -43,13 +43,17 @@ export default function AIAnalyticsPage() {
   const [modelVersion, setModelVersion] = useState("");
   const [result, setResult] = useState<{ key: string; data: AIAnalyticsResponse } | null>(null);
   const [failure, setFailure] = useState<{ key: string; message: string } | null>(null);
+  const [knownVersions, setKnownVersions] = useState<string[]>([]);
   const [refresh, setRefresh] = useState(0);
 
   const requestKey = `${from}|${to}|${modelVersion}`;
   useEffect(() => {
     let active = true;
     getAIAnalytics(from, to, modelVersion || undefined)
-      .then((data) => { if (active) { setResult({ key: requestKey, data }); setFailure(null); } })
+      .then((data) => { if (active) {
+        setResult({ key: requestKey, data }); setFailure(null);
+        setKnownVersions((versions) => [...new Set([...versions, ...data.category_model_versions.map((item) => item.model_version), ...data.priority_model_versions.map((item) => item.model_version)])].sort());
+      } })
       .catch((reason: unknown) => { if (active) setFailure({ key: requestKey, message: reason instanceof Error ? reason.message : "AI analytics could not be loaded." }); });
     return () => { active = false; };
   }, [from, to, modelVersion, refresh, requestKey]);
@@ -57,9 +61,6 @@ export default function AIAnalyticsPage() {
   const data = result?.key === requestKey ? result.data : null;
   const error = failure?.key === requestKey ? failure.message : null;
   const loading = !data && !error;
-  const versions = [...new Set([...(data?.category_model_versions.map((item) => item.model_version) ?? []), ...(data?.priority_model_versions.map((item) => item.model_version) ?? [])])].sort();
-  const commonVersions = data ? [...new Set([...data.category_model_versions.map((item) => item.model_version), ...data.priority_model_versions.map((item) => item.model_version)])].sort() : [];
-  const versionsToFilter = versions.length ? versions : commonVersions;
 
   return <AgentShell activeSection="analytics" selectedTeamName="AI Analytics">
     <div className="mx-auto max-w-[1320px] space-y-6">
@@ -67,7 +68,7 @@ export default function AIAnalyticsPage() {
         <div className="flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-3 shadow-sm shadow-slate-200/40">
           <label className="text-xs font-medium text-slate-600">From<input type="date" value={from} max={to} onChange={(event) => setFrom(event.target.value)} className="mt-1 block rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" /></label>
           <label className="text-xs font-medium text-slate-600">To<input type="date" value={to} min={from} max={defaultDate(0)} onChange={(event) => setTo(event.target.value)} className="mt-1 block rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" /></label>
-          <label className="text-xs font-medium text-slate-600">Model version<select value={modelVersion} onChange={(event) => setModelVersion(event.target.value)} className="mt-1 block max-w-44 rounded-md border border-slate-300 bg-white px-2 py-2 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"><option value="">All versions</option>{versionsToFilter.map((version) => <option key={version}>{version}</option>)}</select></label>
+          <label className="text-xs font-medium text-slate-600">Model version<select value={modelVersion} onChange={(event) => setModelVersion(event.target.value)} className="mt-1 block max-w-44 rounded-md border border-slate-300 bg-white px-2 py-2 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"><option value="">All versions</option>{knownVersions.map((version) => <option key={version}>{version}</option>)}</select></label>
         </div>
       </header>
       {error ? <div role="alert" className="rounded-lg border border-red-200 bg-white p-5 text-sm text-red-700"><p className="font-semibold">Analytics could not be loaded</p><p className="mt-1">{error}</p><button type="button" onClick={() => setRefresh((value) => value + 1)} className="mt-3 rounded-md bg-blue-600 px-3 py-2 font-medium text-white hover:bg-blue-700">Retry</button></div>
