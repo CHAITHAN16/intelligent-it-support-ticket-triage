@@ -167,6 +167,34 @@ def test_employee_cannot_read_or_submit_agent_reviews(evidence_client, evidence_
     assert evidence_client.post("/api/tickets/1/prediction-reviews", headers=employee_headers, json=review(category="Network")).status_code == 403
 
 
+def test_ai_analytics_uses_latest_snapshot_and_agent_ticket_scope(evidence_client, evidence_db):
+    now = datetime.now(timezone.utc)
+    evidence_db.add(TicketPredictionReview(
+        ticket_id=1, prediction_evidence_id=1, reviewer_id=2, field_name="category",
+        predicted_value="Network", confirmed_value="Network", outcome="ACCEPTED", reviewed_at=now,
+    ))
+    evidence_db.commit()
+    date_value = now.date().isoformat()
+    response = evidence_client.get(
+        f"/api/analytics/ai?from={date_value}&to={date_value}", headers=headers(evidence_db, 2)
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    # The agent only sees team 1; ticket 2 belongs to another team.
+    assert body["total_prediction_tickets"] == 1
+    assert body["reviewed_prediction_tickets"] == 1
+    assert body["category"] == {"reviewed": 1, "accepted": 1, "overridden": 0, "acceptance_rate": 1.0, "override_rate": 0.0}
+    assert body["priority"]["reviewed"] == 0
+
+
+def test_employee_cannot_read_ai_analytics(evidence_client, evidence_db):
+    date_value = datetime.now(timezone.utc).date().isoformat()
+    response = evidence_client.get(
+        f"/api/analytics/ai?from={date_value}&to={date_value}", headers=headers(evidence_db, 1)
+    )
+    assert response.status_code == 403
+
+
 def test_agent_ticket_scope_and_evidence_scope_are_enforced(evidence_client, evidence_db):
     agent_headers = headers(evidence_db, 2)
     assert evidence_client.get("/api/tickets/2/prediction-evidence", headers=agent_headers).status_code == 403
