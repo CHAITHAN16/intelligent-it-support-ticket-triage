@@ -72,7 +72,7 @@ export function AgentTicketTable({
   const visibleTickets = limit === undefined ? filteredTickets : filteredTickets.slice(0, limit);
   const ticketHref = (ticketId: number) => `/agent/tickets/${ticketId}?from=${source}${source === "team" && teamId ? `&teamId=${teamId}` : ""}`;
 
-  return <section aria-label="Ticket list" className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+  return <section aria-label="Ticket list" className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/40">
     {showFilters && <div className="flex flex-col gap-3 border-b border-slate-200 p-3 sm:flex-row sm:flex-wrap sm:items-center">
       <label className="relative min-w-0 flex-1 sm:min-w-60"><span className="sr-only">Search tickets by ID or subject</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ticket ID or subject" className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-100" /></label>
       <select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value as "ALL" | TicketStatus)} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"><option value="ALL">All statuses</option>{STATUSES.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select>
@@ -85,7 +85,7 @@ export function AgentTicketTable({
       <p className="border-b border-slate-100 px-4 py-2.5 text-xs text-slate-500">{limit === undefined ? `${filteredTickets.length} ticket${filteredTickets.length === 1 ? "" : "s"}` : `Showing ${visibleTickets.length} recent of ${filteredTickets.length} matching ticket${filteredTickets.length === 1 ? "" : "s"}`}</p>
       <div className="hidden overflow-x-auto md:block">
         <table className="w-full min-w-[980px] text-left text-sm">
-          <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500"><tr>{["ID", "Ticket", "Category", "Priority", "Status", "Assigned team / agent", "Created"].map((label) => <th key={label} scope="col" className="px-4 py-3">{label}</th>)}</tr></thead>
+          <thead className="bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wide text-slate-500"><tr>{["ID", "Ticket", "Category", "Priority", "Status", "Assigned team / agent", "Created"].map((label) => <th key={label} scope="col" className="px-4 py-3">{label}</th>)}</tr></thead>
           <tbody className="divide-y divide-slate-100">{visibleTickets.map((ticket) => <tr key={ticket.id} className="hover:bg-slate-50">
             <td className="whitespace-nowrap px-4 py-3 text-xs font-medium text-slate-500">#{ticket.id}</td>
             <td className="max-w-[300px] px-4 py-3"><Link href={ticketHref(ticket.id)} className="block truncate font-medium text-sky-800 hover:underline focus-visible:outline-2 focus-visible:outline-sky-600">{ticket.title}</Link></td>

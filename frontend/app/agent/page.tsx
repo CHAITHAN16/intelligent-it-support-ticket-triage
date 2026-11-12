@@ -8,7 +8,7 @@ import { AgentTicketTable } from "@/components/agent-ticket-table";
 import { getTickets, type TicketResponse } from "@/lib/api";
 
 function Metric({ label, value, description }: { label: string; value: number; description: string }) {
-  return <article className="rounded-lg border border-slate-200 bg-white px-4 py-4">
+  return <article className="rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm shadow-slate-200/40">
     <p className="text-xs font-medium text-slate-500">{label}</p>
     <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{value}</p>
     <p className="mt-1 text-xs text-slate-500">{description}</p>
@@ -42,7 +42,7 @@ export default function AgentDashboardPage() {
   const recentTickets = [...tickets].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
 
   return <AgentShell activeSection="overview" selectedTeamName="Agent overview">
-    <div className="mx-auto max-w-[1320px] space-y-7">
+      <div className="mx-auto max-w-[1320px] space-y-7">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Support operations</p><h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">Agent overview</h1><p className="mt-1.5 text-sm text-slate-600">A current view of tickets available to your account.</p></div>
         <button type="button" onClick={refreshTickets} disabled={isLoading} className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{isLoading ? "Refreshing..." : "Refresh"}</button>
