@@ -350,6 +350,10 @@ export default function AgentTicketDetailPage() {
                 isLoading={isEvidenceLoading}
                 error={evidenceError}
                 onRetry={() => void refreshPredictionEvidence()}
+                onReviewSubmitted={async () => {
+                  await Promise.all([refreshPredictionEvidence(), refreshTicket(), refreshAuditHistory()]);
+                }}
+                ticketId={ticketId}
               />
 
               <Section title="Suggested resolution" description="Knowledge-base recommendation for agent review.">

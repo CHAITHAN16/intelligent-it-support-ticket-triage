@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createTicketPredictionReview } from "@/lib/api";
 
 import type {
   Team,
@@ -81,6 +82,8 @@ export function AgentAIEvidencePanel({
   isLoading,
   error,
   onRetry,
+  onReviewSubmitted,
+  ticketId,
 }: {
   currentCategory: string | null;
   currentPriority: TicketPriority;
@@ -93,8 +96,16 @@ export function AgentAIEvidencePanel({
   isLoading: boolean;
   error: string | null;
   onRetry: () => void;
+  onReviewSubmitted: () => Promise<void>;
+  ticketId: number;
 }) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [reason, setReason] = useState("");
+  const [categoryCorrection, setCategoryCorrection] = useState("Network");
+  const [priorityCorrection, setPriorityCorrection] = useState<TicketPriority>("MEDIUM");
+  const [submittingField, setSubmittingField] = useState<"category" | "priority" | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const latestEvidence = evidence[evidence.length - 1] ?? null;
   const selectedEvidence = evidence.find((item) => item.id === selectedId) ?? latestEvidence;
   const selectedReviews = selectedEvidence
@@ -104,6 +115,21 @@ export function AgentAIEvidencePanel({
     .filter((assignment) => assignment.unassigned_at === null)
     .sort((left, right) => Date.parse(right.assigned_at) - Date.parse(left.assigned_at))[0];
   const mappedTeam = selectedEvidence ? CATEGORY_TEAM_MAP[selectedEvidence.predicted_category] ?? "General IT Support" : null;
+  async function submitReview(field: "category" | "priority", value: string) {
+    if (!selectedEvidence) return;
+    setSubmittingField(field); setSubmitError(null); setSubmitSuccess(null);
+    try {
+      await createTicketPredictionReview(ticketId, {
+        prediction_evidence_id: selectedEvidence.id,
+        ...(field === "category" ? { category: value } : { priority: value as TicketPriority }),
+        ...(reason.trim() ? { reason: reason.trim() } : {}),
+      });
+      await onReviewSubmitted();
+      setSubmitSuccess(`${field === "category" ? "Category" : "Priority"} review saved.`);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Review could not be saved.");
+    } finally { setSubmittingField(null); }
+  }
 
   return <div className="space-y-4">
     <Section title="Current ticket values">
@@ -153,6 +179,23 @@ export function AgentAIEvidencePanel({
                     <FieldReviews field="category" reviews={selectedReviews} />
                     <FieldReviews field="priority" reviews={selectedReviews} />
                   </div>
+                  <label className="mt-3 block text-xs font-medium text-slate-700">Optional review reason<textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={2000} rows={2} disabled={submittingField !== null} className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm" /></label>
+                  {!["category", "priority"].every((field) => selectedReviews.some((review) => review.field_name === field)) && <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {!selectedReviews.some((review) => review.field_name === "category") && <div className="rounded-md border border-slate-200 p-3">
+                      <p className="text-xs font-semibold text-slate-800">Category review</p>
+                      <button type="button" disabled={submittingField !== null} onClick={() => void submitReview("category", selectedEvidence.predicted_category)} className="mt-2 w-full rounded bg-sky-700 px-2 py-1.5 text-xs font-semibold text-white disabled:opacity-50">{submittingField === "category" ? "Saving…" : "Accept predicted category"}</button>
+                      <label className="mt-2 block text-xs text-slate-600">Correct category<select value={categoryCorrection} onChange={(event) => setCategoryCorrection(event.target.value)} className="mt-1 w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-xs">{["Network", "Security", "Software", "Other"].map((value) => <option key={value}>{value}</option>)}</select></label>
+                      <button type="button" disabled={submittingField !== null} onClick={() => void submitReview("category", categoryCorrection)} className="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50">Correct category</button>
+                    </div>}
+                    {!selectedReviews.some((review) => review.field_name === "priority") && <div className="rounded-md border border-slate-200 p-3">
+                      <p className="text-xs font-semibold text-slate-800">Priority review</p>
+                      <button type="button" disabled={submittingField !== null} onClick={() => void submitReview("priority", selectedEvidence.predicted_priority)} className="mt-2 w-full rounded bg-sky-700 px-2 py-1.5 text-xs font-semibold text-white disabled:opacity-50">{submittingField === "priority" ? "Saving…" : "Accept predicted priority"}</button>
+                      <label className="mt-2 block text-xs text-slate-600">Correct priority<select value={priorityCorrection} onChange={(event) => setPriorityCorrection(event.target.value as TicketPriority)} className="mt-1 w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-xs">{["LOW", "MEDIUM", "HIGH", "URGENT"].map((value) => <option key={value}>{value}</option>)}</select></label>
+                      <button type="button" disabled={submittingField !== null} onClick={() => void submitReview("priority", priorityCorrection)} className="mt-2 w-full rounded border border-slate-300 px-2 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50">Correct priority</button>
+                    </div>}
+                  </div>}
+                  {submitError && <p role="alert" className="mt-2 text-xs text-rose-700">{submitError}</p>}
+                  {submitSuccess && <p role="status" className="mt-2 text-xs text-emerald-700">{submitSuccess}</p>}
                 </div>
               </div>}
             </>}
