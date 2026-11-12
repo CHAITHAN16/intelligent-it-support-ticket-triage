@@ -41,21 +41,22 @@ export default function AIAnalyticsPage() {
   const [from, setFrom] = useState(defaultDate(-89));
   const [to, setTo] = useState(defaultDate(0));
   const [modelVersion, setModelVersion] = useState("");
-  const [data, setData] = useState<AIAnalyticsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{ key: string; data: AIAnalyticsResponse } | null>(null);
+  const [failure, setFailure] = useState<{ key: string; message: string } | null>(null);
   const [refresh, setRefresh] = useState(0);
 
+  const requestKey = `${from}|${to}|${modelVersion}`;
   useEffect(() => {
     let active = true;
-    setLoading(true); setError(null);
     getAIAnalytics(from, to, modelVersion || undefined)
-      .then((result) => { if (active) setData(result); })
-      .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "AI analytics could not be loaded."); })
-      .finally(() => { if (active) setLoading(false); });
+      .then((data) => { if (active) { setResult({ key: requestKey, data }); setFailure(null); } })
+      .catch((reason: unknown) => { if (active) setFailure({ key: requestKey, message: reason instanceof Error ? reason.message : "AI analytics could not be loaded." }); });
     return () => { active = false; };
   }, [from, to, modelVersion, refresh]);
 
+  const data = result?.key === requestKey ? result.data : null;
+  const error = failure?.key === requestKey ? failure.message : null;
+  const loading = !data && !error;
   const versions = [...new Set([...(data?.category_model_versions.map((item) => item.model_version) ?? []), ...(data?.priority_model_versions.map((item) => item.model_version) ?? [])])].sort();
   const commonVersions = data ? [...new Set([...data.category_model_versions.map((item) => item.model_version), ...data.priority_model_versions.map((item) => item.model_version)])].sort() : [];
   const versionsToFilter = versions.length ? versions : commonVersions;
