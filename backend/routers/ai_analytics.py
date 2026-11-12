@@ -119,7 +119,7 @@ def ai_analytics(
         TicketAssignment.assigned_at < end, TicketAssignment.ticket_id.in_(visible_ticket),
     ).subquery()
     # Resolve the latest AI route per ticket in one aggregate query; no ticket text is selected.
-    route_rows = db.execute(select(Team.name, func.count(func.distinct(TicketAssignment.ticket_id)))
+    route_rows = db.execute(select(Team.name, func.count(func.distinct(ai_route_rank.c.ticket_id)))
         .select_from(ai_route_rank).outerjoin(Team, Team.id == ai_route_rank.c.team_id)
         .where(ai_route_rank.c.row_num == 1)
         .group_by(Team.name).order_by(Team.name)).all()
