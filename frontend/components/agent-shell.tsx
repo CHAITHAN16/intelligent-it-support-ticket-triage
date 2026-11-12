@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 import type { Team } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -16,6 +16,42 @@ const NAV_ITEMS: Array<{ section: AgentSection; href: string; label: string }> =
 ];
 
 const SIDEBAR_STORAGE_KEY = "agent-sidebar-expanded";
+const SIDEBAR_PREFERENCE_EVENT = "agent-sidebar-preference-change";
+let memorySidebarPreference: boolean | null = null;
+
+function getSidebarPreference() {
+  try {
+    const savedPreference = window.localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    if (savedPreference === "true") return true;
+    if (savedPreference === "false") return false;
+  } catch {
+    // Fall back to the in-memory preference when browser storage is unavailable.
+  }
+  return memorySidebarPreference ?? true;
+}
+
+function subscribeToSidebarPreference(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(SIDEBAR_PREFERENCE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(SIDEBAR_PREFERENCE_EVENT, onChange);
+  };
+}
+
+function setSidebarPreference(expanded: boolean) {
+  memorySidebarPreference = expanded;
+  try {
+    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(expanded));
+  } catch {
+    // The in-memory value remains available for this session.
+  }
+  window.dispatchEvent(new Event(SIDEBAR_PREFERENCE_EVENT));
+}
+
+function getServerSidebarPreference() {
+  return true;
+}
 
 function NavigationIcon({ section, className = "" }: { section: AgentSection; className?: string }) {
   const paths: Record<AgentSection, React.ReactNode> = {
@@ -51,27 +87,7 @@ export function AgentShell({
 }) {
   const { logout, user } = useAuth();
   const navItems = NAV_ITEMS.filter((item) => item.section !== "analytics" || user?.role === "AGENT" || user?.role === "ADMIN");
-  const [sidebarExpanded, setSidebarExpanded] = useState(true);
-  const [sidebarPreferenceLoaded, setSidebarPreferenceLoaded] = useState(false);
-
-  useEffect(() => {
-    try {
-      const savedPreference = window.localStorage.getItem(SIDEBAR_STORAGE_KEY);
-      if (savedPreference === "true" || savedPreference === "false") setSidebarExpanded(savedPreference === "true");
-    } catch {
-      // Keep the expanded default when browser storage is unavailable.
-    }
-    setSidebarPreferenceLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    if (!sidebarPreferenceLoaded) return;
-    try {
-      window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarExpanded));
-    } catch {
-      // The sidebar remains usable for this session if storage is unavailable.
-    }
-  }, [sidebarExpanded, sidebarPreferenceLoaded]);
+  const sidebarExpanded = useSyncExternalStore(subscribeToSidebarPreference, getSidebarPreference, getServerSidebarPreference);
 
   useEffect(() => {
     const htmlOverflow = document.documentElement.style.overflow;
@@ -108,7 +124,7 @@ export function AgentShell({
             <span className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-xs font-bold text-white">IT</span>
             {sidebarExpanded && <span className="text-sm font-semibold tracking-tight text-white">IT Support</span>}
           </Link>
-          <button type="button" onClick={() => setSidebarExpanded((expanded) => !expanded)} aria-label={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"} aria-expanded={sidebarExpanded} aria-controls="agent-sidebar" title={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400">
+          <button type="button" onClick={() => setSidebarPreference(!sidebarExpanded)} aria-label={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"} aria-expanded={sidebarExpanded} aria-controls="agent-sidebar" title={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400">
             <SidebarToggleIcon expanded={sidebarExpanded} />
           </button>
         </div>
