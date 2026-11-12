@@ -65,7 +65,10 @@ def process_ticket(ticket_id: int) -> dict[str, int | str]:
         ticket = db.scalar(
             select(Ticket)
             .where(Ticket.id == ticket_id)
-            .with_for_update()
+            # assigned_team is configured with lazy="joined", which adds a
+            # nullable LEFT OUTER JOIN. PostgreSQL cannot lock the nullable
+            # side of that join, so scope the row lock to the ticket itself.
+            .with_for_update(of=Ticket)
         )
         if ticket is None:
             logger.info("Skipping missing ticket: ticket_id=%s", ticket_id)

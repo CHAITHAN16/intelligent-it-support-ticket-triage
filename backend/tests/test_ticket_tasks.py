@@ -5,7 +5,8 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 
 import pytest
 from celery.exceptions import Retry
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, select
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -24,6 +25,20 @@ def test_task_uses_project_database_session_factory():
         ConnectionError,
         TimeoutError,
     )
+
+
+def test_ticket_lock_query_only_locks_ticket_with_joined_team_relationship():
+    statement = (
+        select(Ticket)
+        .where(Ticket.id == 13)
+        .with_for_update(of=Ticket)
+    )
+
+    sql = str(statement.compile(dialect=postgresql.dialect()))
+
+    assert "LEFT OUTER JOIN teams AS teams_1" in sql
+    assert "FOR UPDATE OF tickets" in sql
+    assert "FOR UPDATE OF tickets, teams_1" not in sql
 
 
 @pytest.fixture
