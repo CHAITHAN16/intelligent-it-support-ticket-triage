@@ -27,7 +27,7 @@ function percent(value: number) {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="rounded-lg border border-slate-200 bg-white">
+  return <section className="rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/40">
     <h2 className="border-b border-slate-100 px-4 py-3 text-sm font-semibold text-slate-900">{title}</h2>
     <div className="p-4">{children}</div>
   </section>;
@@ -41,7 +41,7 @@ function Distribution({ title, values }: { title: string; values: Record<string,
       {sortedValues.map(([label, value]) => <li key={label} className="grid grid-cols-[5.5rem_minmax(0,1fr)_3.5rem] items-center gap-2 text-xs">
         <span className="truncate text-slate-600">{label}</span>
         <span className="h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
-          <span className="block h-full rounded-full bg-sky-600" style={{ width: `${Math.max(0, Math.min(100, value * 100))}%` }} />
+          <span className="block h-full rounded-full bg-blue-600" style={{ width: `${Math.max(0, Math.min(100, value * 100))}%` }} />
         </span>
         <span className="text-right tabular-nums text-slate-700">{percent(value)}</span>
       </li>)}
