@@ -104,7 +104,7 @@ export function AgentShell({
     return <>
       {navItems.map((item) => {
         const active = activeSection === item.section;
-        return <Link key={item.section} href={item.href} aria-label={item.label} aria-current={active ? "page" : undefined} title={sidebarExpanded ? undefined : item.label} className={`flex min-h-10 items-center gap-3 whitespace-nowrap rounded-md py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 ${mobile ? "px-3" : sidebarExpanded ? "px-3" : "justify-center px-0"} ${active ? "bg-slate-800 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}>
+        return <Link key={item.section} href={item.href} aria-label={item.label} aria-current={active ? "page" : undefined} title={sidebarExpanded || mobile ? undefined : item.label} className={`flex min-h-10 items-center gap-3 whitespace-nowrap rounded-md py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 ${mobile ? "px-3" : sidebarExpanded ? "px-3" : "justify-center px-0"} ${active ? "bg-slate-800 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}>
           <NavigationIcon section={item.section} />
           <span className={mobile || sidebarExpanded ? "" : "sr-only"}>{item.label}</span>
         </Link>;
@@ -138,7 +138,7 @@ export function AgentShell({
             <label htmlFor="team-selector" className="sr-only">Select support team</label>
             {sidebarExpanded ? <select id="team-selector" value={selectedTeamId ?? ""} onChange={(event) => onTeamChange(Number(event.target.value))} disabled={teams.length === 0} className="mt-2 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-900 disabled:bg-slate-800">
               {teams.length === 0 ? <option value="">No teams available</option> : teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
-            </select> : <div className="relative flex h-10 w-10 items-center justify-center rounded-md text-slate-400 hover:bg-slate-800 hover:text-white focus-within:outline-2 focus-within:outline-blue-400" title={selectedTeamName}>
+            </select> : <div className="relative flex h-10 w-10 items-center justify-center rounded-md text-slate-400 hover:bg-slate-800 hover:text-white focus-within:outline-2 focus-within:outline-blue-400" title={`Select support team: ${selectedTeamName}`}>
               <NavigationIcon section="team" />
               <select id="team-selector" aria-label={`Select support team. Current team: ${selectedTeamName}`} value={selectedTeamId ?? ""} onChange={(event) => onTeamChange(Number(event.target.value))} disabled={teams.length === 0} className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed">
                 {teams.length === 0 ? <option value="">No teams available</option> : teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
