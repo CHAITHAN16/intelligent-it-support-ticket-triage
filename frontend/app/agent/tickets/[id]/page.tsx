@@ -384,7 +384,7 @@ export default function AgentTicketDetailPage() {
             <div className="flex min-w-0 gap-1 overflow-x-auto py-2">{SECTION_LINKS.map((item) => <a key={item.id} href={`#${item.id}`} aria-current={activeTicketSection === item.id ? "location" : undefined} onClick={() => setActiveTicketSection(item.id)} className={`shrink-0 rounded-md px-3 py-2 text-xs font-semibold ${activeTicketSection === item.id ? "bg-white text-sky-800 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:bg-white hover:text-slate-900"}`}>{item.label}</a>)}</div>
           </nav>
 
-          <div className="mt-4 grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)] xl:gap-6">
+          <div className="mt-4 grid min-w-0 grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)] xl:gap-6">
             <main className="min-w-0 space-y-5">
               <Section title="Overview" description="Request summary, classification, and current ownership." className="scroll-mt-28">
                 <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,0.85fr)]">
@@ -447,7 +447,7 @@ export default function AgentTicketDetailPage() {
               </Section>
             </main>
 
-            <aside className="min-w-0 space-y-5 lg:sticky lg:top-16">
+            <aside className="min-w-0 space-y-5 xl:sticky xl:top-16">
               <Section id="assignment" title="Assignment" description="Manage team ownership and individual agent assignment. AI routing remains recorded separately from human changes." className="scroll-mt-28">
                 <div className="space-y-3">
                   <label className="block text-xs font-medium text-slate-700">Assigned team<select value={assignedTeamId} onChange={(event) => { setAssignedTeamId(event.target.value); setSelectedAgentId(""); setAssignmentError(null); }} disabled={isAssignmentSaving} className="mt-1.5 w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:bg-slate-100">
