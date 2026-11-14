@@ -356,7 +356,7 @@ def test_employee_cannot_assign_an_agent(client, database_session):
 
 def test_authorized_agent_comment_creates_only_new_first_response_event(client, database_session):
     # Existing comments have no visibility/event classification and must not be backfilled.
-    database_session.add(Comment(id=1, ticket_id=1, author_id=1, body="Historic customer note"))
+    database_session.add(Comment(id=50, ticket_id=1, author_id=1, body="Historic customer note"))
     database_session.commit()
     assert database_session.get(Ticket, 1).first_response_at is None
     assert database_session.query(TicketFirstResponse).count() == 0

@@ -36,8 +36,8 @@ def test_sla_deadlines_use_aware_elapsed_time_and_are_separate():
     target = SLATarget(priority=TicketPriority.HIGH, response_minutes=60, resolution_minutes=180)
     result = calculate_ticket_sla(ticket, target, now=datetime(2026, 11, 14, 6, 45, tzinfo=timezone.utc))
 
-    assert result.response_deadline == datetime(2026, 11, 14, 5, 0, tzinfo=timezone.utc)
-    assert result.resolution_deadline == datetime(2026, 11, 14, 7, 0, tzinfo=timezone.utc)
+    assert result.response_deadline == datetime(2026, 11, 14, 5, 30, tzinfo=timezone.utc)
+    assert result.resolution_deadline == datetime(2026, 11, 14, 7, 30, tzinfo=timezone.utc)
     assert result.response_overdue is True
     assert result.resolution_overdue is False
     assert result.actively_overdue is True
