@@ -139,6 +139,7 @@ class Ticket(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    first_response_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (
         ForeignKeyConstraint(["assigned_team_id", "assigned_agent_id"], ["team_members.team_id", "team_members.user_id"], name="fk_ticket_agent_team_membership"),
@@ -170,7 +171,9 @@ class TicketAssignment(Base):
     agent_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
     source: Mapped[AssignmentSource] = mapped_column(SqlEnum(AssignmentSource, name="assignment_source"), nullable=False)
     assigned_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
+    previous_agent_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
     routing_reason: Mapped[str | None] = mapped_column(Text)
+    reason: Mapped[str | None] = mapped_column(Text)
     model_version: Mapped[str | None] = mapped_column(String(100))
     ai_confidence: Mapped[Decimal | None] = mapped_column(Numeric(5, 4))
     assigned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -189,6 +192,30 @@ class TicketAssignment(Base):
         Index("idx_ticket_assignments_team", "team_id", "assigned_at"),
         Index("idx_ticket_assignments_source", "source", "assigned_at"),
     )
+
+
+class SLATarget(Base):
+    __tablename__ = "sla_targets"
+
+    priority: Mapped[TicketPriority] = mapped_column(SqlEnum(TicketPriority, name="ticket_priority", create_type=False), primary_key=True)
+    response_minutes: Mapped[int] = mapped_column(nullable=False)
+    resolution_minutes: Mapped[int] = mapped_column(nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("response_minutes > 0", name="chk_sla_response_minutes_positive"),
+        CheckConstraint("resolution_minutes > 0", name="chk_sla_resolution_minutes_positive"),
+    )
+
+
+class TicketFirstResponse(Base):
+    __tablename__ = "ticket_first_responses"
+
+    ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id", ondelete="CASCADE"), primary_key=True)
+    comment_id: Mapped[int] = mapped_column(ForeignKey("comments.id", ondelete="RESTRICT"), unique=True, nullable=False)
+    agent_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    responded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    __table_args__ = (Index("idx_ticket_first_responses_responded_at", "responded_at"),)
 
 
 class TicketPredictionEvidence(Base):
