@@ -205,6 +205,7 @@ class SLATarget(Base):
     __table_args__ = (
         CheckConstraint("response_minutes > 0", name="chk_sla_response_minutes_positive"),
         CheckConstraint("resolution_minutes > 0", name="chk_sla_resolution_minutes_positive"),
+        CheckConstraint("resolution_minutes >= response_minutes", name="chk_sla_resolution_after_response"),
     )
 
 
