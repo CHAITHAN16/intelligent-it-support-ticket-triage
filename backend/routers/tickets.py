@@ -169,8 +169,10 @@ def update_ticket(
         now = datetime.now(timezone.utc)
         if team_changed or agent_changed:
             target_team_id = requested_team_id if team_changed else ticket.assigned_team_id
-            target_agent_id = requested_agent_id if agent_changed else ticket.assigned_agent_id
+            target_agent_id = requested_agent_id if agent_changed else (None if team_changed else ticket.assigned_agent_id)
             team = db.get(Team, target_team_id) if target_team_id is not None else None
+            if team_changed and target_team_id is None:
+                raise HTTPException(status_code=422, detail="A ticket must remain assigned to a team")
             if target_team_id is not None and team is None:
                 raise HTTPException(status_code=404, detail=f"Team {target_team_id} not found")
             if target_agent_id is not None:
