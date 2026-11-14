@@ -161,14 +161,39 @@ def update_ticket(
         )
     requested_team_id = updates.pop("assigned_team_id", None)
     team_changed = "assigned_team_id" in payload.model_fields_set and requested_team_id != ticket.assigned_team_id
+    requested_agent_id = updates.pop("assigned_agent_id", None)
+    agent_changed = "assigned_agent_id" in payload.model_fields_set and requested_agent_id != ticket.assigned_agent_id
+    assignment_reason = updates.pop("assignment_reason", None)
 
     try:
         now = datetime.now(timezone.utc)
-        if team_changed:
-            team = db.get(Team, requested_team_id)
-            if team is None:
-                raise HTTPException(status_code=404, detail=f"Team {requested_team_id} not found")
+        if team_changed or agent_changed:
+            target_team_id = requested_team_id if team_changed else ticket.assigned_team_id
+            target_agent_id = requested_agent_id if agent_changed else ticket.assigned_agent_id
+            team = db.get(Team, target_team_id) if target_team_id is not None else None
+            if target_team_id is not None and team is None:
+                raise HTTPException(status_code=404, detail=f"Team {target_team_id} not found")
+            if target_agent_id is not None:
+                if target_team_id is None:
+                    raise HTTPException(status_code=422, detail="An agent assignment requires an assigned team")
+                member = db.scalar(select(TeamMember).where(
+                    TeamMember.team_id == target_team_id,
+                    TeamMember.user_id == target_agent_id,
+                ))
+                if member is None:
+                    raise HTTPException(status_code=422, detail="The assigned agent must belong to the assigned team")
+                agent = db.get(User, target_agent_id)
+                if agent is None or not agent.active or agent.role != UserRole.SUPPORT_AGENT:
+                    raise HTTPException(status_code=422, detail="The assigned user is not an active support agent")
+            if isinstance(current_user, User) and current_user.role != UserRole.ADMIN and target_team_id is not None:
+                membership = db.scalar(select(TeamMember).where(
+                    TeamMember.team_id == target_team_id,
+                    TeamMember.user_id == current_user.id,
+                ))
+                if membership is None:
+                    raise HTTPException(status_code=403, detail="You are not authorized to assign tickets to this team")
 
+            previous_agent_id = ticket.assigned_agent_id
             active_assignments = db.scalars(
                 select(TicketAssignment).where(
                     TicketAssignment.ticket_id == ticket.id,
@@ -180,17 +205,18 @@ def update_ticket(
             db.add(
                 TicketAssignment(
                     ticket_id=ticket.id,
-                    team_id=team.id,
-                    agent_id=None,
+                    team_id=target_team_id,
+                    agent_id=target_agent_id,
+                    previous_agent_id=previous_agent_id,
                     source=AssignmentSource.HUMAN,
                     assigned_by_id=current_user.id if isinstance(current_user, User) else None,
-                    routing_reason="Reassigned by support agent",
+                    reason=assignment_reason,
                     assigned_at=now,
                 )
             )
-            ticket.assigned_team_id = team.id
+            ticket.assigned_team_id = target_team_id
             ticket.assigned_team = team
-            ticket.assigned_agent_id = None
+            ticket.assigned_agent_id = target_agent_id
 
         for field, value in updates.items():
             old_value = getattr(ticket, field)
@@ -206,7 +232,7 @@ def update_ticket(
                     )
                 )
 
-        if updates or team_changed:
+        if updates or team_changed or agent_changed:
             ticket.updated_at = now
         if status_changed:
             new_status = updates["status"]
@@ -227,7 +253,7 @@ def update_ticket(
                     note=resolution_note if new_status == TicketStatus.RESOLVED else None,
                 )
             )
-        if updates or team_changed:
+        if updates or team_changed or agent_changed:
             db.commit()
             db.refresh(ticket)
 
