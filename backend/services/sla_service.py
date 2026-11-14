@@ -27,8 +27,16 @@ def calculate_ticket_sla(ticket: Ticket, target: SLATarget, now: datetime | None
     response_deadline = created_utc + timedelta(minutes=target.response_minutes)
     resolution_deadline = created_utc + timedelta(minutes=target.resolution_minutes)
     terminal = ticket.status in (TicketStatus.RESOLVED, TicketStatus.CLOSED)
-    response_overdue = ticket.first_response_at is None and current.astimezone(timezone.utc) > response_deadline
-    resolution_overdue = ticket.resolved_at is None and current.astimezone(timezone.utc) > resolution_deadline
+    now_utc = current.astimezone(timezone.utc)
+    response_time = ticket.first_response_at or now_utc
+    if response_time.tzinfo is None or response_time.utcoffset() is None:
+        response_time = response_time.replace(tzinfo=timezone.utc)
+    resolution_time = ticket.resolved_at or now_utc
+    if resolution_time.tzinfo is None or resolution_time.utcoffset() is None:
+        resolution_time = resolution_time.replace(tzinfo=timezone.utc)
+    # A response/resolution completed after its deadline remains a recorded breach.
+    response_overdue = response_time.astimezone(timezone.utc) > response_deadline
+    resolution_overdue = resolution_time.astimezone(timezone.utc) > resolution_deadline
     return SLACalculation(
         response_deadline=response_deadline,
         resolution_deadline=resolution_deadline,

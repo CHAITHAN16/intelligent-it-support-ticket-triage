@@ -77,3 +77,23 @@ def test_sla_calculator_rejects_naive_now():
     target = SLATarget(priority=TicketPriority.LOW, response_minutes=60, resolution_minutes=120)
     with pytest.raises(ValueError, match="timezone-aware"):
         calculate_ticket_sla(ticket, target, now=datetime(2026, 11, 14))
+
+
+def test_late_first_response_remains_a_response_sla_breach():
+    created = datetime(2026, 11, 14, 10, tzinfo=timezone.utc)
+    ticket = Ticket(
+        id=1,
+        title="Late response",
+        description="Description",
+        creator_id=1,
+        priority=TicketPriority.HIGH,
+        status=TicketStatus.IN_PROGRESS,
+        created_at=created,
+        first_response_at=created + timedelta(minutes=61),
+    )
+    target = SLATarget(priority=TicketPriority.HIGH, response_minutes=60, resolution_minutes=180)
+    result = calculate_ticket_sla(ticket, target, now=created + timedelta(minutes=62))
+
+    assert result.response_overdue is True
+    assert result.resolution_overdue is False
+    assert result.actively_overdue is True
