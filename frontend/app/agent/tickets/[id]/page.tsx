@@ -508,6 +508,7 @@ export default function AgentTicketDetailPage() {
                 {ticket.closed_at && <div className="mt-2"><Detail label="Closed" value={formattedDate(ticket.closed_at)} /></div>}
                 <p className="mt-3 whitespace-pre-wrap border-t border-slate-100 pt-3 text-sm leading-5 text-slate-700">{latestResolution?.note ?? "No resolution note is available."}</p>
               </Section>}
+            </aside>
           </div>
 
           <Section id="activity" title="Activity" description="Unified chronological status, assignment, comment and audit events." className="mt-5 scroll-mt-28">
