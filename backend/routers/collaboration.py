@@ -38,7 +38,9 @@ def create_comment(
     current_user: User | None = Depends(require_agent),
 ) -> Comment:
     try:
-        ticket = _require_ticket(ticket_id, db)
+        ticket = db.scalar(select(Ticket).where(Ticket.id == ticket_id).with_for_update())
+        if ticket is None:
+            raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
         is_authorized_agent = False
         if isinstance(current_user, User):
             if current_user.role not in (UserRole.SUPPORT_AGENT, UserRole.ADMIN) or not _can_agent_access_ticket(ticket, current_user, db):

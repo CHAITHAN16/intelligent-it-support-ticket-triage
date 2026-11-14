@@ -114,7 +114,7 @@ def list_tickets(
     responses={401: {"description": "Authentication is required."}, 403: {"description": "The user cannot access this ticket."}, 404: {"description": "The ticket does not exist."}},
 )
 def get_ticket(ticket_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> TicketResponse:
-    ticket = db.get(Ticket, ticket_id)
+    ticket = db.scalar(select(Ticket).where(Ticket.id == ticket_id).with_for_update())
     if ticket is None:
         raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
     _require_ticket_access(ticket, current_user, db)
