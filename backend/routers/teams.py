@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from auth import get_current_user, require_agent
 from models import Team, TeamMember, Ticket, TicketPriority, TicketStatus, User, UserRole
-from schemas.teams import TeamResponse
+from schemas.teams import TeamAgentMembershipResponse, TeamAgentResponse, TeamResponse
 from schemas.tickets import TicketResponse
 
 
@@ -29,6 +29,54 @@ def list_teams(current_user: User = Depends(require_agent), db: Session = Depend
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     statement = select(Team).order_by(Team.name.asc())
     return list(db.scalars(statement).all())
+
+
+@router.get(
+    "/{team_id}/agents",
+    response_model=list[TeamAgentResponse],
+    summary="List eligible agents for a team",
+    description="Return active support agents in the requested team and their team memberships. Agents must belong to the requested team; administrators may inspect any team.",
+    responses={401: {"description": "Authentication is required."}, 403: {"description": "The caller cannot inspect this team's membership."}, 404: {"description": "The team does not exist."}},
+)
+def list_team_agents(
+    team_id: int,
+    current_user: User = Depends(require_agent),
+    db: Session = Depends(get_db),
+) -> list[TeamAgentResponse]:
+    if db.get(Team, team_id) is None:
+        raise HTTPException(status_code=404, detail=f"Team {team_id} not found")
+    if current_user.role != UserRole.ADMIN and db.scalar(select(TeamMember.team_id).where(
+        TeamMember.team_id == team_id,
+        TeamMember.user_id == current_user.id,
+    )) is None:
+        raise HTTPException(status_code=403, detail="You are not a member of this team")
+
+    agents = db.execute(
+        select(User.id, User.name)
+        .join(TeamMember, TeamMember.user_id == User.id)
+        .where(
+            TeamMember.team_id == team_id,
+            User.role == UserRole.SUPPORT_AGENT,
+            User.active.is_(True),
+        )
+        .order_by(User.name.asc(), User.id.asc())
+    ).all()
+    if not agents:
+        return []
+    agent_ids = [agent.id for agent in agents]
+    membership_rows = db.execute(
+        select(TeamMember.user_id, Team.id.label("team_id"), Team.name.label("team_name"))
+        .join(Team, Team.id == TeamMember.team_id)
+        .where(TeamMember.user_id.in_(agent_ids))
+        .order_by(Team.name.asc(), Team.id.asc())
+    ).all()
+    memberships: dict[int, list[TeamAgentMembershipResponse]] = {agent_id: [] for agent_id in agent_ids}
+    for membership in membership_rows:
+        memberships[membership.user_id].append(TeamAgentMembershipResponse(
+            team_id=membership.team_id,
+            team_name=membership.team_name,
+        ))
+    return [TeamAgentResponse(id=agent.id, name=agent.name, memberships=memberships[agent.id]) for agent in agents]
 
 
 @router.get(
