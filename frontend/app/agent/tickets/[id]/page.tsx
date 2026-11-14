@@ -423,9 +423,7 @@ export default function AgentTicketDetailPage() {
                 </form>
               </Section>
 
-            </main>
-
-            <aside className="min-w-0 space-y-4">
+            <div className="grid min-w-0 gap-5 xl:grid-cols-2">
 
               <Section title="Update ticket" description="Changes are saved to the ticket audit history.">
                 <div className="space-y-3">
@@ -460,18 +458,6 @@ export default function AgentTicketDetailPage() {
               </Section>
 
               <div id="sla" className="scroll-mt-28"><TicketSLAPanel sla={sla} loading={isSlaLoading} error={slaError} onRetry={() => void refreshSLA()} /></div>
-
-              <Section title="Assignment history" description="AI team routing and human changes are distinguished in the audit record.">
-                {isAuditLoading ? <p role="status" className="text-sm text-slate-500">Loading assignment history…</p>
-                  : auditError ? <p role="alert" className="text-sm text-rose-800">{auditError}</p>
-                    : assignmentHistory.length === 0 ? <p className="text-sm text-slate-500">No assignment events recorded.</p>
-                      : <ol className="space-y-3">{[...assignmentHistory].reverse().map((entry) => <li key={entry.id} className="border-l-2 border-slate-200 pl-3">
-                        <p className="text-xs font-semibold text-slate-800">{entry.source === "AI" ? "AI team routing" : entry.source === "HUMAN" ? "Agent assignment updated" : "System assignment"}</p>
-                        <p className="mt-1 text-xs text-slate-600">{entry.previous_agent_id != null ? agentName(entry.previous_agent_id) : "Unassigned"} → {agentName(entry.agent_id)}</p>
-                        <p className="mt-1 text-[11px] text-slate-500">Team #{entry.team_id ?? "—"} · {entry.assigned_by_id == null ? "System" : `User #${entry.assigned_by_id}`} · {formattedDate(entry.assigned_at)}</p>
-                        {(entry.reason || entry.routing_reason) && <p className="mt-1 text-xs leading-5 text-slate-500">{entry.reason ?? entry.routing_reason}</p>}
-                      </li>)}</ol>}
-              </Section>
 
               <AgentAIEvidencePanel
                 currentCategory={ticket.category}
@@ -509,18 +495,19 @@ export default function AgentTicketDetailPage() {
                 {ticket.closed_at && <div className="mt-2"><Detail label="Closed" value={formattedDate(ticket.closed_at)} /></div>}
                 <p className="mt-3 whitespace-pre-wrap border-t border-slate-100 pt-3 text-sm leading-5 text-slate-700">{latestResolution?.note ?? "No resolution note is available."}</p>
               </Section>}
-            </aside>
+            </div>
           </div>
 
-          <details className="mt-5 rounded-lg border border-slate-200 bg-white">
-            <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-800">Audit history</summary>
-            <div className="border-t border-slate-100 p-4 sm:p-5">
-              {isAuditLoading ? <p role="status" className="text-sm text-slate-500">Loading audit history…</p>
-                : auditError ? <p role="alert" className="text-sm text-rose-800">{auditError}<button type="button" onClick={() => void refreshAuditHistory()} className="ml-2 font-semibold underline">Retry</button></p>
-                  : fieldHistory.length === 0 && assignmentHistory.length === 0 ? <p className="text-sm text-slate-500">No human field overrides or assignment changes recorded.</p>
-                    : <ul className="space-y-2">{fieldHistory.map((entry) => <li key={`field-${entry.id}`} className="text-sm text-slate-700"><span className="font-medium">{entry.field_name}:</span> {entry.old_value ?? "Not set"} → {entry.new_value ?? "Not set"} <span className="text-xs text-slate-500">· User #{entry.changed_by_id} · {formattedDate(entry.changed_at)}</span>{entry.note && <p className="mt-1 text-xs text-slate-500">{entry.note}</p>}</li>)}</ul>}
-            </div>
-          </details>
+          <Section id="activity" title="Activity" description="Unified chronological status, assignment, comment and audit events." className="scroll-mt-28">
+            {isAuditLoading || isHistoryLoading || isCommentsLoading ? <p role="status" className="text-sm text-slate-500">Loading activity…</p>
+              : auditError || historyError || commentsError ? <div role="alert" className="space-y-1 text-sm text-rose-800"><p>{auditError ?? historyError ?? commentsError}</p><button type="button" onClick={() => { void refreshAuditHistory(); void refreshHistory(); void refreshComments(); }} className="font-semibold underline">Retry activity</button></div>
+                : activityEvents.length === 0 ? <p className="text-sm text-slate-500">No activity recorded yet.</p>
+                  : <ol className="space-y-4 border-l border-slate-200 pl-4">{activityEvents.map((event) => <li key={event.key} className="relative before:absolute before:-left-[1.32rem] before:top-1 before:h-2.5 before:w-2.5 before:rounded-full before:bg-sky-600 before:ring-4 before:ring-white">
+                    <div className="flex flex-wrap items-start justify-between gap-2"><p className="text-sm font-medium text-slate-800">{event.title}</p><time dateTime={event.date} className="text-xs text-slate-500">{formattedDate(event.date)}</time></div>
+                    <p className="mt-1 text-xs text-slate-500">{event.detail}</p>{event.note && <p className="mt-1 whitespace-pre-wrap text-sm leading-5 text-slate-600">{event.note}</p>}
+                    {event.commentId != null && <p className="mt-2 whitespace-pre-wrap rounded-md bg-slate-50 p-3 text-sm leading-5 text-slate-700">{comments.find((comment) => comment.id === event.commentId)?.body}</p>}
+                  </li>)}</ol>}
+          </Section>
         </>}
     </div>
   </AgentShell>;
