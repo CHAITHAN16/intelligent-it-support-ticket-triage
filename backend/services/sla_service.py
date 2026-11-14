@@ -19,8 +19,10 @@ def calculate_ticket_sla(ticket: Ticket, target: SLATarget, now: datetime | None
     if current.tzinfo is None or current.utcoffset() is None:
         raise ValueError("now must be timezone-aware")
     created = ticket.created_at
+    # SQLite drops tzinfo when round-tripping DateTime(timezone=True); treat those
+    # test/legacy-naive values as UTC. PostgreSQL persists these columns as timestamptz.
     if created.tzinfo is None or created.utcoffset() is None:
-        raise ValueError("ticket.created_at must be timezone-aware")
+        created = created.replace(tzinfo=timezone.utc)
     created_utc = created.astimezone(timezone.utc)
     response_deadline = created_utc + timedelta(minutes=target.response_minutes)
     resolution_deadline = created_utc + timedelta(minutes=target.resolution_minutes)

@@ -57,6 +57,8 @@ def create_comment(
         db.flush()
         if is_authorized_agent and ticket.first_response_at is None:
             responded_at = comment.created_at or datetime.now(timezone.utc)
+            if responded_at.tzinfo is None or responded_at.utcoffset() is None:
+                responded_at = responded_at.replace(tzinfo=timezone.utc)
             ticket.first_response_at = responded_at
             db.add(TicketFirstResponse(
                 ticket_id=ticket.id,
