@@ -26,6 +26,8 @@ class TicketUpdateRequest(BaseModel):
     priority: TicketPriority | None = None
     status: TicketStatus | None = None
     assigned_team_id: int | None = Field(default=None, gt=0)
+    assigned_agent_id: int | None = Field(default=None, gt=0)
+    assignment_reason: str | None = Field(default=None, max_length=2000)
     resolution_note: str | None = Field(default=None, max_length=5000)
 
     @field_validator("title", "description")
@@ -52,6 +54,11 @@ class TicketUpdateRequest(BaseModel):
             raise ValueError("resolution note must contain at least 10 characters")
         return value or None
 
+    @field_validator("assignment_reason")
+    @classmethod
+    def trim_assignment_reason(cls, value: str | None) -> str | None:
+        return value.strip() if value and value.strip() else None
+
 
 class TicketResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -71,6 +78,7 @@ class TicketResponse(BaseModel):
     updated_at: datetime
     resolved_at: datetime | None
     closed_at: datetime | None
+    first_response_at: datetime | None = None
     ai_predicted_category: str | None
     ai_predicted_subcategory: str | None
     ai_predicted_priority: TicketPriority | None
@@ -95,8 +103,10 @@ class TicketAssignmentResponse(BaseModel):
     ticket_id: int
     team_id: int | None
     agent_id: int | None
+    previous_agent_id: int | None = None
     source: str
     assigned_by_id: int | None
     routing_reason: str | None
+    reason: str | None = None
     assigned_at: datetime
     unassigned_at: datetime | None
