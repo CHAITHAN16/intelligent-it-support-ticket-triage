@@ -53,6 +53,7 @@ type TicketActivityEvent = {
   title: string;
   detail: string;
   note?: string | null;
+  commentId?: number;
 };
 
 function formattedDate(value: string) {
@@ -281,10 +282,9 @@ export default function AgentTicketDetailPage() {
     }
     setIsSaving(true); setError(null); setSaveMessage(null);
     try {
-      const teamId = Number(assignedTeamId);
       await updateTicket(ticket.id, {
         ...(category.trim() ? { category: category.trim(), subcategory: subcategory.trim() || null } : {}),
-        priority, status, ...(teamId ? { assigned_team_id: teamId } : {}),
+        priority, status,
         ...(resolving ? { resolution_note: resolutionNote.trim() } : {}),
       });
       await Promise.all([refreshTicket(), refreshHistory(), refreshAuditHistory()]);
@@ -326,6 +326,30 @@ export default function AgentTicketDetailPage() {
 
   const latestResolution = [...history].reverse().find((entry) => entry.new_status === "RESOLVED");
   const agentName = (id: number | null | undefined) => id == null ? "Unassigned" : eligibleAgents.find((agent) => agent.id === id)?.name ?? `Agent #${id}`;
+  const activityEvents = useMemo<TicketActivityEvent[]>(() => [
+    ...history.map((entry) => ({
+      key: `status-${entry.id}`, date: entry.changed_at, kind: "status" as const,
+      title: `${entry.old_status?.replaceAll("_", " ") ?? "Created"} → ${entry.new_status.replaceAll("_", " ")}`,
+      detail: `Changed by ${entry.changed_by_id === null ? "system" : `User #${entry.changed_by_id}`}`,
+      note: entry.note,
+    })),
+    ...assignmentHistory.map((entry) => ({
+      key: `assignment-${entry.id}`, date: entry.assigned_at, kind: "assignment" as const,
+      title: entry.source === "AI" ? "AI team routing" : entry.source === "HUMAN" ? "Human assignment change" : "System assignment",
+      detail: `Team #${entry.team_id ?? "—"} · ${agentName(entry.previous_agent_id)} → ${agentName(entry.agent_id)} · ${entry.assigned_by_id == null ? "System" : `User #${entry.assigned_by_id}`}`,
+      note: entry.reason ?? entry.routing_reason,
+    })),
+    ...fieldHistory.map((entry) => ({
+      key: `field-${entry.id}`, date: entry.changed_at, kind: "field" as const,
+      title: `${entry.field_name} updated`,
+      detail: `${entry.old_value ?? "Not set"} → ${entry.new_value ?? "Not set"} · User #${entry.changed_by_id}`,
+      note: entry.note,
+    })),
+    ...comments.map((entry) => ({
+      key: `comment-${entry.id}`, date: entry.created_at, kind: "comment" as const,
+      title: "Team comment added", detail: `User #${entry.author_id}`, commentId: entry.id,
+    })),
+  ].sort((left, right) => Date.parse(right.date) - Date.parse(left.date)), [assignmentHistory, comments, eligibleAgents, fieldHistory, history]);
 
   return <AgentShell activeSection={activeSection} selectedTeamName={ticket?.assigned_team_name ?? "Agent workspace"}>
     <div className="mx-auto max-w-[1440px]">
