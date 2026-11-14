@@ -7,6 +7,7 @@ from routers.ai_analytics import router as ai_analytics_router
 from routers.collaboration import router as collaboration_router
 from routers.teams import router as teams_router
 from routers.tickets import router as tickets_router
+from routers.sla import router as sla_router
 
 
 app = FastAPI(title="Intelligent IT Support Ticket Triage and Routing")
@@ -17,6 +18,7 @@ app.include_router(ai_analytics_router)
 app.include_router(teams_router)
 app.include_router(collaboration_router)
 app.include_router(auth_router)
+app.include_router(sla_router)
 
 
 @app.get(
