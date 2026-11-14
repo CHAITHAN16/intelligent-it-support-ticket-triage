@@ -1,10 +1,12 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from database import get_db
 from auth import get_current_user, require_agent
-from models import Comment, Ticket, TicketAssignment, TicketFieldHistory, TicketStatusHistory, User, UserRole
+from models import Comment, Ticket, TicketAssignment, TicketFieldHistory, TicketFirstResponse, TicketStatusHistory, User, UserRole
 from routers.tickets import _require_ticket_access, _can_agent_access_ticket
 from schemas.collaboration import CommentCreate, CommentResponse, TicketFieldHistoryResponse, TicketStatusHistoryResponse
 from schemas.tickets import TicketAssignmentResponse
@@ -37,10 +39,12 @@ def create_comment(
 ) -> Comment:
     try:
         ticket = _require_ticket(ticket_id, db)
+        is_authorized_agent = False
         if isinstance(current_user, User):
             if current_user.role not in (UserRole.SUPPORT_AGENT, UserRole.ADMIN) or not _can_agent_access_ticket(ticket, current_user, db):
                 raise HTTPException(status_code=403, detail="Only an authorized agent can create comments")
             author_id = current_user.id
+            is_authorized_agent = True
         else:
             author_id = payload.author_id
             if author_id is None:
@@ -50,6 +54,16 @@ def create_comment(
 
         comment = Comment(ticket_id=ticket_id, author_id=author_id, body=payload.body)
         db.add(comment)
+        db.flush()
+        if is_authorized_agent and ticket.first_response_at is None:
+            responded_at = comment.created_at or datetime.now(timezone.utc)
+            ticket.first_response_at = responded_at
+            db.add(TicketFirstResponse(
+                ticket_id=ticket.id,
+                comment_id=comment.id,
+                agent_id=author_id,
+                responded_at=responded_at,
+            ))
         db.commit()
         db.refresh(comment)
         return comment
