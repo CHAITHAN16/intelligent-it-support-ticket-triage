@@ -18,7 +18,7 @@ from schemas.sla import (
     SLATargetUpdate,
     TicketSLAResponse,
 )
-from services.sla_service import calculate_ticket_sla_clocks
+from services.sla_service import _aware_utc, calculate_ticket_sla_clocks
 
 
 router = APIRouter(prefix="/api/sla", tags=["sla"])
@@ -62,7 +62,7 @@ def _sla_response(ticket: SimpleNamespace, target: SLATarget, now: datetime, app
         priority=ticket.priority,
         status=ticket.status.value,
         team_id=ticket.assigned_team_id,
-        created_at=ticket.created_at,
+        created_at=_aware_utc(ticket.created_at),
         response=SLAClockResponse(**result.response.__dict__),
         resolution=SLAClockResponse(**result.resolution.__dict__),
         actively_overdue=result.actively_overdue,
