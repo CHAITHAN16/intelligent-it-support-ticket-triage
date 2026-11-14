@@ -12,7 +12,7 @@ from sqlalchemy.pool import StaticPool
 from auth import create_access_token, password_hash, verify_password
 from database import get_db
 from main import app
-from models import AssignmentSource, Base, Comment, Team, TeamMember, Ticket, TicketAssignment, TicketFieldHistory, TicketStatus, TicketStatusHistory, User, UserRole
+from models import AssignmentSource, Base, Comment, SLATarget, Team, TeamMember, Ticket, TicketAssignment, TicketFieldHistory, TicketFirstResponse, TicketPriority, TicketStatus, TicketStatusHistory, User, UserRole
 
 
 @pytest.fixture
@@ -306,3 +306,84 @@ def test_agent_team_reassignment_closes_active_assignment_and_records_human_sour
     assert assignments[1].assigned_by_id == 3
     history = client.get("/api/tickets/1/assignments", headers=token_for(database_session, 3))
     assert [entry["source"] for entry in history.json()] == ["AI", "HUMAN"]
+
+
+def test_agent_assignment_reassignment_and_safe_unassignment_are_audited(client, database_session):
+    second_agent = User(id=4, name="Agent Two", email="agent2@example.com", role=UserRole.SUPPORT_AGENT)
+    database_session.add_all([second_agent, TeamMember(team_id=1, user_id=4, member_role=UserRole.SUPPORT_AGENT)])
+    database_session.commit()
+
+    first = client.patch("/api/tickets/1", json={"assigned_agent_id": 3, "assignment_reason": "Initial owner"}, headers=token_for(database_session, 3))
+    assert first.status_code == 200, first.text
+    assert first.json()["assigned_team_id"] == 1
+    assert first.json()["assigned_agent_id"] == 3
+
+    second = client.patch("/api/tickets/1", json={"assigned_agent_id": 4, "assignment_reason": "Shift handoff"}, headers=token_for(database_session, 3))
+    assert second.status_code == 200
+    assert second.json()["assigned_agent_id"] == 4
+
+    third = client.patch("/api/tickets/1", json={"assigned_agent_id": None, "assignment_reason": "Back to team queue"}, headers=token_for(database_session, 3))
+    assert third.status_code == 200
+    assert third.json()["assigned_agent_id"] is None
+    assert third.json()["assigned_team_id"] == 1
+
+    history = client.get("/api/tickets/1/assignments", headers=token_for(database_session, 3))
+    assert history.status_code == 200
+    rows = history.json()
+    assert [(row["previous_agent_id"], row["agent_id"], row["assigned_by_id"], row["reason"]) for row in rows] == [
+        (None, 3, 3, "Initial owner"),
+        (3, 4, 3, "Shift handoff"),
+        (4, None, 3, "Back to team queue"),
+    ]
+    assert all(row["assigned_at"] and row["unassigned_at"] for row in rows[:-1])
+    assert rows[-1]["unassigned_at"] is None
+
+
+def test_agent_cannot_assign_outside_own_team_or_to_nonmember(client, database_session):
+    outsider = User(id=4, name="Outsider", email="outsider@example.com", role=UserRole.SUPPORT_AGENT)
+    database_session.add(outsider)
+    database_session.commit()
+
+    assert client.patch("/api/tickets/1", json={"assigned_team_id": 2}, headers=token_for(database_session, 3)).status_code == 403
+    assert client.patch("/api/tickets/1", json={"assigned_agent_id": 4}, headers=token_for(database_session, 3)).status_code == 422
+    assert database_session.query(TicketAssignment).count() == 0
+
+
+def test_employee_cannot_assign_an_agent(client, database_session):
+    assert client.patch("/api/tickets/1", json={"assigned_agent_id": 3}, headers=token_for(database_session, 1)).status_code == 403
+    assert database_session.query(TicketAssignment).count() == 0
+
+
+def test_authorized_agent_comment_creates_only_new_first_response_event(client, database_session):
+    # Existing comments have no visibility/event classification and must not be backfilled.
+    database_session.add(Comment(id=1, ticket_id=1, author_id=1, body="Historic customer note"))
+    database_session.commit()
+    assert database_session.get(Ticket, 1).first_response_at is None
+    assert database_session.query(TicketFirstResponse).count() == 0
+
+    response = client.post("/api/tickets/1/comments", json={"body": "Agent response"}, headers=token_for(database_session, 3))
+    assert response.status_code == 201
+    event_row = database_session.query(TicketFirstResponse).one()
+    assert event_row.ticket_id == 1
+    assert event_row.comment_id == response.json()["id"]
+    assert event_row.agent_id == 3
+    assert database_session.get(Ticket, 1).first_response_at is not None
+
+
+def test_sla_target_configuration_is_admin_only_and_validated(client, database_session):
+    employee_headers = token_for(database_session, 1)
+    agent_headers = token_for(database_session, 3)
+    assert client.put("/api/sla/targets/HIGH", json={"response_minutes": 30, "resolution_minutes": 120}, headers=agent_headers).status_code == 403
+    assert client.put("/api/sla/targets/HIGH", json={"response_minutes": 120, "resolution_minutes": 60}, headers=token_for(database_session, 1)).status_code == 403
+
+    admin = User(id=5, name="Admin", email="admin@example.com", role=UserRole.ADMIN)
+    database_session.add(admin)
+    database_session.commit()
+    updated = client.put("/api/sla/targets/HIGH", json={"response_minutes": 30, "resolution_minutes": 120}, headers=token_for(database_session, 5))
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["priority"] == "HIGH"
+    assert updated.json()["response_minutes"] == 30
+    assert updated.json()["resolution_minutes"] == 120
+    invalid = client.put("/api/sla/targets/HIGH", json={"response_minutes": 120, "resolution_minutes": 60}, headers=token_for(database_session, 5))
+    assert invalid.status_code == 422
+    assert database_session.get(SLATarget, TicketPriority.HIGH).response_minutes == 30
