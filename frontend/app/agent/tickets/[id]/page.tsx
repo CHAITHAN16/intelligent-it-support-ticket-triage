@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AgentShell } from "@/components/agent-shell";
 import { AgentAIEvidencePanel } from "@/components/agent-ai-evidence-panel";
@@ -37,6 +37,23 @@ import {
 const ACTION_STATUSES: TicketStatus[] = ["NEW", "ASSIGNED", "IN_PROGRESS", "WAITING_FOR_USER", "RESOLVED", "CLOSED"];
 const PRIORITIES: TicketPriority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 const CATEGORIES = ["Network", "Security", "Software", "Other"];
+const SECTION_LINKS = [
+  { id: "overview", label: "Overview" },
+  { id: "conversation", label: "Conversation" },
+  { id: "assignment", label: "Assignment" },
+  { id: "sla", label: "SLA" },
+  { id: "ai-insights", label: "AI Insights" },
+  { id: "activity", label: "Activity" },
+];
+
+type TicketActivityEvent = {
+  key: string;
+  date: string;
+  kind: "status" | "assignment" | "field" | "comment";
+  title: string;
+  detail: string;
+  note?: string | null;
+};
 
 function formattedDate(value: string) {
   return new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
@@ -61,8 +78,8 @@ function priorityTone(priority: TicketPriority) {
   return "text-slate-600";
 }
 
-function Section({ title, description, children, className = "" }: { title: string; description?: string; children: React.ReactNode; className?: string }) {
-  return <section className={`rounded-lg border border-slate-200 bg-white ${className}`}>
+function Section({ title, description, children, className = "", id }: { title: string; description?: string; children: React.ReactNode; className?: string; id?: string }) {
+  return <section id={id} className={`scroll-mt-28 rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/30 ${className}`}>
     <div className="border-b border-slate-100 px-4 py-3 sm:px-5">
       <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
       {description && <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>}
@@ -88,6 +105,7 @@ export default function AgentTicketDetailPage() {
   const activeSection = origin === "all" ? "all" : origin === "overview" ? "overview" : "team";
   const ticketId = Number(params.id);
   const [ticket, setTicket] = useState<TicketResponse | null>(null);
+  const [activeTicketSection, setActiveTicketSection] = useState("overview");
   const [category, setCategory] = useState("");
   const [subcategory, setSubcategory] = useState("");
   const [priority, setPriority] = useState<TicketPriority>("MEDIUM");
@@ -240,6 +258,19 @@ export default function AgentTicketDetailPage() {
       .finally(() => { if (!cancelled) setIsAgentListLoading(false); });
     return () => { cancelled = true; };
   }, [ticket?.assigned_team_id]);
+
+  useEffect(() => {
+    if (!ticket) return;
+    const scrollRoot = document.getElementById("agent-main");
+    if (!scrollRoot) return;
+    const sections = SECTION_LINKS.map((item) => document.getElementById(item.id)).filter((item): item is HTMLElement => item !== null);
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting).sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top);
+      if (visible[0]) setActiveTicketSection(visible[0].target.id);
+    }, { root: scrollRoot, rootMargin: "-112px 0px -68% 0px", threshold: 0 });
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [Boolean(ticket)]);
 
   async function saveChanges() {
     if (!ticket) return;
