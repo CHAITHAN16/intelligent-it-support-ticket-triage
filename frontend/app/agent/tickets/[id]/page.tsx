@@ -260,8 +260,9 @@ export default function AgentTicketDetailPage() {
     return () => { cancelled = true; };
   }, [assignedTeamId]);
 
+  const hasTicket = ticket !== null;
   useEffect(() => {
-    if (!ticket) return;
+    if (!hasTicket) return;
     const scrollRoot = document.getElementById("agent-main");
     if (!scrollRoot) return;
     const sections = SECTION_LINKS.map((item) => document.getElementById(item.id)).filter((item): item is HTMLElement => item !== null);
@@ -271,7 +272,7 @@ export default function AgentTicketDetailPage() {
     }, { root: scrollRoot, rootMargin: "-112px 0px -68% 0px", threshold: 0 });
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
-  }, [Boolean(ticket)]);
+  }, [hasTicket]);
 
   async function saveChanges() {
     if (!ticket) return;
@@ -325,7 +326,7 @@ export default function AgentTicketDetailPage() {
   }
 
   const latestResolution = [...history].reverse().find((entry) => entry.new_status === "RESOLVED");
-  const agentName = (id: number | null | undefined) => id == null ? "Unassigned" : eligibleAgents.find((agent) => agent.id === id)?.name ?? `Agent #${id}`;
+  const agentName = useCallback((id: number | null | undefined) => id == null ? "Unassigned" : eligibleAgents.find((agent) => agent.id === id)?.name ?? `Agent #${id}`, [eligibleAgents]);
   const activityEvents = useMemo<TicketActivityEvent[]>(() => [
     ...history.map((entry) => ({
       key: `status-${entry.id}`, date: entry.changed_at, kind: "status" as const,
@@ -349,7 +350,7 @@ export default function AgentTicketDetailPage() {
       key: `comment-${entry.id}`, date: entry.created_at, kind: "comment" as const,
       title: "Team comment added", detail: `User #${entry.author_id}`, commentId: entry.id,
     })),
-  ].sort((left, right) => Date.parse(right.date) - Date.parse(left.date)), [assignmentHistory, comments, eligibleAgents, fieldHistory, history]);
+  ].sort((left, right) => Date.parse(right.date) - Date.parse(left.date)), [assignmentHistory, comments, fieldHistory, history, agentName]);
 
   return <AgentShell activeSection={activeSection} selectedTeamName={ticket?.assigned_team_name ?? "Agent workspace"}>
     <div className="mx-auto max-w-[1440px]">
