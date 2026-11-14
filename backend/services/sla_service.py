@@ -122,6 +122,11 @@ def calculate_ticket_sla_clocks(
         terminal_without_completion=False,
         approaching_within_minutes=approaching_within_minutes,
     )
+    if terminal and response.actively_overdue:
+        response = SLAClockCalculation(
+            response.target_minutes, response.deadline, response.completed_at,
+            response.state, response.remaining_seconds, response.overdue_seconds, False,
+        )
     resolution = _clock_result(
         target_minutes=target.resolution_minutes,
         deadline=resolution_deadline,

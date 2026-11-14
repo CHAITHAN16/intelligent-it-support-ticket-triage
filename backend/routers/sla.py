@@ -44,7 +44,6 @@ def _team_scope(team_id: int | None, user: User, db: Session):
 def _ticket_projection(row) -> SimpleNamespace:
     return SimpleNamespace(
         id=row.id,
-        title=row.title,
         priority=row.priority,
         status=row.status,
         assigned_team_id=row.assigned_team_id,
@@ -78,7 +77,6 @@ def _sla_rows_statement():
     # Select only operational ticket fields; employee descriptions and AI data are never loaded.
     return select(
         Ticket.id.label("id"),
-        Ticket.title.label("title"),
         Ticket.priority.label("priority"),
         Ticket.status.label("status"),
         Ticket.assigned_team_id.label("assigned_team_id"),
