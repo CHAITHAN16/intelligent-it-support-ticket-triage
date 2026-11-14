@@ -53,11 +53,11 @@ function ClockCard({ title, clock }: { title: string; clock: SLAClock }) {
 export function TicketSLAPanel({ sla, loading, error, onRetry }: { sla: TicketSLA | null; loading: boolean; error: string | null; onRetry: () => void }) {
   return <section className="rounded-lg border border-slate-200 bg-white">
     <div className="border-b border-slate-100 px-4 py-3 sm:px-5"><h2 className="text-sm font-semibold text-slate-900">Service level targets</h2><p className="mt-1 text-xs leading-5 text-slate-500">Response and resolution clocks are tracked independently.</p></div>
-    <div className="space-y-3 p-4 sm:p-5">
-      {loading ? <p role="status" className="text-sm text-slate-500">Loading SLA status…</p>
-        : error ? <p role="alert" className="text-sm text-rose-800">{error}<button type="button" onClick={onRetry} className="ml-2 font-semibold underline">Retry</button></p>
+    <div className="grid grid-cols-1 gap-3 p-4 sm:p-5 md:grid-cols-2">
+      {loading ? <p role="status" className="text-sm text-slate-500 md:col-span-2">Loading SLA status…</p>
+        : error ? <p role="alert" className="text-sm text-rose-800 md:col-span-2">{error}<button type="button" onClick={onRetry} className="ml-2 font-semibold underline">Retry</button></p>
           : sla ? <><ClockCard title="First response" clock={sla.response} /><ClockCard title="Resolution" clock={sla.resolution} /></>
-            : <p className="text-sm text-slate-500">SLA data is not available.</p>}
+            : <p className="text-sm text-slate-500 md:col-span-2">SLA data is not available.</p>}
     </div>
   </section>;
 }
