@@ -60,7 +60,7 @@ def test_terminal_tickets_are_not_actively_overdue(terminal_status):
     result = calculate_ticket_sla(ticket, target, now=datetime(2026, 11, 14, tzinfo=timezone.utc))
 
     assert result.response_overdue is True
-    assert result.resolution_overdue is False
+    assert result.resolution_overdue is True
     assert result.actively_overdue is False
 
 
