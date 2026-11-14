@@ -246,7 +246,7 @@ export default function AgentTicketDetailPage() {
   }, [ticketId, retryCount, refreshAuditHistory, refreshPredictionEvidence, refreshSLA, refreshTicket]);
 
   useEffect(() => {
-    const teamId = ticket?.assigned_team_id ?? 0;
+    const teamId = Number(assignedTeamId);
     if (!Number.isInteger(teamId) || teamId < 1) return;
     let cancelled = false;
     Promise.resolve().then(() => {
@@ -257,7 +257,7 @@ export default function AgentTicketDetailPage() {
       .catch((reason) => { if (!cancelled) { setEligibleAgents([]); setEligibleAgentsTeamId(null); setAssignmentError(reason instanceof Error ? reason.message : "Eligible agents could not be loaded."); } })
       .finally(() => { if (!cancelled) setIsAgentListLoading(false); });
     return () => { cancelled = true; };
-  }, [ticket?.assigned_team_id]);
+  }, [assignedTeamId]);
 
   useEffect(() => {
     if (!ticket) return;
@@ -307,10 +307,13 @@ export default function AgentTicketDetailPage() {
   }
 
   async function saveAgentAssignment() {
-    if (!ticket || !ticket.assigned_team_id) { setAssignmentError("Assign the ticket to a team before choosing an agent."); return; }
+    const teamId = Number(assignedTeamId);
+    if (!ticket || !Number.isInteger(teamId) || teamId < 1) { setAssignmentError("Choose a team before assigning an agent."); return; }
+    if (eligibleAgentsTeamId !== teamId) { setAssignmentError("Load the selected team’s eligible agents before saving."); return; }
     setIsAssignmentSaving(true); setAssignmentError(null); setAssignmentMessage(null);
     try {
       await updateTicket(ticket.id, {
+        assigned_team_id: teamId,
         assigned_agent_id: selectedAgentId ? Number(selectedAgentId) : null,
         ...(assignmentReason.trim() ? { assignment_reason: assignmentReason.trim() } : {}),
       });
