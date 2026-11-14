@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from auth import get_current_user, require_agent
 from models import Comment, Ticket, TicketAssignment, TicketFieldHistory, TicketFirstResponse, TicketStatusHistory, User, UserRole
-from routers.tickets import _require_ticket_access, _can_agent_access_ticket
+from routers.tickets import _require_ticket_access, _can_agent_access_ticket, _ticket_for_update_query
 from schemas.collaboration import CommentCreate, CommentResponse, TicketFieldHistoryResponse, TicketStatusHistoryResponse
 from schemas.tickets import TicketAssignmentResponse
 
@@ -38,7 +38,7 @@ def create_comment(
     current_user: User | None = Depends(require_agent),
 ) -> Comment:
     try:
-        ticket = db.scalar(select(Ticket).where(Ticket.id == ticket_id).with_for_update())
+        ticket = db.scalar(_ticket_for_update_query(ticket_id))
         if ticket is None:
             raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
         is_authorized_agent = False

@@ -6,6 +6,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -13,6 +14,7 @@ from auth import create_access_token, password_hash, verify_password
 from database import get_db
 from main import app
 from models import AssignmentSource, Base, Comment, SLATarget, Team, TeamMember, Ticket, TicketAssignment, TicketFieldHistory, TicketFirstResponse, TicketPriority, TicketStatus, TicketStatusHistory, User, UserRole
+from routers.tickets import _ticket_for_update_query
 
 
 @pytest.fixture
@@ -76,6 +78,15 @@ def client(database_session):
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+def test_ticket_update_lock_targets_only_ticket_table_for_postgresql():
+    statement = _ticket_for_update_query(1)
+    sql = str(statement.compile(dialect=postgresql.dialect()))
+
+    assert "LEFT OUTER JOIN teams AS teams_1" in sql
+    assert "FOR UPDATE OF tickets" in sql
+    assert "FOR UPDATE OF tickets, teams_1" not in sql
 
 
 def token_for(database_session, user_id):
