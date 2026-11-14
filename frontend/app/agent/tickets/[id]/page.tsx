@@ -384,15 +384,16 @@ export default function AgentTicketDetailPage() {
             <div className="flex min-w-0 gap-1 overflow-x-auto py-2">{SECTION_LINKS.map((item) => <a key={item.id} href={`#${item.id}`} aria-current={activeTicketSection === item.id ? "location" : undefined} onClick={() => setActiveTicketSection(item.id)} className={`shrink-0 rounded-md px-3 py-2 text-xs font-semibold ${activeTicketSection === item.id ? "bg-white text-sky-800 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:bg-white hover:text-slate-900"}`}>{item.label}</a>)}</div>
           </nav>
 
-          <div className="mt-4 min-w-0 space-y-5">
-            <Section title="Overview" description="Request summary, current ownership and ticket classification." className="scroll-mt-28">
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
-                <div><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Employee request · User #{ticket.creator_id}</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{ticket.description}</p></div>
-                <dl className="grid gap-x-6 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"><Detail label="Category" value={ticket.category ?? "Not assigned"} /><Detail label="Subcategory" value={ticket.subcategory ?? "Not assigned"} /><Detail label="Priority" value={ticket.priority} valueClass={priorityTone(ticket.priority)} /><Detail label="Status" value={ticket.status.replaceAll("_", " ")} /><Detail label="Assigned team" value={ticket.assigned_team_name ?? "Unassigned"} /><Detail label="Assigned agent" value={agentName(ticket.assigned_agent_id)} /><Detail label="Created" value={formattedDate(ticket.created_at)} /><Detail label="Last updated" value={formattedDate(ticket.updated_at)} /></dl>
-              </div>
-            </Section>
+          <div className="mt-4 grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)] xl:gap-6">
+            <main className="min-w-0 space-y-5">
+              <Section title="Overview" description="Request summary, classification, and current ownership." className="scroll-mt-28">
+                <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,0.85fr)]">
+                  <div className="min-w-0 rounded-md bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Employee request · User #{ticket.creator_id}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{ticket.description}</p></div>
+                  <dl className="grid min-w-0 gap-x-5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"><Detail label="Category" value={ticket.category ?? "Not assigned"} /><Detail label="Subcategory" value={ticket.subcategory ?? "Not assigned"} /><Detail label="Priority" value={ticket.priority} valueClass={priorityTone(ticket.priority)} /><Detail label="Status" value={ticket.status.replaceAll("_", " ")} /><Detail label="Assigned team" value={ticket.assigned_team_name ?? "Unassigned"} /><Detail label="Assigned agent" value={agentName(ticket.assigned_agent_id)} /><Detail label="Created" value={formattedDate(ticket.created_at)} /><Detail label="Last updated" value={formattedDate(ticket.updated_at)} /></dl>
+                </div>
+              </Section>
 
-            <Section id="conversation" title="Conversation" description="Employee request, team discussion, and first-response comments." className="scroll-mt-28">
+              <Section id="conversation" title="Conversation" description="Employee request, team discussion, and first-response comments." className="scroll-mt-28">
                 <article className="border-b border-slate-100 pb-5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div><p className="text-sm font-semibold text-slate-900">Employee request</p><p className="mt-0.5 text-xs text-slate-500">Ticket creator · User #{ticket.creator_id}</p></div>
@@ -424,7 +425,15 @@ export default function AgentTicketDetailPage() {
                 </form>
               </Section>
 
-            <div className="grid min-w-0 gap-5 xl:grid-cols-2">
+              <Section title="Status history" description="Recorded ticket status transitions.">
+                {isHistoryLoading ? <p role="status" className="text-sm text-slate-500">Loading timeline…</p>
+                  : historyError ? <p role="alert" className="text-sm text-rose-800">{historyError}<button type="button" onClick={() => void refreshHistory()} className="ml-2 font-semibold underline">Retry</button></p>
+                    : history.length === 0 ? <p className="text-sm text-slate-500">No status changes recorded yet.</p>
+                      : <ol className="space-y-4 border-l border-slate-200 pl-4">{history.map((entry) => <li key={entry.id} className="relative before:absolute before:-left-[1.32rem] before:top-1 before:h-2.5 before:w-2.5 before:rounded-full before:bg-sky-600 before:ring-4 before:ring-white">
+                        <div className="flex flex-wrap justify-between gap-2"><p className="text-sm font-medium text-slate-800">{entry.old_status?.replaceAll("_", " ") ?? "Created"} <span className="px-1 text-slate-400">→</span> {entry.new_status.replaceAll("_", " ")}</p><time dateTime={entry.changed_at} className="text-xs text-slate-500">{formattedDate(entry.changed_at)}</time></div>
+                        <p className="mt-1 text-xs text-slate-500">Changed by {entry.changed_by_id === null ? "system" : `user #${entry.changed_by_id}`}</p>{entry.note && <p className="mt-2 text-sm leading-5 text-slate-600">{entry.note}</p>}
+                      </li>)}</ol>}
+              </Section>
 
               <Section title="Update ticket" description="Changes are saved to the ticket audit history.">
                 <div className="space-y-3">
@@ -436,7 +445,9 @@ export default function AgentTicketDetailPage() {
                   <button type="button" onClick={() => void saveChanges()} disabled={isSaving} className="w-full rounded-md bg-sky-700 px-3 py-2.5 text-sm font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50">{isSaving ? "Saving changes…" : "Save changes"}</button>
                 </div>
               </Section>
+            </main>
 
+            <aside className="min-w-0 space-y-5 lg:sticky lg:top-16">
               <Section id="assignment" title="Assignment" description="Manage team ownership and individual agent assignment. AI routing remains recorded separately from human changes." className="scroll-mt-28">
                 <div className="space-y-3">
                   <label className="block text-xs font-medium text-slate-700">Assigned team<select value={assignedTeamId} onChange={(event) => { setAssignedTeamId(event.target.value); setSelectedAgentId(""); setAssignmentError(null); }} disabled={isAssignmentSaving} className="mt-1.5 w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:bg-slate-100">
@@ -444,7 +455,7 @@ export default function AgentTicketDetailPage() {
                   </select></label>
                   {Number(assignedTeamId) !== ticket.assigned_team_id && <p className="rounded-md bg-sky-50 px-3 py-2 text-xs text-sky-900">Saving a team change clears the previous agent until an eligible member is selected.</p>}
                   <label className="block text-xs font-medium text-slate-700">Assigned agent
-                    <select value={selectedAgentId} disabled={!ticket.assigned_team_id || eligibleAgentsTeamId !== ticket.assigned_team_id || isAgentListLoading || isAssignmentSaving} onChange={(event) => setSelectedAgentId(event.target.value)} className="mt-1.5 w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:bg-slate-100">
+                    <select value={selectedAgentId} disabled={!Number(assignedTeamId) || eligibleAgentsTeamId !== Number(assignedTeamId) || isAgentListLoading || isAssignmentSaving} onChange={(event) => setSelectedAgentId(event.target.value)} className="mt-1.5 w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:bg-slate-100">
                       <option value="">Unassigned</option>
                       {selectedAgentId && !eligibleAgents.some((agent) => agent.id.toString() === selectedAgentId) && <option value={selectedAgentId}>Current agent #{selectedAgentId}</option>}
                       {eligibleAgents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
@@ -460,6 +471,7 @@ export default function AgentTicketDetailPage() {
 
               <div id="sla" className="scroll-mt-28"><TicketSLAPanel sla={sla} loading={isSlaLoading} error={slaError} onRetry={() => void refreshSLA()} /></div>
 
+              <div id="ai-insights" className="min-w-0 scroll-mt-28 space-y-5">
               <AgentAIEvidencePanel
                 currentCategory={ticket.category}
                 currentPriority={ticket.priority}
@@ -489,17 +501,16 @@ export default function AgentTicketDetailPage() {
                   </dl>
                 </> : ticket.solution_status === "NO_MATCH" ? <p className="text-sm leading-5 text-amber-800">No sufficiently relevant knowledge-base solution was found. Continue with the assigned support team.</p>
                   : <p className="text-sm text-slate-500">No recommendation is available yet.</p>}
-              </Section>
+              </Section></div>
 
               {ticket.resolved_at && <Section title="Resolution record">
                 <Detail label="Resolved" value={formattedDate(ticket.resolved_at)} />
                 {ticket.closed_at && <div className="mt-2"><Detail label="Closed" value={formattedDate(ticket.closed_at)} /></div>}
                 <p className="mt-3 whitespace-pre-wrap border-t border-slate-100 pt-3 text-sm leading-5 text-slate-700">{latestResolution?.note ?? "No resolution note is available."}</p>
               </Section>}
-            </div>
           </div>
 
-          <Section id="activity" title="Activity" description="Unified chronological status, assignment, comment and audit events." className="scroll-mt-28">
+          <Section id="activity" title="Activity" description="Unified chronological status, assignment, comment and audit events." className="mt-5 scroll-mt-28">
             {isAuditLoading || isHistoryLoading || isCommentsLoading ? <p role="status" className="text-sm text-slate-500">Loading activity…</p>
               : auditError || historyError || commentsError ? <div role="alert" className="space-y-1 text-sm text-rose-800"><p>{auditError ?? historyError ?? commentsError}</p><button type="button" onClick={() => { void refreshAuditHistory(); void refreshHistory(); void refreshComments(); }} className="font-semibold underline">Retry activity</button></div>
                 : activityEvents.length === 0 ? <p className="text-sm text-slate-500">No activity recorded yet.</p>
