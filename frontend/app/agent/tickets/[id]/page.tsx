@@ -363,7 +363,7 @@ export default function AgentTicketDetailPage() {
           <button type="button" onClick={() => setRetryCount((value) => value + 1)} className="mt-4 rounded-md bg-slate-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-slate-700">Retry</button>
         </div>
         : ticket && <>
-          <header className="mt-5 border-b border-slate-200 pb-4">
+          <header id="overview" className="mt-5 scroll-mt-28 border-b border-slate-200 pb-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -372,15 +372,26 @@ export default function AgentTicketDetailPage() {
                   <span className={`text-xs font-semibold ${priorityTone(ticket.priority)}`}>{ticket.priority} priority</span>
                 </div>
                 <h1 className="mt-2 break-words text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">{ticket.title}</h1>
+                <p className="mt-2 text-xs text-slate-600">{ticket.assigned_team_name ?? "No team assigned"} <span className="px-1 text-slate-300">·</span> {agentName(ticket.assigned_agent_id)}</p>
               </div>
               <Link href={returnTo} className="hidden shrink-0 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:inline-flex">Return to queue</Link>
             </div>
             {(error || saveMessage) && <div className={`mt-4 rounded-md border px-3 py-2 text-sm ${error ? "border-rose-200 bg-rose-50 text-rose-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`} role={error ? "alert" : "status"}>{error ?? saveMessage}</div>}
           </header>
 
-          <div className="mt-5 grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-            <main className="min-w-0 space-y-5">
-              <Section title="Conversation" description="Ticket request and team discussion, in chronological order.">
+          <nav aria-label="Ticket sections" className="sticky top-0 z-20 -mx-4 mt-3 border-b border-slate-200 bg-slate-50/95 px-4 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+            <div className="flex min-w-0 gap-1 overflow-x-auto py-2">{SECTION_LINKS.map((item) => <a key={item.id} href={`#${item.id}`} aria-current={activeTicketSection === item.id ? "location" : undefined} onClick={() => setActiveTicketSection(item.id)} className={`shrink-0 rounded-md px-3 py-2 text-xs font-semibold ${activeTicketSection === item.id ? "bg-white text-sky-800 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:bg-white hover:text-slate-900"}`}>{item.label}</a>)}</div>
+          </nav>
+
+          <div className="mt-4 min-w-0 space-y-5">
+            <Section title="Overview" description="Request summary, current ownership and ticket classification." className="scroll-mt-28">
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
+                <div><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Employee request · User #{ticket.creator_id}</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{ticket.description}</p></div>
+                <dl className="grid gap-x-6 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"><Detail label="Category" value={ticket.category ?? "Not assigned"} /><Detail label="Subcategory" value={ticket.subcategory ?? "Not assigned"} /><Detail label="Priority" value={ticket.priority} valueClass={priorityTone(ticket.priority)} /><Detail label="Status" value={ticket.status.replaceAll("_", " ")} /><Detail label="Assigned team" value={ticket.assigned_team_name ?? "Unassigned"} /><Detail label="Assigned agent" value={agentName(ticket.assigned_agent_id)} /><Detail label="Created" value={formattedDate(ticket.created_at)} /><Detail label="Last updated" value={formattedDate(ticket.updated_at)} /></dl>
+              </div>
+            </Section>
+
+            <Section id="conversation" title="Conversation" description="Employee request, team discussion, and first-response comments." className="scroll-mt-28">
                 <article className="border-b border-slate-100 pb-5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div><p className="text-sm font-semibold text-slate-900">Employee request</p><p className="mt-0.5 text-xs text-slate-500">Ticket creator · User #{ticket.creator_id}</p></div>
@@ -412,30 +423,9 @@ export default function AgentTicketDetailPage() {
                 </form>
               </Section>
 
-              <Section title="Status history" description="Recorded ticket status transitions.">
-                {isHistoryLoading ? <p role="status" className="text-sm text-slate-500">Loading timeline…</p>
-                  : historyError ? <p role="alert" className="text-sm text-rose-800">{historyError}<button type="button" onClick={() => void refreshHistory()} className="ml-2 font-semibold underline">Retry</button></p>
-                    : history.length === 0 ? <p className="text-sm text-slate-500">No status changes recorded yet.</p>
-                      : <ol className="space-y-4 border-l border-slate-200 pl-4">{history.map((entry) => <li key={entry.id} className="relative before:absolute before:-left-[1.32rem] before:top-1 before:h-2.5 before:w-2.5 before:rounded-full before:bg-sky-600 before:ring-4 before:ring-white">
-                        <div className="flex flex-wrap justify-between gap-2"><p className="text-sm font-medium text-slate-800">{entry.old_status?.replaceAll("_", " ") ?? "Created"} <span className="px-1 text-slate-400">→</span> {entry.new_status.replaceAll("_", " ")}</p><time dateTime={entry.changed_at} className="text-xs text-slate-500">{formattedDate(entry.changed_at)}</time></div>
-                        <p className="mt-1 text-xs text-slate-500">Changed by {entry.changed_by_id === null ? "system" : `user #${entry.changed_by_id}`}</p>{entry.note && <p className="mt-2 text-sm leading-5 text-slate-600">{entry.note}</p>}
-                      </li>)}</ol>}
-              </Section>
             </main>
 
             <aside className="min-w-0 space-y-4">
-              <Section title="Ticket details">
-                <dl>
-                  <Detail label="Status" value={ticket.status.replaceAll("_", " ")} />
-                  <Detail label="Priority" value={ticket.priority} valueClass={priorityTone(ticket.priority)} />
-                  <Detail label="Category" value={ticket.category ?? "Not assigned"} />
-                  <Detail label="Subcategory" value={ticket.subcategory ?? "Not assigned"} />
-                  <Detail label="Assigned team" value={ticket.assigned_team_name ?? "Unassigned"} />
-                  <Detail label="Assigned agent" value={agentName(ticket.assigned_agent_id)} />
-                  <Detail label="Created" value={formattedDate(ticket.created_at)} />
-                  <Detail label="Last updated" value={formattedDate(ticket.updated_at)} />
-                </dl>
-              </Section>
 
               <Section title="Update ticket" description="Changes are saved to the ticket audit history.">
                 <div className="space-y-3">
