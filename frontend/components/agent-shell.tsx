@@ -6,12 +6,13 @@ import { useEffect, useSyncExternalStore } from "react";
 import type { Team } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
-type AgentSection = "overview" | "team" | "all" | "analytics";
+type AgentSection = "overview" | "team" | "all" | "sla" | "analytics";
 
 const NAV_ITEMS: Array<{ section: AgentSection; href: string; label: string }> = [
   { section: "overview", href: "/agent", label: "Overview" },
   { section: "team", href: "/agent/team-queue", label: "Team Queue" },
   { section: "all", href: "/agent/tickets", label: "All Tickets" },
+  { section: "sla", href: "/agent/sla", label: "SLA Overview" },
   { section: "analytics", href: "/agent/analytics", label: "AI Analytics" },
 ];
 
@@ -58,6 +59,7 @@ function NavigationIcon({ section, className = "" }: { section: AgentSection; cl
     overview: <><rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="13" y="3" width="8" height="5" rx="1.5" /><rect x="13" y="10" width="8" height="11" rx="1.5" /><rect x="3" y="13" width="8" height="8" rx="1.5" /></>,
     team: <><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="10" cy="7" r="4" /><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>,
     all: <><rect x="4" y="4" width="16" height="17" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /><path d="M8 2v4M16 2v4" /></>,
+    sla: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /><path d="M7 2 5 4M17 2l2 2" /></>,
     analytics: <><path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-5 5" /></>,
   };
   return <svg aria-hidden="true" className={`h-5 w-5 shrink-0 ${className}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{paths[section]}</svg>;

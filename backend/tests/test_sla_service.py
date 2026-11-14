@@ -96,4 +96,23 @@ def test_late_first_response_remains_a_response_sla_breach():
 
     assert result.response_overdue is True
     assert result.resolution_overdue is False
-    assert result.actively_overdue is True
+    assert result.actively_overdue is False
+
+
+def test_completion_exactly_on_deadline_meets_sla():
+    created = datetime(2026, 11, 14, 10, tzinfo=timezone.utc)
+    ticket = Ticket(
+        id=1,
+        title="On time response",
+        description="Description",
+        creator_id=1,
+        priority=TicketPriority.LOW,
+        status=TicketStatus.IN_PROGRESS,
+        created_at=created,
+        first_response_at=created + timedelta(minutes=60),
+    )
+    target = SLATarget(priority=TicketPriority.LOW, response_minutes=60, resolution_minutes=120)
+    result = calculate_ticket_sla(ticket, target, now=created + timedelta(minutes=60))
+
+    assert result.response_overdue is False
+    assert result.actively_overdue is False

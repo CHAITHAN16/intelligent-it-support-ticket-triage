@@ -27,7 +27,9 @@ export type TicketUpdateInput = {
   subcategory?: string | null;
   priority?: TicketPriority;
   status?: TicketStatus;
-  assigned_team_id?: number;
+  assigned_team_id?: number | null;
+  assigned_agent_id?: number | null;
+  assignment_reason?: string;
   resolution_note?: string;
 };
 
@@ -120,11 +122,70 @@ export type TicketAssignmentHistory = {
   ticket_id: number;
   team_id: number | null;
   agent_id: number | null;
+  previous_agent_id?: number | null;
   source: "AI" | "SYSTEM" | "HUMAN";
   assigned_by_id: number | null;
   routing_reason: string | null;
+  reason?: string | null;
   assigned_at: string;
   unassigned_at: string | null;
+};
+
+export type TeamAgent = {
+  id: number;
+  name: string;
+  memberships: Array<{ team_id: number; team_name: string }>;
+};
+
+export type SLAState = "ON_TRACK" | "APPROACHING" | "BREACHED" | "MET" | "NOT_APPLICABLE";
+
+export type SLAClock = {
+  target_minutes: number;
+  deadline: string;
+  completed_at: string | null;
+  state: SLAState;
+  remaining_seconds: number | null;
+  overdue_seconds: number | null;
+  actively_overdue: boolean;
+};
+
+export type TicketSLA = {
+  ticket_id: number;
+  priority: TicketPriority;
+  status: TicketStatus;
+  team_id: number | null;
+  created_at: string;
+  response: SLAClock;
+  resolution: SLAClock;
+  actively_overdue: boolean;
+};
+
+export type SLAPriorityCount = {
+  priority: TicketPriority;
+  tickets: number;
+  approaching_response: number;
+  approaching_resolution: number;
+  breached_response: number;
+  breached_resolution: number;
+  actively_overdue: number;
+};
+
+export type SLAOverview = {
+  generated_at: string;
+  approaching_within_minutes: number;
+  total_tickets: number;
+  priority_counts: SLAPriorityCount[];
+  approaching_response: TicketSLA[];
+  approaching_resolution: TicketSLA[];
+  breached_response: TicketSLA[];
+  breached_resolution: TicketSLA[];
+};
+
+export type SLAOverviewFilters = {
+  team_id?: number;
+  priority?: TicketPriority;
+  state?: SLAState;
+  approaching_within_minutes?: number;
 };
 
 export type TicketPredictionEvidence = {
@@ -312,6 +373,24 @@ export async function getCurrentUser(): Promise<AuthUser> {
 
 export async function getTeams(): Promise<Team[]> {
   return request<Team[]>("/teams");
+}
+
+export async function getTeamAgents(teamId: number): Promise<TeamAgent[]> {
+  return request<TeamAgent[]>(`/teams/${teamId}/agents`);
+}
+
+export async function getTicketSLA(ticketId: number): Promise<TicketSLA> {
+  return request<TicketSLA>(`/sla/tickets/${ticketId}`);
+}
+
+export async function getSLAOverview(filters: SLAOverviewFilters = {}): Promise<SLAOverview> {
+  const query = new URLSearchParams();
+  if (filters.team_id !== undefined) query.set("team_id", String(filters.team_id));
+  if (filters.priority) query.set("priority", filters.priority);
+  if (filters.state) query.set("state", filters.state);
+  if (filters.approaching_within_minutes !== undefined) query.set("approaching_within_minutes", String(filters.approaching_within_minutes));
+  const queryString = query.toString();
+  return request<SLAOverview>(`/sla/overview${queryString ? `?${queryString}` : ""}`);
 }
 
 export async function getTeamTickets(teamId: number, filters: TeamTicketFilters = {}): Promise<TicketResponse[]> {

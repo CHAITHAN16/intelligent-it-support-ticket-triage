@@ -6,9 +6,11 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AgentShell } from "@/components/agent-shell";
 import { AgentAIEvidencePanel } from "@/components/agent-ai-evidence-panel";
+import { TicketSLAPanel } from "@/components/agent-sla";
 import {
   createTicketComment,
   getTeams,
+  getTeamAgents,
   getTicket,
   getTicketAssignmentHistory,
   getTicketComments,
@@ -16,8 +18,10 @@ import {
   getTicketHistory,
   getTicketPredictionEvidence,
   getTicketPredictionReviews,
+  getTicketSLA,
   updateTicket,
   type Team,
+  type TeamAgent,
   type TicketAssignmentHistory,
   type TicketComment,
   type TicketFieldHistory,
@@ -27,6 +31,7 @@ import {
   type TicketResponse,
   type TicketStatus,
   type TicketStatusHistory,
+  type TicketSLA,
 } from "@/lib/api";
 
 const ACTION_STATUSES: TicketStatus[] = ["NEW", "ASSIGNED", "IN_PROGRESS", "WAITING_FOR_USER", "RESOLVED", "CLOSED"];
@@ -88,6 +93,17 @@ export default function AgentTicketDetailPage() {
   const [priority, setPriority] = useState<TicketPriority>("MEDIUM");
   const [status, setStatus] = useState<TicketStatus>("NEW");
   const [assignedTeamId, setAssignedTeamId] = useState("");
+  const [eligibleAgents, setEligibleAgents] = useState<TeamAgent[]>([]);
+  const [eligibleAgentsTeamId, setEligibleAgentsTeamId] = useState<number | null>(null);
+  const [selectedAgentId, setSelectedAgentId] = useState("");
+  const [assignmentReason, setAssignmentReason] = useState("");
+  const [isAgentListLoading, setIsAgentListLoading] = useState(false);
+  const [isAssignmentSaving, setIsAssignmentSaving] = useState(false);
+  const [assignmentError, setAssignmentError] = useState<string | null>(null);
+  const [assignmentMessage, setAssignmentMessage] = useState<string | null>(null);
+  const [sla, setSla] = useState<TicketSLA | null>(null);
+  const [isSlaLoading, setIsSlaLoading] = useState(true);
+  const [slaError, setSlaError] = useState<string | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
@@ -122,7 +138,16 @@ export default function AgentTicketDetailPage() {
     setPriority(result.priority);
     setStatus(result.status);
     setAssignedTeamId(result.assigned_team_id?.toString() ?? "");
+    setSelectedAgentId(result.assigned_agent_id?.toString() ?? "");
     setResolutionNote("");
+  }, [ticketId]);
+
+  const refreshSLA = useCallback(async () => {
+    setIsSlaLoading(true);
+    setSlaError(null);
+    try { setSla(await getTicketSLA(ticketId)); }
+    catch (reason) { setSlaError(reason instanceof Error ? reason.message : "SLA status could not be loaded."); }
+    finally { setIsSlaLoading(false); }
   }, [ticketId]);
 
   const refreshComments = useCallback(async () => {
@@ -196,10 +221,25 @@ export default function AgentTicketDetailPage() {
       if (teamsResult.status === "fulfilled") setTeams(teamsResult.value);
       void refreshAuditHistory();
       void refreshPredictionEvidence();
+      void refreshSLA();
     }
     void load();
     return () => { cancelled = true; };
-  }, [ticketId, retryCount, refreshAuditHistory, refreshPredictionEvidence, refreshTicket]);
+  }, [ticketId, retryCount, refreshAuditHistory, refreshPredictionEvidence, refreshSLA, refreshTicket]);
+
+  useEffect(() => {
+    const teamId = ticket?.assigned_team_id ?? 0;
+    if (!Number.isInteger(teamId) || teamId < 1) return;
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      setIsAgentListLoading(true);
+      return getTeamAgents(teamId);
+    }).then((agents) => { if (!cancelled && agents) { setEligibleAgents(agents); setEligibleAgentsTeamId(teamId); } })
+      .catch((reason) => { if (!cancelled) { setEligibleAgents([]); setEligibleAgentsTeamId(null); setAssignmentError(reason instanceof Error ? reason.message : "Eligible agents could not be loaded."); } })
+      .finally(() => { if (!cancelled) setIsAgentListLoading(false); });
+    return () => { cancelled = true; };
+  }, [ticket?.assigned_team_id]);
 
   async function saveChanges() {
     if (!ticket) return;
@@ -235,8 +275,23 @@ export default function AgentTicketDetailPage() {
     finally { setIsCommentPosting(false); }
   }
 
+  async function saveAgentAssignment() {
+    if (!ticket || !ticket.assigned_team_id) { setAssignmentError("Assign the ticket to a team before choosing an agent."); return; }
+    setIsAssignmentSaving(true); setAssignmentError(null); setAssignmentMessage(null);
+    try {
+      await updateTicket(ticket.id, {
+        assigned_agent_id: selectedAgentId ? Number(selectedAgentId) : null,
+        ...(assignmentReason.trim() ? { assignment_reason: assignmentReason.trim() } : {}),
+      });
+      setAssignmentReason("");
+      await Promise.all([refreshTicket(), refreshAuditHistory(), refreshSLA()]);
+      setAssignmentMessage(selectedAgentId ? "Agent assignment updated." : "Agent unassigned.");
+    } catch (reason) { setAssignmentError(reason instanceof Error ? reason.message : "Agent assignment could not be updated."); }
+    finally { setIsAssignmentSaving(false); }
+  }
+
   const latestResolution = [...history].reverse().find((entry) => entry.new_status === "RESOLVED");
-  const humanAssignments = assignmentHistory.filter((entry) => entry.source === "HUMAN");
+  const agentName = (id: number | null | undefined) => id == null ? "Unassigned" : eligibleAgents.find((agent) => agent.id === id)?.name ?? `Agent #${id}`;
 
   return <AgentShell activeSection={activeSection} selectedTeamName={ticket?.assigned_team_name ?? "Agent workspace"}>
     <div className="mx-auto max-w-[1440px]">
@@ -318,7 +373,7 @@ export default function AgentTicketDetailPage() {
                   <Detail label="Category" value={ticket.category ?? "Not assigned"} />
                   <Detail label="Subcategory" value={ticket.subcategory ?? "Not assigned"} />
                   <Detail label="Assigned team" value={ticket.assigned_team_name ?? "Unassigned"} />
-                  <Detail label="Assigned agent" value={ticket.assigned_agent_id == null ? "Unassigned" : `User #${ticket.assigned_agent_id}`} />
+                  <Detail label="Assigned agent" value={agentName(ticket.assigned_agent_id)} />
                   <Detail label="Created" value={formattedDate(ticket.created_at)} />
                   <Detail label="Last updated" value={formattedDate(ticket.updated_at)} />
                 </dl>
@@ -336,6 +391,38 @@ export default function AgentTicketDetailPage() {
                   {status === "RESOLVED" && ticket.status !== "RESOLVED" && <label className="block text-xs font-medium text-slate-700">Resolution note<textarea value={resolutionNote} onChange={(event) => setResolutionNote(event.target.value)} minLength={10} maxLength={5000} rows={3} placeholder="Describe the fix and how it was verified (at least 10 characters)." disabled={isSaving} className="mt-1.5 w-full resize-y rounded-md border border-slate-300 px-2.5 py-2 text-sm text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:bg-slate-50" /></label>}
                   <button type="button" onClick={() => void saveChanges()} disabled={isSaving} className="w-full rounded-md bg-sky-700 px-3 py-2.5 text-sm font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50">{isSaving ? "Saving changes…" : "Save changes"}</button>
                 </div>
+              </Section>
+
+              <Section title="Individual agent assignment" description="Choose an eligible member of the assigned team. Leave the agent unassigned when the ticket should remain team queued.">
+                <div className="space-y-3">
+                  <p className="text-xs text-slate-600">Team: <span className="font-semibold text-slate-800">{ticket.assigned_team_name ?? "Unassigned"}</span></p>
+                  <label className="block text-xs font-medium text-slate-700">Assigned agent
+                    <select value={selectedAgentId} disabled={!ticket.assigned_team_id || eligibleAgentsTeamId !== ticket.assigned_team_id || isAgentListLoading || isAssignmentSaving} onChange={(event) => setSelectedAgentId(event.target.value)} className="mt-1.5 w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:bg-slate-100">
+                      <option value="">Unassigned</option>
+                      {selectedAgentId && !eligibleAgents.some((agent) => agent.id.toString() === selectedAgentId) && <option value={selectedAgentId}>Current agent #{selectedAgentId}</option>}
+                      {eligibleAgents.map((agent) => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
+                    </select>
+                  </label>
+                  <label className="block text-xs font-medium text-slate-700">Reason (optional)<input value={assignmentReason} maxLength={1000} onChange={(event) => setAssignmentReason(event.target.value)} placeholder="Add context for the assignment" disabled={isAssignmentSaving} className="mt-1.5 w-full rounded-md border border-slate-300 px-2.5 py-2 text-sm text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:bg-slate-50" /></label>
+                  {isAgentListLoading && <p role="status" className="text-xs text-slate-500">Loading eligible agents…</p>}
+                  {assignmentError && <p role="alert" className="text-xs text-rose-700">{assignmentError}</p>}
+                  {assignmentMessage && <p role="status" className="text-xs text-emerald-700">{assignmentMessage}</p>}
+                  <button type="button" onClick={() => void saveAgentAssignment()} disabled={isAssignmentSaving || isAgentListLoading || !ticket.assigned_team_id || eligibleAgentsTeamId !== ticket.assigned_team_id || selectedAgentId === (ticket.assigned_agent_id?.toString() ?? "")} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{isAssignmentSaving ? "Updating assignment…" : selectedAgentId ? "Save agent assignment" : "Unassign agent"}</button>
+                </div>
+              </Section>
+
+              <TicketSLAPanel sla={sla} loading={isSlaLoading} error={slaError} onRetry={() => void refreshSLA()} />
+
+              <Section title="Assignment history" description="AI routing and human assignment events are shown together.">
+                {isAuditLoading ? <p role="status" className="text-sm text-slate-500">Loading assignment history…</p>
+                  : auditError ? <p role="alert" className="text-sm text-rose-800">{auditError}</p>
+                    : assignmentHistory.length === 0 ? <p className="text-sm text-slate-500">No assignment events recorded.</p>
+                      : <ol className="space-y-3">{[...assignmentHistory].reverse().map((entry) => <li key={entry.id} className="border-l-2 border-slate-200 pl-3">
+                        <p className="text-xs font-semibold text-slate-800">{entry.source === "AI" ? "AI team routing" : entry.source === "HUMAN" ? "Agent assignment updated" : "System assignment"}</p>
+                        <p className="mt-1 text-xs text-slate-600">{entry.previous_agent_id != null ? agentName(entry.previous_agent_id) : "Unassigned"} → {agentName(entry.agent_id)}</p>
+                        <p className="mt-1 text-[11px] text-slate-500">Team #{entry.team_id ?? "—"} · {entry.assigned_by_id == null ? "System" : `User #${entry.assigned_by_id}`} · {formattedDate(entry.assigned_at)}</p>
+                        {(entry.reason || entry.routing_reason) && <p className="mt-1 text-xs leading-5 text-slate-500">{entry.reason ?? entry.routing_reason}</p>}
+                      </li>)}</ol>}
               </Section>
 
               <AgentAIEvidencePanel
@@ -382,8 +469,8 @@ export default function AgentTicketDetailPage() {
             <div className="border-t border-slate-100 p-4 sm:p-5">
               {isAuditLoading ? <p role="status" className="text-sm text-slate-500">Loading audit history…</p>
                 : auditError ? <p role="alert" className="text-sm text-rose-800">{auditError}<button type="button" onClick={() => void refreshAuditHistory()} className="ml-2 font-semibold underline">Retry</button></p>
-                  : fieldHistory.length === 0 && humanAssignments.length === 0 ? <p className="text-sm text-slate-500">No human field overrides or team reassignments recorded.</p>
-                    : <ul className="space-y-2">{fieldHistory.map((entry) => <li key={`field-${entry.id}`} className="text-sm text-slate-700"><span className="font-medium">{entry.field_name}:</span> {entry.old_value ?? "Not set"} → {entry.new_value ?? "Not set"} <span className="text-xs text-slate-500">· User #{entry.changed_by_id} · {formattedDate(entry.changed_at)}</span>{entry.note && <p className="mt-1 text-xs text-slate-500">{entry.note}</p>}</li>)}{humanAssignments.map((entry) => <li key={`assignment-${entry.id}`} className="text-sm text-slate-700"><span className="font-medium">Team reassigned:</span> {teams.find((team) => team.id === entry.team_id)?.name ?? (entry.team_id ? `Team #${entry.team_id}` : "Unassigned")} <span className="text-xs text-slate-500">· User #{entry.assigned_by_id ?? "unknown"} · {formattedDate(entry.assigned_at)}</span>{entry.routing_reason && <p className="mt-1 text-xs text-slate-500">{entry.routing_reason}</p>}</li>)}</ul>}
+                  : fieldHistory.length === 0 && assignmentHistory.length === 0 ? <p className="text-sm text-slate-500">No human field overrides or assignment changes recorded.</p>
+                    : <ul className="space-y-2">{fieldHistory.map((entry) => <li key={`field-${entry.id}`} className="text-sm text-slate-700"><span className="font-medium">{entry.field_name}:</span> {entry.old_value ?? "Not set"} → {entry.new_value ?? "Not set"} <span className="text-xs text-slate-500">· User #{entry.changed_by_id} · {formattedDate(entry.changed_at)}</span>{entry.note && <p className="mt-1 text-xs text-slate-500">{entry.note}</p>}</li>)}</ul>}
             </div>
           </details>
         </>}
