@@ -164,6 +164,8 @@ def update_ticket(
     requested_agent_id = updates.pop("assigned_agent_id", None)
     agent_changed = "assigned_agent_id" in payload.model_fields_set and requested_agent_id != ticket.assigned_agent_id
     assignment_reason = updates.pop("assignment_reason", None)
+    if assignment_reason and not (team_changed or agent_changed):
+        raise HTTPException(status_code=422, detail="An assignment reason requires an assignment change")
 
     try:
         now = datetime.now(timezone.utc)
