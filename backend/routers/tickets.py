@@ -54,6 +54,10 @@ _ALLOWED_STATUS_TRANSITIONS = {
 }
 
 
+def _ticket_for_update_query(ticket_id: int):
+    return select(Ticket).where(Ticket.id == ticket_id).with_for_update(of=Ticket)
+
+
 def _can_agent_access_ticket(ticket: Ticket, user: User, db: Session) -> bool:
     if user.role == UserRole.ADMIN:
         return True
@@ -135,7 +139,7 @@ def update_ticket(
     db: Session = Depends(get_db),
     current_user: User | None = Depends(require_agent),
 ) -> TicketResponse:
-    ticket = db.scalar(select(Ticket).where(Ticket.id == ticket_id).with_for_update())
+    ticket = db.scalar(_ticket_for_update_query(ticket_id))
     if ticket is None:
         raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
     if isinstance(current_user, User) and (
