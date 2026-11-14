@@ -349,6 +349,30 @@ def test_agent_cannot_assign_outside_own_team_or_to_nonmember(client, database_s
     assert database_session.query(TicketAssignment).count() == 0
 
 
+def test_admin_can_assign_agent_in_another_team(client, database_session):
+    second_agent = User(id=4, name="Security Agent", email="security-agent@example.com", role=UserRole.SUPPORT_AGENT)
+    admin = User(id=5, name="Admin", email="admin-assign@example.com", role=UserRole.ADMIN)
+    database_session.add_all([
+        second_agent,
+        admin,
+        TeamMember(team_id=2, user_id=4, member_role=UserRole.SUPPORT_AGENT),
+    ])
+    database_session.commit()
+
+    response = client.patch(
+        "/api/tickets/1",
+        json={"assigned_team_id": 2, "assigned_agent_id": 4, "assignment_reason": "Security escalation"},
+        headers=token_for(database_session, 5),
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["assigned_team_id"] == 2
+    assert response.json()["assigned_agent_id"] == 4
+    assignment = database_session.query(TicketAssignment).one()
+    assert assignment.previous_agent_id is None
+    assert assignment.agent_id == 4
+    assert assignment.assigned_by_id == 5
+
+
 def test_employee_cannot_assign_an_agent(client, database_session):
     assert client.patch("/api/tickets/1", json={"assigned_agent_id": 3}, headers=token_for(database_session, 1)).status_code == 403
     assert database_session.query(TicketAssignment).count() == 0
@@ -387,3 +411,13 @@ def test_sla_target_configuration_is_admin_only_and_validated(client, database_s
     invalid = client.put("/api/sla/targets/HIGH", json={"response_minutes": 120, "resolution_minutes": 60}, headers=token_for(database_session, 5))
     assert invalid.status_code == 422
     assert database_session.get(SLATarget, TicketPriority.HIGH).response_minutes == 30
+    for priority in ("LOW", "MEDIUM", "URGENT"):
+        response = client.put(
+            f"/api/sla/targets/{priority}",
+            json={"response_minutes": 60, "resolution_minutes": 120},
+            headers=token_for(database_session, 5),
+        )
+        assert response.status_code == 200
+    listed = client.get("/api/sla/targets", headers=token_for(database_session, 3))
+    assert listed.status_code == 200
+    assert {row["priority"] for row in listed.json()} == {"LOW", "MEDIUM", "HIGH", "URGENT"}
