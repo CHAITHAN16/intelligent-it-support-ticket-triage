@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import type { TicketPriority, TicketResponse, TicketStatus } from "@/lib/api";
+import { PriorityBadge, StatusBadge } from "@/components/ticket-badges";
+import { UiIcon } from "@/components/ui-icon";
 
 type TicketSource = "overview" | "team" | "all";
 type AssignmentFilter = "ALL" | "ASSIGNED" | "UNASSIGNED";
@@ -14,23 +16,6 @@ const PRIORITIES: TicketPriority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 function dateLabel(value: string) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(date);
-}
-
-function priorityClass(priority: TicketPriority) {
-  if (priority === "URGENT" || priority === "HIGH") return "bg-rose-50 text-rose-700 ring-rose-200";
-  if (priority === "LOW") return "bg-slate-100 text-slate-600 ring-slate-200";
-  return "bg-amber-50 text-amber-800 ring-amber-200";
-}
-
-function statusClass(status: TicketStatus) {
-  if (status === "RESOLVED" || status === "CLOSED") return "bg-emerald-50 text-emerald-700 ring-emerald-200";
-  if (status === "IN_PROGRESS") return "bg-sky-50 text-sky-700 ring-sky-200";
-  if (status === "WAITING_FOR_USER") return "bg-violet-50 text-violet-700 ring-violet-200";
-  return "bg-slate-100 text-slate-700 ring-slate-200";
-}
-
-function Badge({ children, className }: { children: React.ReactNode; className: string }) {
-  return <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${className}`}>{children}</span>;
 }
 
 export function AgentTicketTable({
