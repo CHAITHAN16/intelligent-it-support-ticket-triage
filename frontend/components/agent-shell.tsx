@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useSyncExternalStore } from "react";
+import { UiIcon } from "@/components/ui-icon";
 
 import type { Team } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -54,22 +55,12 @@ function getServerSidebarPreference() {
   return true;
 }
 
-function NavigationIcon({ section, className = "" }: { section: AgentSection; className?: string }) {
-  const paths: Record<AgentSection, React.ReactNode> = {
-    overview: <><rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="13" y="3" width="8" height="5" rx="1.5" /><rect x="13" y="10" width="8" height="11" rx="1.5" /><rect x="3" y="13" width="8" height="8" rx="1.5" /></>,
-    team: <><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="10" cy="7" r="4" /><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>,
-    all: <><rect x="4" y="4" width="16" height="17" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /><path d="M8 2v4M16 2v4" /></>,
-    sla: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /><path d="M7 2 5 4M17 2l2 2" /></>,
-    analytics: <><path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-5 5" /></>,
-  };
-  return <svg aria-hidden="true" className={`h-5 w-5 shrink-0 ${className}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{paths[section]}</svg>;
-}
+const NAV_ICONS: Record<AgentSection, "layout-dashboard" | "users" | "tickets" | "clock" | "chart"> = {
+  overview: "layout-dashboard", team: "users", all: "tickets", sla: "clock", analytics: "chart",
+};
 
 function SidebarToggleIcon({ expanded }: { expanded: boolean }) {
-  return <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2.5" y="3" width="15" height="14" rx="2" />
-    <path d="M7.5 3v14M11 7l2.5 3-2.5 3" transform={expanded ? undefined : "translate(24 0) scale(-1 1)"} />
-  </svg>;
+  return <UiIcon name="chevron-left" className={`h-4 w-4 transition-transform ${expanded ? "" : "rotate-180"}`} />;
 }
 
 export function AgentShell({
@@ -106,8 +97,8 @@ export function AgentShell({
     return <>
       {navItems.map((item) => {
         const active = activeSection === item.section;
-        return <Link key={item.section} href={item.href} aria-label={item.label} aria-current={active ? "page" : undefined} title={sidebarExpanded || mobile ? undefined : item.label} className={`flex min-h-10 items-center gap-3 whitespace-nowrap rounded-md py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 ${mobile ? "px-3" : sidebarExpanded ? "px-3" : "justify-center px-0"} ${active ? "bg-slate-800 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}>
-          <NavigationIcon section={item.section} />
+        return <Link key={item.section} href={item.href} aria-label={item.label} aria-current={active ? "page" : undefined} title={sidebarExpanded || mobile ? undefined : item.label} className={`flex min-h-10 items-center gap-3 whitespace-nowrap rounded-md border-l-2 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 ${mobile ? "px-3" : sidebarExpanded ? "px-3" : "justify-center px-0"} ${active ? "border-blue-500 bg-blue-500/10 text-white" : "border-transparent text-slate-400 hover:bg-slate-800 hover:text-white"}`}>
+          <UiIcon name={NAV_ICONS[item.section]} className="h-5 w-5" />
           <span className={mobile || sidebarExpanded ? "" : "sr-only"}>{item.label}</span>
         </Link>;
       })}
@@ -141,7 +132,7 @@ export function AgentShell({
             {sidebarExpanded ? <select id="team-selector" value={selectedTeamId ?? ""} onChange={(event) => onTeamChange(Number(event.target.value))} disabled={teams.length === 0} className="mt-2 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-900 disabled:bg-slate-800">
               {teams.length === 0 ? <option value="">No teams available</option> : teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
             </select> : <div className="relative flex h-10 w-10 items-center justify-center rounded-md text-slate-400 hover:bg-slate-800 hover:text-white focus-within:outline-2 focus-within:outline-blue-400" title={`Select support team: ${selectedTeamName}`}>
-              <NavigationIcon section="team" />
+              <UiIcon name="users" className="h-5 w-5" />
               <select id="team-selector" aria-label={`Select support team. Current team: ${selectedTeamName}`} value={selectedTeamId ?? ""} onChange={(event) => onTeamChange(Number(event.target.value))} disabled={teams.length === 0} className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed">
                 {teams.length === 0 ? <option value="">No teams available</option> : teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
               </select>
