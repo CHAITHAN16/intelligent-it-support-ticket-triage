@@ -353,7 +353,7 @@ export default function AgentTicketDetailPage() {
           <button type="button" onClick={() => setRetryCount((value) => value + 1)} className="mt-4 rounded-md bg-slate-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-slate-700">Retry</button>
         </div>
         : ticket && <>
-          <header id="overview" className="mt-5 border-b border-slate-200 pb-4">
+          <header id="overview" className="mt-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-900/[0.03] sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -361,7 +361,7 @@ export default function AgentTicketDetailPage() {
                   <StatusBadge status={ticket.status} compact />
                   <PriorityBadge priority={ticket.priority} />
                 </div>
-                <h1 className="mt-2 break-words text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">{ticket.title}</h1>
+                <h1 className="mt-2 break-words text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">{ticket.title}</h1>
                 <p className="mt-2 text-xs text-slate-600">{ticket.assigned_team_name ?? "No team assigned"} <span className="px-1 text-slate-300">·</span> {agentName(ticket.assigned_agent_id)}</p>
               </div>
               <Link href={returnTo} className="hidden shrink-0 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:inline-flex">Return to queue</Link>

@@ -59,6 +59,7 @@ export default function EmployeeTicketDetailPage() {
   const [triageDelayed, setTriageDelayed] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const triageComplete = ticket ? isTicketProcessingComplete(ticket) : false;
+  const shouldPollTriage = ticket !== null && !triageComplete;
 
   useEffect(() => {
     let cancelled = false;
@@ -120,7 +121,7 @@ export default function EmployeeTicketDetailPage() {
   }, [ticketId, retryCount]);
 
   useEffect(() => {
-    if (!ticket || triageComplete) return;
+    if (!shouldPollTriage) return;
 
     let cancelled = false;
     const startedAt = Date.now();
@@ -147,7 +148,7 @@ export default function EmployeeTicketDetailPage() {
       cancelled = true;
       window.clearInterval(poll);
     };
-  }, [ticketId, triageComplete]);
+  }, [ticketId, shouldPollTriage]);
 
   return (
     <div className="min-h-screen bg-[#f6f8fb] text-slate-950">
