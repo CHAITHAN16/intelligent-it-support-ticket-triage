@@ -26,14 +26,14 @@
   --color-ai: var(--app-ai);
   --color-neutral: var(--app-neutral);
   --color-border: var(--app-border);
-  --font-sans: "Trebuchet MS", "Segoe UI", sans-serif;
-  --font-mono: "Cascadia Code", Consolas, monospace;
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", Consolas, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 :where(a, button, input, select, textarea, summary):focus-visible {
@@ -94,6 +94,8 @@ html[data-theme="dark"] [class*="divide-slate-"] > :not([hidden]) ~ :not([hidden
 html[data-theme="dark"] .bg-blue-50,
 html[data-theme="dark"] .bg-sky-50,
 html[data-theme="dark"] .bg-violet-50,
+html[data-theme="dark"] .bg-teal-50,
+html[data-theme="dark"] .bg-indigo-50,
 html[data-theme="dark"] [class*="bg-violet-50/"],
 html[data-theme="dark"] .bg-emerald-50,
 html[data-theme="dark"] .bg-amber-50,
@@ -106,6 +108,13 @@ html[data-theme="dark"] .hover\:bg-slate-50:hover,
 html[data-theme="dark"] .hover\:bg-slate-100:hover,
 html[data-theme="dark"] .hover\:bg-white:hover {
   background-color: #243149 !important;
+}
+
+html[data-theme="dark"] .text-teal-800,
+html[data-theme="dark"] .text-blue-700,
+html[data-theme="dark"] .text-violet-700,
+html[data-theme="dark"] .text-emerald-700 {
+  color: #a5d6ca !important;
 }
 
 html[data-theme="dark"] input,
@@ -125,5 +134,14 @@ html[data-theme="dark"] .shadow-sm,
 html[data-theme="dark"] .shadow-xl,
 html[data-theme="dark"] .shadow-lg {
   --tw-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
+  box-shadow: var(--tw-shadow);
+}
+
+.rounded-3xl {
+  border-radius: 1rem;
+}
+
+.shadow-xl {
+  --tw-shadow: 0 8px 24px rgb(15 23 42 / 0.06);
   box-shadow: var(--tw-shadow);
 }
