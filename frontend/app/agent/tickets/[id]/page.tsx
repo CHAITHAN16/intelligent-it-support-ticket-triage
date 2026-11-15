@@ -69,7 +69,7 @@ function confidenceLabel(value: number | null) {
 
 function Section({ title, description, children, className = "", id }: { title: string; description?: string; children: React.ReactNode; className?: string; id?: string }) {
   const icon = title === "Conversation" ? "message-circle" : title === "Status history" || title === "Activity" ? "history" : title === "Assignment" ? "user-check" : title === "SLA" ? "clock" : title === "AI insights" ? "brain-circuit" : title === "Overview" ? "layout-dashboard" : "activity";
-  return <section id={id} className={`scroll-mt-28 rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/30 ${className}`}>
+  return <section id={id} className={`rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-900/[0.03] ${className}`}>
     <div className="border-b border-slate-100 px-4 py-3 sm:px-5">
       <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900"><UiIcon name={icon} className={`h-4 w-4 ${icon === "brain-circuit" ? "text-violet-700" : "text-slate-500"}`} />{title}</h2>
       {description && <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>}
@@ -258,7 +258,7 @@ export default function AgentTicketDetailPage() {
     const observer = new IntersectionObserver((entries) => {
       const visible = entries.filter((entry) => entry.isIntersecting).sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top);
       if (visible[0]) setActiveTicketSection(visible[0].target.id);
-    }, { root: scrollRoot, rootMargin: "-112px 0px -68% 0px", threshold: 0 });
+    }, { root: scrollRoot, rootMargin: "-48px 0px -68% 0px", threshold: 0 });
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
   }, [hasTicket]);
@@ -374,7 +374,7 @@ export default function AgentTicketDetailPage() {
           </nav>
 
           <div className="mt-4 grid min-w-0 grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)] xl:gap-6">
-            <main className="min-w-0 space-y-5">
+            <div className="min-w-0 space-y-5">
               <Section title="Overview" description="Request summary, classification, and current ownership.">
                 <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,0.85fr)]">
                   <div className="min-w-0 rounded-md bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Employee request · User #{ticket.creator_id}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{ticket.description}</p></div>
@@ -434,9 +434,9 @@ export default function AgentTicketDetailPage() {
                   <button type="button" onClick={() => void saveChanges()} disabled={isSaving} className="w-full rounded-md bg-sky-700 px-3 py-2.5 text-sm font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50">{isSaving ? "Saving changes…" : "Save changes"}</button>
                 </div>
               </Section>
-            </main>
+            </div>
 
-            <aside className="min-w-0 space-y-5 xl:sticky xl:top-16">
+            <aside className="min-w-0 space-y-5">
               <Section id="assignment" title="Assignment" description="Manage team ownership and individual agent assignment. AI routing remains recorded separately from human changes.">
                 <div className="space-y-3">
                   <label className="block text-xs font-medium text-slate-700">Assigned team<select value={assignedTeamId} onChange={(event) => { setAssignedTeamId(event.target.value); setSelectedAgentId(""); setAssignmentError(null); }} disabled={isAssignmentSaving} className="mt-1.5 w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:bg-slate-100">
