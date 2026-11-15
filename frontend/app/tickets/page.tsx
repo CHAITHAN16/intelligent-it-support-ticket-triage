@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { SiteHeader } from "@/components/site-header";
+import { PriorityBadge, StatusBadge } from "@/components/ticket-badges";
 import { getMyTickets, type TicketResponse } from "@/lib/api";
 
 const STATUSES = ["NEW", "ASSIGNED", "IN_PROGRESS", "WAITING_FOR_USER", "RESOLVED", "CLOSED"] as const;
@@ -17,29 +18,14 @@ function confidenceValue(ticket: TicketResponse) {
   return ticket.ai_confidence === null ? "Not available" : `${Math.round(ticket.ai_confidence * 100)}%`;
 }
 
-function statusClass(status: TicketResponse["status"]) {
-  switch (status) {
-    case "RESOLVED":
-    case "CLOSED":
-      return "bg-emerald-50 text-emerald-700 ring-emerald-100";
-    case "IN_PROGRESS":
-      return "bg-amber-50 text-amber-700 ring-amber-100";
-    case "ASSIGNED":
-      return "bg-sky-50 text-sky-700 ring-sky-100";
-    case "WAITING_FOR_USER":
-      return "bg-violet-50 text-violet-700 ring-violet-100";
-    default:
-      return "bg-slate-100 text-slate-700 ring-slate-200";
-  }
-}
-
 function TicketRow({ ticket }: { ticket: TicketResponse }) {
   return (
     <Link href={`/tickets/${ticket.id}`} aria-label={`View details for ticket ${ticket.id}: ${ticket.title}`} className="grid gap-4 px-5 py-5 transition hover:bg-sky-50/60 focus-visible:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-500 sm:grid-cols-[1fr_auto] sm:items-center">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-sm font-semibold text-slate-950">#{ticket.id}</p>
-          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ring-1 ring-inset ${statusClass(ticket.status)}`}>{ticket.status.replaceAll("_", " ")}</span>
+          <p className="text-sm font-semibold text-slate-950">Ticket #{ticket.id}</p>
+          <StatusBadge status={ticket.status} compact />
+          <PriorityBadge priority={ticket.priority} />
         </div>
         <h2 className="mt-2 truncate text-base font-semibold text-slate-950">{ticket.title}</h2>
         <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">{ticket.description}</p>
