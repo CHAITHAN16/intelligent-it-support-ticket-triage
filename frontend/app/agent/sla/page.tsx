@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AgentShell } from "@/components/agent-shell";
 import { formatDuration, SLAStateBadge } from "@/components/agent-sla";
+import { UiIcon } from "@/components/ui-icon";
 import { useAuth } from "@/lib/auth";
 import { getSLAOverview, getTeamAgents, getTeams, type SLAOverview, type SLAOverviewFilters, type SLAState, type Team, type TicketPriority, type TicketSLA } from "@/lib/api";
 
@@ -24,7 +25,7 @@ function TicketList({ title, items, empty }: { title: string; items: TicketSLA[]
         const clock = isResponse ? item.response : item.resolution;
         return <li key={`${title}-${item.ticket_id}`} className="px-4 py-3 hover:bg-slate-50">
           <Link href={`/agent/tickets/${item.ticket_id}?from=all`} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0"><p className="text-sm font-semibold text-sky-800">Ticket #{item.ticket_id}</p><p className="mt-1 text-xs text-slate-500">{item.priority} · {item.status.replaceAll("_", " ")} · Team {item.team_id == null ? "unassigned" : `#${item.team_id}`}</p></div>
+            <div className="min-w-0"><p className="flex items-center gap-1 text-sm font-semibold text-teal-700"><UiIcon name="ticket" className="h-3.5 w-3.5" />Ticket #{item.ticket_id}</p><p className="mt-1 text-xs text-slate-500">{item.priority} · {item.status.replaceAll("_", " ")} · Team {item.team_id == null ? "unassigned" : `#${item.team_id}`}</p></div>
             <div className="flex flex-wrap items-center gap-2"><span className="text-xs text-slate-500">{clock.completed_at ? `Completed ${dateTime(clock.completed_at)}` : clock.actively_overdue ? `Overdue ${formatDuration(clock.overdue_seconds)}` : `Due ${dateTime(clock.deadline)}`}</span><SLAStateBadge clock={clock} compact /></div>
           </Link>
         </li>;
@@ -121,7 +122,7 @@ export default function AgentSLAPage() {
                 { title: "Approaching resolution", value: approachingResolution.length, detail: `Next ${overview.approaching_within_minutes} minutes`, tone: "text-amber-700", accent: "border-t-amber-400" },
                 { title: "Breached response", value: breachedResponse.length, detail: `${responseActiveOverdue} currently overdue`, tone: "text-rose-700", accent: "border-t-rose-400" },
                 { title: "Breached resolution", value: breachedResolution.length, detail: `${resolutionActiveOverdue} currently overdue`, tone: "text-rose-700", accent: "border-t-rose-400" },
-              ].map((card) => <article key={card.title} className={`rounded-lg border border-slate-200 border-t-2 ${card.accent} bg-white p-4 shadow-sm shadow-slate-200/40`}><p className="text-xs font-medium text-slate-500">{card.title}</p><p className={`mt-2 text-3xl font-semibold ${card.tone}`}>{card.value}</p><p className="mt-1 text-xs text-slate-500">{card.detail}</p></article>)}
+              ].map((card) => <article key={card.title} className={`flex min-h-32 items-start justify-between rounded-xl border border-slate-200 border-t-2 ${card.accent} bg-white p-4 shadow-sm shadow-slate-900/[0.03]`}><div><p className="text-xs font-medium text-slate-500">{card.title}</p><p className={`mt-2 text-3xl font-semibold ${card.tone}`}>{card.value}</p><p className="mt-1 text-xs text-slate-500">{card.detail}</p></div><span className={`rounded-lg p-2 ${card.tone.replace("text-", "bg-").replace("700", "50")}`}><UiIcon name={card.title.includes("Approaching") ? "alert-circle" : "alert-triangle"} className={`h-4 w-4 ${card.tone}`} /></span></article>)}
             </div>
 
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/40">
