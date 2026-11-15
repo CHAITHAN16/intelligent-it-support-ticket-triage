@@ -3,16 +3,18 @@
 :root {
   --app-primary: #2563eb;
   --app-navy: #111827;
-  --app-background: #f8fafc;
+  --app-background: #f7f9fc;
+  --app-text: #172033;
+  --app-secondary: #64748b;
   --app-card: #ffffff;
   --app-success: #059669;
   --app-warning: #d97706;
   --app-danger: #dc2626;
   --app-ai: #7c3aed;
   --app-neutral: #64748b;
-  --app-border: #e2e8f0;
+  --app-border: #e5eaf1;
   --background: var(--app-background);
-  --foreground: var(--app-navy);
+  --foreground: var(--app-text);
 }
 
 @theme inline {
@@ -34,6 +36,26 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.bg-slate-50,
+[class*="bg-slate-50/"],
+[class*="bg-[#f6f8fb]"] {
+  background-color: var(--app-background);
+}
+
+.text-slate-950,
+.text-slate-900 {
+  color: var(--app-text);
+}
+
+.text-slate-600,
+.text-slate-500 {
+  color: var(--app-secondary);
+}
+
+.border-slate-200 {
+  border-color: var(--app-border);
 }
 
 :where(a, button, input, select, textarea, summary):focus-visible {

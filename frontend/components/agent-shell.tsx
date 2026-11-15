@@ -137,7 +137,6 @@ export function AgentShell({
             <SidebarToggleIcon expanded={sidebarExpanded} />
           </button>
         </div>
-        {sidebarExpanded && <p className="px-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Workspace</p>}
         <nav aria-label="Agent workspace navigation" className="flex flex-col gap-1">
           {sidebarExpanded && <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Workspace</p>}
           {renderNavigation(false, navItems.filter((item) => ["overview", "team", "all"].includes(item.section)))}
