@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { UiIcon } from "@/components/ui-icon";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 import type { Team } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -79,24 +80,8 @@ export function AgentShell({
   children: React.ReactNode;
 }) {
   const { logout, user } = useAuth();
-  const [theme, setTheme] = useState<"light" | "dark">("light");
   const navItems = NAV_ITEMS.filter((item) => item.section !== "analytics" || user?.role === "AGENT" || user?.role === "ADMIN");
   const sidebarExpanded = useSyncExternalStore(subscribeToSidebarPreference, getSidebarPreference, getServerSidebarPreference);
-
-  useEffect(() => {
-    let saved: string | null = null;
-    try { saved = window.localStorage.getItem("support-dashboard-theme"); } catch { /* Use the light theme when browser storage is unavailable. */ }
-    const nextTheme = saved === "dark" ? "dark" : "light";
-    setTheme(nextTheme);
-    document.documentElement.dataset.theme = nextTheme;
-  }, []);
-
-  function toggleTheme() {
-    const nextTheme = theme === "light" ? "dark" : "light";
-    setTheme(nextTheme);
-    document.documentElement.dataset.theme = nextTheme;
-    try { window.localStorage.setItem("support-dashboard-theme", nextTheme); } catch { /* The selected theme remains active for this page. */ }
-  }
 
   useEffect(() => {
     const htmlOverflow = document.documentElement.style.overflow;
@@ -168,7 +153,7 @@ export function AgentShell({
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600 text-xs font-bold text-white md:hidden">IT</span>
             <span className="min-w-0 truncate text-sm font-semibold tracking-tight">IntelliDesk <span className="font-normal text-slate-400">/ Agent workspace</span></span>
           </Link>
-          <div className="flex items-center gap-2 sm:gap-3"><button type="button" onClick={toggleTheme} aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`} aria-pressed={theme === "dark"} title={`Switch to ${theme === "light" ? "dark" : "light"} mode`} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"><UiIcon name={theme === "light" ? "moon" : "sun"} className="h-4 w-4" /><span className="sr-only">{theme === "light" ? "Dark mode" : "Light mode"}</span></button><div className="hidden text-right sm:block"><p className="text-xs font-medium">{user?.name ?? "Support user"}</p><p className="text-[11px] text-slate-400">{user?.role === "ADMIN" ? "Administrator" : "Support agent"}</p></div><button type="button" onClick={logout} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500">Log out</button></div>
+          <div className="flex items-center gap-2 sm:gap-3"><ThemeToggle /><div className="hidden text-right sm:block"><p className="text-xs font-medium">{user?.name ?? "Support user"}</p><p className="text-[11px] text-slate-400">{user?.role === "ADMIN" ? "Administrator" : "Support agent"}</p></div><button type="button" onClick={logout} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500">Log out</button></div>
         </div>
       </header>
 
