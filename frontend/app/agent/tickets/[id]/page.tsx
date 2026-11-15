@@ -353,7 +353,7 @@ export default function AgentTicketDetailPage() {
           <button type="button" onClick={() => setRetryCount((value) => value + 1)} className="mt-4 rounded-md bg-slate-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-slate-700">Retry</button>
         </div>
         : ticket && <>
-          <header id="overview" className="mt-5 scroll-mt-28 border-b border-slate-200 pb-4">
+          <header id="overview" className="mt-5 scroll-mt-14 border-b border-slate-200 pb-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
