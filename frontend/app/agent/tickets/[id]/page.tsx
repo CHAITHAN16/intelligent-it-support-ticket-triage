@@ -7,6 +7,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AgentShell } from "@/components/agent-shell";
 import { AgentAIEvidencePanel } from "@/components/agent-ai-evidence-panel";
 import { TicketSLAPanel } from "@/components/agent-sla";
+import { ConfidenceBar, PriorityBadge, StatusBadge } from "@/components/ticket-badges";
+import { UiIcon } from "@/components/ui-icon";
 import {
   createTicketComment,
   getTeams,
@@ -45,6 +47,7 @@ const SECTION_LINKS = [
   { id: "ai-insights", label: "AI Insights" },
   { id: "activity", label: "Activity" },
 ];
+const SECTION_ICONS = ["layout-dashboard", "message-circle", "user-check", "clock", "brain-circuit", "activity"] as const;
 
 type TicketActivityEvent = {
   key: string;
@@ -62,21 +65,6 @@ function formattedDate(value: string) {
 
 function confidenceLabel(value: number | null) {
   return value === null ? "Not available" : `${Math.round(value * 100)}%`;
-}
-
-function statusTone(status: TicketStatus) {
-  if (status === "RESOLVED" || status === "CLOSED") return "bg-emerald-50 text-emerald-800 ring-emerald-200";
-  if (status === "WAITING_FOR_USER") return "bg-violet-50 text-violet-800 ring-violet-200";
-  if (status === "IN_PROGRESS") return "bg-amber-50 text-amber-800 ring-amber-200";
-  if (status === "ASSIGNED") return "bg-blue-50 text-blue-800 ring-blue-200";
-  return "bg-slate-100 text-slate-700 ring-slate-200";
-}
-
-function priorityTone(priority: TicketPriority) {
-  if (priority === "URGENT") return "text-rose-700";
-  if (priority === "HIGH") return "text-orange-700";
-  if (priority === "MEDIUM") return "text-amber-700";
-  return "text-slate-600";
 }
 
 function Section({ title, description, children, className = "", id }: { title: string; description?: string; children: React.ReactNode; className?: string; id?: string }) {
