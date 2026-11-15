@@ -112,13 +112,14 @@ export function AgentShell({
     return <>
       {navItems.map((item) => {
         const active = activeSection === item.section;
-        return <Link key={item.section} href={item.href} aria-label={item.label} aria-current={active ? "page" : undefined} title={sidebarExpanded || mobile ? undefined : item.label} className={`flex min-h-10 items-center gap-3 whitespace-nowrap rounded-md border-l-2 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400 ${mobile ? "px-3" : sidebarExpanded ? "px-3" : "justify-center px-0"} ${active ? "border-blue-500 bg-blue-500/10 text-white" : "border-transparent text-slate-400 hover:bg-slate-800 hover:text-white"}`}>
+        {sidebarExpanded && !mobile && item.section === "sla" && <span className="mb-1 mt-5 w-full border-t border-slate-100 px-3 pt-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Performance</span>}
+        return <Link key={item.section} href={item.href} aria-label={item.label} aria-current={active ? "page" : undefined} title={sidebarExpanded || mobile ? undefined : item.label} className={`flex min-h-10 items-center gap-3 whitespace-nowrap rounded-lg border-l-2 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${mobile ? "px-3" : sidebarExpanded ? "px-3" : "justify-center px-0"} ${active ? "border-teal-600 bg-teal-50 text-teal-800" : "border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`}>
           <UiIcon name={NAV_ICONS[item.section]} className="h-5 w-5" />
           <span className={mobile || sidebarExpanded ? "" : "sr-only"}>{item.label}</span>
         </Link>;
       })}
       {mobile && activeSection === "team" && onTeamChange && <label className="sr-only" htmlFor="mobile-team-selector">Select support team</label>}
-      {mobile && activeSection === "team" && onTeamChange && <select id="mobile-team-selector" aria-label="Select support team" value={selectedTeamId ?? ""} onChange={(event) => onTeamChange(Number(event.target.value))} disabled={teams.length === 0} className="min-w-36 rounded-md border border-slate-700 bg-slate-900 px-2 py-2 text-xs text-slate-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-900 disabled:bg-slate-800">
+      {mobile && activeSection === "team" && onTeamChange && <select id="mobile-team-selector" aria-label="Select support team" value={selectedTeamId ?? ""} onChange={(event) => onTeamChange(Number(event.target.value))} disabled={teams.length === 0} className="min-w-36 rounded-md border border-slate-200 bg-white px-2 py-2 text-xs text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100">
         {teams.length === 0 ? <option value="">No teams available</option> : teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
       </select>}
     </>;
@@ -140,13 +141,13 @@ export function AgentShell({
         <nav aria-label="Agent workspace navigation" className="flex flex-col gap-1">
           {renderNavigation()}
         </nav>
-        {activeSection === "team" && <div className={`mt-5 border-t border-slate-800 pt-4 ${sidebarExpanded ? "" : "flex justify-center"}`}>
-          {sidebarExpanded && <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Selected team</p>}
+        {activeSection === "team" && <div className={`mt-5 border-t border-slate-200 pt-4 ${sidebarExpanded ? "" : "flex justify-center"}`}>
+          {sidebarExpanded && <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Selected team</p>}
           {onTeamChange ? <>
             <label htmlFor="team-selector" className="sr-only">Select support team</label>
-            {sidebarExpanded ? <select id="team-selector" value={selectedTeamId ?? ""} onChange={(event) => onTeamChange(Number(event.target.value))} disabled={teams.length === 0} className="mt-2 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-900 disabled:bg-slate-800">
+            {sidebarExpanded ? <select id="team-selector" value={selectedTeamId ?? ""} onChange={(event) => onTeamChange(Number(event.target.value))} disabled={teams.length === 0} className="mt-2 w-full rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100">
               {teams.length === 0 ? <option value="">No teams available</option> : teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
-            </select> : <div className="relative flex h-10 w-10 items-center justify-center rounded-md text-slate-400 hover:bg-slate-800 hover:text-white focus-within:outline-2 focus-within:outline-blue-400" title={`Select support team: ${selectedTeamName}`}>
+            </select> : <div className="relative flex h-10 w-10 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-within:outline-2 focus-within:outline-blue-500" title={`Select support team: ${selectedTeamName}`}>
               <UiIcon name="users" className="h-5 w-5" />
               <select id="team-selector" aria-label={`Select support team. Current team: ${selectedTeamName}`} value={selectedTeamId ?? ""} onChange={(event) => onTeamChange(Number(event.target.value))} disabled={teams.length === 0} className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed">
                 {teams.length === 0 ? <option value="">No teams available</option> : teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
@@ -154,8 +155,8 @@ export function AgentShell({
             </div>}
           </> : <p className={`mt-2 text-sm font-medium text-slate-300 ${sidebarExpanded ? "px-3" : "sr-only"}`} title={selectedTeamName}>{sidebarExpanded ? selectedTeamName : "Selected team"}</p>}
         </div>}
-        <div className={`mt-auto border-t border-slate-800 pt-4 text-xs text-slate-500 ${sidebarExpanded ? "px-3" : "flex justify-center"}`}>
-          {sidebarExpanded ? <><span className="block truncate text-slate-300">{user?.name ?? "Support user"}</span><span className="mt-1 block">{user?.role === "ADMIN" ? "Administrator" : "Support agent"}</span></> : <span aria-label={`${user?.name ?? "Support user"}, ${user?.role === "ADMIN" ? "Administrator" : "Support agent"}`} title={`${user?.name ?? "Support user"} · ${user?.role === "ADMIN" ? "Administrator" : "Support agent"}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-slate-200">{(user?.name ?? "S").trim().charAt(0).toUpperCase()}</span>}
+        <div className={`mt-auto border-t border-slate-200 pt-4 text-xs text-slate-500 ${sidebarExpanded ? "px-3" : "flex justify-center"}`}>
+          {sidebarExpanded ? <><span className="block truncate font-medium text-slate-800">{user?.name ?? "Support user"}</span><span className="mt-1 block">{user?.role === "ADMIN" ? "Administrator" : "Support agent"}</span></> : <span aria-label={`${user?.name ?? "Support user"}, ${user?.role === "ADMIN" ? "Administrator" : "Support agent"}`} title={`${user?.name ?? "Support user"} · ${user?.role === "ADMIN" ? "Administrator" : "Support agent"}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-700">{(user?.name ?? "S").trim().charAt(0).toUpperCase()}</span>}
         </div>
       </aside>
 
