@@ -353,7 +353,7 @@ export default function AgentTicketDetailPage() {
           <button type="button" onClick={() => setRetryCount((value) => value + 1)} className="mt-4 rounded-md bg-slate-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-slate-700">Retry</button>
         </div>
         : ticket && <>
-          <header id="overview" className="mt-5 scroll-mt-14 border-b border-slate-200 pb-4">
+          <header id="overview" className="mt-5 border-b border-slate-200 pb-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -369,20 +369,20 @@ export default function AgentTicketDetailPage() {
             {(error || saveMessage) && <div className={`mt-4 rounded-md border px-3 py-2 text-sm ${error ? "border-rose-200 bg-rose-50 text-rose-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`} role={error ? "alert" : "status"}>{error ?? saveMessage}</div>}
           </header>
 
-          <nav aria-label="Ticket sections" className="sticky top-0 z-20 -mx-4 mt-3 border-b border-slate-200 bg-white px-4 shadow-sm sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+          <nav aria-label="Ticket sections" className="-mx-4 mt-3 border-b border-slate-200 bg-white px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
             <div className="flex min-w-0 gap-1 overflow-x-auto py-2">{SECTION_LINKS.map((item, index) => <a key={item.id} href={`#${item.id}`} aria-current={activeTicketSection === item.id ? "location" : undefined} onClick={() => setActiveTicketSection(item.id)} className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border-b-2 px-3 py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${activeTicketSection === item.id ? "border-blue-600 bg-white text-blue-700 shadow-sm" : "border-transparent text-slate-600 hover:bg-white hover:text-slate-900"}`}><UiIcon name={SECTION_ICONS[index]} className="h-3.5 w-3.5" />{item.label}</a>)}</div>
           </nav>
 
           <div className="mt-4 grid min-w-0 grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)] xl:gap-6">
             <main className="min-w-0 space-y-5">
-              <Section title="Overview" description="Request summary, classification, and current ownership." className="scroll-mt-14">
+              <Section title="Overview" description="Request summary, classification, and current ownership.">
                 <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,0.85fr)]">
                   <div className="min-w-0 rounded-md bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Employee request · User #{ticket.creator_id}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{ticket.description}</p></div>
                   <dl className="grid min-w-0 gap-x-5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"><Detail label="Category" value={ticket.category ?? "Not assigned"} /><Detail label="Subcategory" value={ticket.subcategory ?? "Not assigned"} /><Detail label="Priority" value={ticket.priority} /><Detail label="Status" value={ticket.status.replaceAll("_", " ")} /><Detail label="Assigned team" value={ticket.assigned_team_name ?? "Unassigned"} /><Detail label="Assigned agent" value={agentName(ticket.assigned_agent_id)} /><Detail label="Created" value={formattedDate(ticket.created_at)} /><Detail label="Last updated" value={formattedDate(ticket.updated_at)} /></dl>
                 </div>
               </Section>
 
-              <Section id="conversation" title="Conversation" description="Employee request, team discussion, and first-response comments." className="scroll-mt-14">
+              <Section id="conversation" title="Conversation" description="Employee request, team discussion, and first-response comments.">
                 <article className="border-b border-slate-100 pb-5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div><p className="text-sm font-semibold text-slate-900">Employee request</p><p className="mt-0.5 text-xs text-slate-500">Ticket creator · User #{ticket.creator_id}</p></div>
@@ -437,7 +437,7 @@ export default function AgentTicketDetailPage() {
             </main>
 
             <aside className="min-w-0 space-y-5 xl:sticky xl:top-16">
-              <Section id="assignment" title="Assignment" description="Manage team ownership and individual agent assignment. AI routing remains recorded separately from human changes." className="scroll-mt-14">
+              <Section id="assignment" title="Assignment" description="Manage team ownership and individual agent assignment. AI routing remains recorded separately from human changes.">
                 <div className="space-y-3">
                   <label className="block text-xs font-medium text-slate-700">Assigned team<select value={assignedTeamId} onChange={(event) => { setAssignedTeamId(event.target.value); setSelectedAgentId(""); setAssignmentError(null); }} disabled={isAssignmentSaving} className="mt-1.5 w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 focus:border-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:bg-slate-100">
                     {!assignedTeamId && <option value="">Select a team to assign</option>}{assignedTeamId && !teams.some((team) => team.id.toString() === assignedTeamId) && <option value={assignedTeamId} disabled>{ticket.assigned_team_name ?? `Team #${assignedTeamId}`} (current assignment)</option>}{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
@@ -458,9 +458,9 @@ export default function AgentTicketDetailPage() {
                 </div>
               </Section>
 
-              <div id="sla" className="scroll-mt-14"><TicketSLAPanel sla={sla} loading={isSlaLoading} error={slaError} onRetry={() => void refreshSLA()} /></div>
+              <div id="sla"><TicketSLAPanel sla={sla} loading={isSlaLoading} error={slaError} onRetry={() => void refreshSLA()} /></div>
 
-              <div id="ai-insights" className="min-w-0 scroll-mt-14 space-y-5">
+              <div id="ai-insights" className="min-w-0 space-y-5">
               <AgentAIEvidencePanel
                 currentCategory={ticket.category}
                 currentPriority={ticket.priority}
@@ -500,7 +500,7 @@ export default function AgentTicketDetailPage() {
             </aside>
           </div>
 
-          <Section id="activity" title="Activity" description="Unified chronological status, assignment, comment and audit events." className="mt-5 scroll-mt-14">
+          <Section id="activity" title="Activity" description="Unified chronological status, assignment, comment and audit events." className="mt-5">
             {isAuditLoading || isHistoryLoading || isCommentsLoading ? <p role="status" className="text-sm text-slate-500">Loading activity…</p>
               : auditError || historyError || commentsError ? <div role="alert" className="space-y-1 text-sm text-rose-800"><p>{auditError ?? historyError ?? commentsError}</p><button type="button" onClick={() => { void refreshAuditHistory(); void refreshHistory(); void refreshComments(); }} className="font-semibold underline">Retry activity</button></div>
                 : activityEvents.length === 0 ? <p className="text-sm text-slate-500">No activity recorded yet.</p>
