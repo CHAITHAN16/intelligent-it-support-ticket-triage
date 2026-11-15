@@ -68,9 +68,10 @@ function confidenceLabel(value: number | null) {
 }
 
 function Section({ title, description, children, className = "", id }: { title: string; description?: string; children: React.ReactNode; className?: string; id?: string }) {
+  const icon = title === "Conversation" ? "message-circle" : title === "Status history" || title === "Activity" ? "history" : title === "Assignment" ? "user-check" : title === "SLA" ? "clock" : title === "AI insights" ? "brain-circuit" : title === "Overview" ? "layout-dashboard" : "activity";
   return <section id={id} className={`scroll-mt-28 rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/30 ${className}`}>
     <div className="border-b border-slate-100 px-4 py-3 sm:px-5">
-      <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+      <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900"><UiIcon name={icon} className={`h-4 w-4 ${icon === "brain-circuit" ? "text-violet-700" : "text-slate-500"}`} />{title}</h2>
       {description && <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>}
     </div>
     <div className="p-4 sm:p-5">{children}</div>
