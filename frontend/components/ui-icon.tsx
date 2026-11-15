@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-type IconName = "layout-dashboard" | "users" | "tickets" | "clock" | "chart" | "chevron-left" | "ticket" | "user-check" | "users-round" | "arrow-right" | "history" | "brain-circuit" | "message-circle" | "activity" | "check-circle" | "alert-circle" | "alert-triangle" | "calendar-clock" | "sparkles" | "check" | "user";
+type IconName = "layout-dashboard" | "users" | "tickets" | "clock" | "chart" | "chevron-left" | "ticket" | "user-check" | "users-round" | "arrow-right" | "history" | "brain-circuit" | "message-circle" | "activity" | "check-circle" | "alert-circle" | "alert-triangle" | "calendar-clock" | "sparkles" | "check" | "user" | "sun" | "moon" | "flame" | "inbox" | "layers";
 
 const paths: Record<IconName, React.ReactNode> = {
   "layout-dashboard": <><rect x="3" y="3" width="7" height="9" rx="1" /><rect x="14" y="3" width="7" height="5" rx="1" /><rect x="14" y="12" width="7" height="9" rx="1" /><rect x="3" y="16" width="7" height="5" rx="1" /></>,
@@ -24,6 +24,11 @@ const paths: Record<IconName, React.ReactNode> = {
   sparkles: <><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2zM19 14l1.2 2.8L23 18l-2.8 1.2L19 22l-1.2-2.8L15 18l2.8-1.2z" /></>,
   check: <path d="m5 12 4 4L19 6" />,
   user: <><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></>,
+  sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></>,
+  moon: <path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z" />,
+  flame: <path d="M8.5 14.5A2.5 2.5 0 0 0 11 17c1.4 0 2.5-1.1 2.5-2.5 0-2-2-3-1.5-6.5 3 2 7 5 7 10a7 7 0 0 1-14 0c0-3 1.5-5.5 4-8-.2 2-.3 3.5-.5 4.5Z" />,
+  inbox: <><path d="M4 4h16l2 10v5H2v-5z" /><path d="M2 14h5l2 3h6l2-3h5" /></>,
+  layers: <><path d="m12 2 9 5-9 5-9-5z" /><path d="m3 12 9 5 9-5M3 17l9 5 9-5" /></>,
 };
 
 export function UiIcon({ name, className = "h-4 w-4", ...props }: SVGProps<SVGSVGElement> & { name: IconName }) {
