@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { AgentShell } from "@/components/agent-shell";
+import { UiIcon } from "@/components/ui-icon";
 import { getAIAnalytics, type AIAnalyticsResponse } from "@/lib/api";
 
 function defaultDate(offsetDays: number) {
@@ -28,11 +29,11 @@ function BarRows({ rows, labelKey, countKey }: { rows: Array<Record<string, stri
 
 function ReviewBreakdown({ title, data }: { title: string; data: NonNullable<AIAnalyticsResponse>["category"] }) {
   return <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/40">
-    <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+    <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900"><UiIcon name="brain-circuit" className="h-4 w-4 text-violet-700" />{title}</h2>
     <p className="mt-1 text-xs text-slate-500">{data.reviewed} reviewed field decisions</p>
     <div className="mt-4 grid grid-cols-2 gap-3">
-      <div className="rounded-md bg-slate-50 p-3"><p className="text-xs text-slate-500">Accepted</p><p className="mt-1 text-lg font-semibold text-emerald-700">{data.accepted}</p><p className="text-xs text-slate-500">{rate(data.acceptance_rate)} of reviews</p></div>
-      <div className="rounded-md bg-slate-50 p-3"><p className="text-xs text-slate-500">Overridden</p><p className="mt-1 text-lg font-semibold text-amber-700">{data.overridden}</p><p className="text-xs text-slate-500">{rate(data.override_rate)} of reviews</p></div>
+      <div className="rounded-md bg-emerald-50/70 p-3"><p className="flex items-center gap-1 text-xs text-emerald-800"><UiIcon name="check-circle" className="h-3.5 w-3.5" />Accepted</p><p className="mt-1 text-lg font-semibold text-emerald-700">{data.accepted}</p><p className="text-xs text-slate-500">{rate(data.acceptance_rate)} of reviews</p></div>
+      <div className="rounded-md bg-amber-50/70 p-3"><p className="flex items-center gap-1 text-xs text-amber-800"><UiIcon name="arrow-right" className="h-3.5 w-3.5" />Overridden</p><p className="mt-1 text-lg font-semibold text-amber-700">{data.overridden}</p><p className="text-xs text-slate-500">{rate(data.override_rate)} of reviews</p></div>
     </div>
   </section>;
 }
@@ -75,7 +76,7 @@ export default function AIAnalyticsPage() {
 
   return <AgentShell activeSection="analytics" selectedTeamName="AI Analytics">
     <div className="mx-auto max-w-[1320px] space-y-6">
-      <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">Quality operations</p><h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">AI analytics</h1><p className="mt-1.5 text-sm text-slate-600">Human review outcomes and routing activity for predictions visible to your account.</p></div>
+      <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end"><div><p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-violet-700"><UiIcon name="brain-circuit" className="h-4 w-4" />Quality operations</p><h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">AI analytics</h1><p className="mt-1.5 text-sm text-slate-600">Human review outcomes and routing activity for predictions visible to your account.</p></div>
         <div aria-label="Analytics filters" className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm shadow-slate-200/40 sm:grid-cols-3">
           <label className="text-xs font-medium text-slate-600">From<input type="date" value={from} max={to} onChange={(event) => setFrom(event.target.value)} className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" /></label>
           <label className="text-xs font-medium text-slate-600">To<input type="date" value={to} min={from} max={defaultDate(0)} onChange={(event) => setTo(event.target.value)} className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100" /></label>
@@ -95,8 +96,8 @@ export default function AIAnalyticsPage() {
               <div className="grid gap-4 lg:grid-cols-2"><ReviewBreakdown title="Category review outcomes" data={data.category} /><ReviewBreakdown title="Priority review outcomes" data={data.priority} /></div>
               <div className="grid gap-4 lg:grid-cols-2"><DecisionBreakdown title="Outcomes by predicted category" rows={data.category_review_breakdown} /><DecisionBreakdown title="Outcomes by predicted priority" rows={data.priority_review_breakdown} /></div>
               <div className="grid gap-4 lg:grid-cols-2">
-                <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/40"><h2 className="text-sm font-semibold text-slate-900">Review activity over time</h2><p className="mb-4 mt-1 text-xs text-slate-500">Reviews by day, limited to the selected prediction cohort and date range.</p><BarRows rows={data.review_activity.map((item) => ({ date: item.date, reviews: item.reviews }))} labelKey="date" countKey="reviews" /></section>
-                <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/40"><h2 className="text-sm font-semibold text-slate-900">AI team-routing distribution</h2><p className="mb-4 mt-1 text-xs text-slate-500">Distinct tickets with AI assignment events in this date range.</p><BarRows rows={data.ai_routing_distribution.map((item) => ({ team: item.team, tickets: item.tickets }))} labelKey="team" countKey="tickets" /></section>
+                <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/40"><h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900"><UiIcon name="activity" className="h-4 w-4 text-violet-700" />Review activity over time</h2><p className="mb-4 mt-1 text-xs text-slate-500">Reviews by day, limited to the selected prediction cohort and date range.</p><BarRows rows={data.review_activity.map((item) => ({ date: item.date, reviews: item.reviews }))} labelKey="date" countKey="reviews" /></section>
+                <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/40"><h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900"><UiIcon name="users" className="h-4 w-4 text-violet-700" />AI team-routing distribution</h2><p className="mb-4 mt-1 text-xs text-slate-500">Distinct tickets with AI assignment events in this date range.</p><BarRows rows={data.ai_routing_distribution.map((item) => ({ team: item.team, tickets: item.tickets }))} labelKey="team" countKey="tickets" /></section>
               </div>
               <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/40"><h2 className="text-sm font-semibold text-slate-900">Model-version review comparison</h2><p className="mb-4 mt-1 text-xs text-slate-500">Observed agent decisions grouped by model version. Counts are field-level review records.</p><div className="grid gap-5 md:grid-cols-2">
                 <div><h3 className="mb-2 text-xs font-semibold text-slate-700">Category models</h3>{data.category_model_versions.length ? <ul className="divide-y divide-slate-100">{data.category_model_versions.map((item) => <li key={item.model_version} className="flex justify-between gap-4 py-2 text-xs"><span className="break-all font-medium text-slate-700">{item.model_version}</span><span className="shrink-0 text-right text-slate-600">{item.accepted} accepted / {item.overridden} overridden<br />{rate(item.reviews ? item.accepted / item.reviews : null)} acceptance · {item.reviews} reviews<br />{item.reviewed_tickets} reviewed tickets</span></li>)}</ul> : <p className="text-sm text-slate-500">Insufficient records.</p>}</div>

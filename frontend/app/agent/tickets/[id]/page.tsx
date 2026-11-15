@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AgentShell } from "@/components/agent-shell";
 import { AgentAIEvidencePanel } from "@/components/agent-ai-evidence-panel";
 import { TicketSLAPanel } from "@/components/agent-sla";
-import { ConfidenceBar, PriorityBadge, StatusBadge } from "@/components/ticket-badges";
+import { PriorityBadge, StatusBadge } from "@/components/ticket-badges";
 import { UiIcon } from "@/components/ui-icon";
 import {
   createTicketComment,
