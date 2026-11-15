@@ -1,4 +1,5 @@
 import type { SLAClock, SLAState, TicketSLA } from "@/lib/api";
+import { UiIcon } from "@/components/ui-icon";
 
 function dateTime(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
@@ -18,7 +19,7 @@ export function formatDuration(seconds: number | null) {
 const tones: Record<SLAState, string> = {
   ON_TRACK: "bg-emerald-50 text-emerald-800 ring-emerald-200",
   APPROACHING: "bg-amber-50 text-amber-900 ring-amber-200",
-  BREACHED: "bg-rose-50 text-rose-800 ring-rose-200",
+  BREACHED: "bg-red-50 text-red-800 ring-red-200",
   MET: "bg-emerald-50 text-emerald-800 ring-emerald-200",
   NOT_APPLICABLE: "bg-slate-100 text-slate-600 ring-slate-200",
 };
@@ -29,7 +30,10 @@ export function SLAStateBadge({ clock, compact = false }: { clock: SLAClock; com
       : clock.state === "BREACHED" ? (clock.completed_at ? "Completed after deadline" : "Breached")
         : clock.state === "MET" ? "Completed"
           : "Not applicable";
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${tones[clock.state]} ${compact ? "px-2 py-0.5" : ""}`}>{label}</span>;
+  const icon = clock.state === "ON_TRACK" || clock.state === "MET" ? "check-circle" : clock.state === "APPROACHING" ? "alert-circle" : clock.state === "BREACHED" ? "alert-triangle" : "clock";
+  const completed = clock.completed_at !== null;
+  const stateTone = clock.state === "BREACHED" && completed ? "bg-red-50 text-red-800 ring-red-200" : tones[clock.state];
+  return <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${stateTone} ${compact ? "px-2 py-0.5" : ""}`}><UiIcon name={icon} className="h-3.5 w-3.5" />{label === "Completed" ? "Completed on time" : label}</span>;
 }
 
 function ClockCard({ title, clock }: { title: string; clock: SLAClock }) {
@@ -38,8 +42,9 @@ function ClockCard({ title, clock }: { title: string; clock: SLAClock }) {
     : clock.actively_overdue ? `Overdue by ${formatDuration(clock.overdue_seconds)}`
       : clock.remaining_seconds !== null ? `${formatDuration(clock.remaining_seconds)} remaining`
         : "No active timer";
-  return <section className="rounded-md border border-slate-200 bg-slate-50 p-3.5">
-    <div className="flex flex-wrap items-start justify-between gap-2"><h3 className="text-sm font-semibold text-slate-900">{title}</h3><SLAStateBadge clock={clock} /></div>
+  const accent = clock.state === "BREACHED" ? "border-l-red-500" : clock.state === "APPROACHING" ? "border-l-amber-500" : clock.state === "ON_TRACK" || clock.state === "MET" ? "border-l-emerald-500" : "border-l-slate-300";
+  return <section className={`rounded-md border border-l-4 border-slate-200 bg-slate-50 p-3.5 ${accent}`}>
+    <div className="flex flex-wrap items-start justify-between gap-2"><h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-900"><UiIcon name="calendar-clock" className="h-4 w-4 text-slate-500" />{title}</h3><SLAStateBadge clock={clock} /></div>
     <dl className="mt-3 space-y-2 text-xs">
       <div className="flex justify-between gap-3"><dt className="text-slate-500">Target</dt><dd className="text-right font-medium text-slate-800">{formatDuration(clock.target_minutes * 60)}</dd></div>
       <div className="flex justify-between gap-3"><dt className="text-slate-500">Deadline</dt><dd className="text-right font-medium text-slate-800">{dateTime(clock.deadline)}</dd></div>
