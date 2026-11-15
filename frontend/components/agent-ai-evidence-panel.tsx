@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { createTicketPredictionReview } from "@/lib/api";
+import { ReviewOutcome } from "@/components/ticket-badges";
+import { UiIcon } from "@/components/ui-icon";
 
 import type {
   Team,
@@ -27,8 +29,9 @@ function percent(value: number) {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const icon = title === "Prediction evidence" ? "brain-circuit" : title === "Routing" ? "users" : "ticket";
   return <section className="rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/40">
-    <h2 className="border-b border-slate-100 px-4 py-3 text-sm font-semibold text-slate-900">{title}</h2>
+    <h2 className={`flex items-center gap-2 border-b border-slate-100 px-4 py-3 text-sm font-semibold ${title === "Prediction evidence" ? "bg-violet-50/60 text-violet-900" : "text-slate-900"}`}><UiIcon name={icon} className={`h-4 w-4 ${title === "Prediction evidence" ? "text-violet-700" : "text-slate-500"}`} />{title}</h2>
     <div className="p-4">{children}</div>
   </section>;
 }
@@ -56,9 +59,7 @@ function FieldReviews({ field, reviews }: { field: "category" | "priority"; revi
   return <div className="border-t border-slate-100 pt-3 first:border-0 first:pt-0">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-xs font-semibold text-slate-800">{label}</h3>
-      <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${!latest ? "bg-slate-100 text-slate-600" : latest.outcome === "ACCEPTED" ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"}`}>
-        {!latest ? "Not reviewed" : latest.outcome === "ACCEPTED" ? "Accepted" : "Overridden"}
-      </span>
+      {latest ? <ReviewOutcome outcome={latest.outcome} /> : <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">Not reviewed</span>}
     </div>
     {!latest ? <p className="mt-1 text-xs text-slate-500">No human review recorded for this prediction.</p> : <ul className="mt-2 space-y-2">
       {fieldReviews.map((review) => <li key={review.id} className="rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-700">
