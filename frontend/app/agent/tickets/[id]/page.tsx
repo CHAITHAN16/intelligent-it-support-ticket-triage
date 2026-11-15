@@ -356,9 +356,9 @@ export default function AgentTicketDetailPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs font-semibold text-slate-500">#{ticket.id}</span>
-                  <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${statusTone(ticket.status)}`}>{ticket.status.replaceAll("_", " ")}</span>
-                  <span className={`text-xs font-semibold ${priorityTone(ticket.priority)}`}>{ticket.priority} priority</span>
+                  <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-slate-500"><UiIcon name="ticket" className="h-3.5 w-3.5" />#{ticket.id}</span>
+                  <StatusBadge status={ticket.status} compact />
+                  <PriorityBadge priority={ticket.priority} />
                 </div>
                 <h1 className="mt-2 break-words text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">{ticket.title}</h1>
                 <p className="mt-2 text-xs text-slate-600">{ticket.assigned_team_name ?? "No team assigned"} <span className="px-1 text-slate-300">·</span> {agentName(ticket.assigned_agent_id)}</p>
@@ -369,7 +369,7 @@ export default function AgentTicketDetailPage() {
           </header>
 
           <nav aria-label="Ticket sections" className="sticky top-0 z-20 -mx-4 mt-3 border-b border-slate-200 bg-slate-50/95 px-4 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-            <div className="flex min-w-0 gap-1 overflow-x-auto py-2">{SECTION_LINKS.map((item) => <a key={item.id} href={`#${item.id}`} aria-current={activeTicketSection === item.id ? "location" : undefined} onClick={() => setActiveTicketSection(item.id)} className={`shrink-0 rounded-md px-3 py-2 text-xs font-semibold ${activeTicketSection === item.id ? "bg-white text-sky-800 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:bg-white hover:text-slate-900"}`}>{item.label}</a>)}</div>
+            <div className="flex min-w-0 gap-1 overflow-x-auto py-2">{SECTION_LINKS.map((item, index) => <a key={item.id} href={`#${item.id}`} aria-current={activeTicketSection === item.id ? "location" : undefined} onClick={() => setActiveTicketSection(item.id)} className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border-b-2 px-3 py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${activeTicketSection === item.id ? "border-blue-600 bg-white text-blue-700 shadow-sm" : "border-transparent text-slate-600 hover:bg-white hover:text-slate-900"}`}><UiIcon name={SECTION_ICONS[index]} className="h-3.5 w-3.5" />{item.label}</a>)}</div>
           </nav>
 
           <div className="mt-4 grid min-w-0 grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)] xl:gap-6">
@@ -377,7 +377,7 @@ export default function AgentTicketDetailPage() {
               <Section title="Overview" description="Request summary, classification, and current ownership." className="scroll-mt-28">
                 <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,0.85fr)]">
                   <div className="min-w-0 rounded-md bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Employee request · User #{ticket.creator_id}</p><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">{ticket.description}</p></div>
-                  <dl className="grid min-w-0 gap-x-5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"><Detail label="Category" value={ticket.category ?? "Not assigned"} /><Detail label="Subcategory" value={ticket.subcategory ?? "Not assigned"} /><Detail label="Priority" value={ticket.priority} valueClass={priorityTone(ticket.priority)} /><Detail label="Status" value={ticket.status.replaceAll("_", " ")} /><Detail label="Assigned team" value={ticket.assigned_team_name ?? "Unassigned"} /><Detail label="Assigned agent" value={agentName(ticket.assigned_agent_id)} /><Detail label="Created" value={formattedDate(ticket.created_at)} /><Detail label="Last updated" value={formattedDate(ticket.updated_at)} /></dl>
+                  <dl className="grid min-w-0 gap-x-5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"><Detail label="Category" value={ticket.category ?? "Not assigned"} /><Detail label="Subcategory" value={ticket.subcategory ?? "Not assigned"} /><Detail label="Priority" value={ticket.priority} /><Detail label="Status" value={ticket.status.replaceAll("_", " ")} /><Detail label="Assigned team" value={ticket.assigned_team_name ?? "Unassigned"} /><Detail label="Assigned agent" value={agentName(ticket.assigned_agent_id)} /><Detail label="Created" value={formattedDate(ticket.created_at)} /><Detail label="Last updated" value={formattedDate(ticket.updated_at)} /></dl>
                 </div>
               </Section>
 
