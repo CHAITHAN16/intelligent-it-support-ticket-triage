@@ -13,7 +13,8 @@ function defaultDate(offsetDays: number) {
 }
 
 function Metric({ title, value, note }: { title: string; value: string; note: string }) {
-  return <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/40"><p className="text-xs font-medium text-slate-500">{title}</p><p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{value}</p><p className="mt-1 text-xs text-slate-500">{note}</p></article>;
+  const icon = title === "Prediction snapshots" ? "layers" : title === "Reviewed tickets" ? "users" : title === "Review coverage" ? "chart" : "check-circle";
+  return <article className="flex min-h-32 items-start justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-900/[0.03]"><div><p className="text-xs font-medium text-slate-500">{title}</p><p className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{value}</p><p className="mt-1 text-xs text-slate-500">{note}</p></div><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50 text-violet-700"><UiIcon name={icon} className="h-4 w-4" /></span></article>;
 }
 
 function rate(value: number | null) { return value === null ? "—" : `${(value * 100).toFixed(1)}%`; }
