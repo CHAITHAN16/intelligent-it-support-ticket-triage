@@ -65,11 +65,11 @@ body {
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  --app-background: #0b1220;
-  --app-card: #131d2e;
-  --app-border: #29364a;
+  --app-background: #090909;
+  --app-card: #151515;
+  --app-border: #303030;
   --background: var(--app-background);
-  --foreground: #e2e8f0;
+  --foreground: #f3f4f6;
 }
 
 html[data-theme="dark"] body,
@@ -92,7 +92,7 @@ html[data-theme="dark"] .bg-slate-50\/80,
 html[data-theme="dark"] .bg-slate-50\/70,
 html[data-theme="dark"] .bg-slate-50\/60,
 html[data-theme="dark"] .bg-slate-50\/40 {
-  background-color: #182438 !important;
+  background-color: #1b1b1b !important;
 }
 
 html[data-theme="dark"] .text-slate-950,
@@ -100,7 +100,7 @@ html[data-theme="dark"] .text-slate-900,
 html[data-theme="dark"] .text-slate-800,
 html[data-theme="dark"] .text-slate-700,
 html[data-theme="dark"] .text-slate-600 {
-  color: #e2e8f0 !important;
+  color: #f3f4f6 !important;
 }
 
 html[data-theme="dark"] .text-slate-500,
@@ -123,13 +123,13 @@ html[data-theme="dark"] .bg-emerald-50,
 html[data-theme="dark"] .bg-amber-50,
 html[data-theme="dark"] .bg-red-50,
 html[data-theme="dark"] .bg-rose-50 {
-  background-color: #202b3d !important;
+  background-color: #1d1d1d !important;
 }
 
 html[data-theme="dark"] .hover\:bg-slate-50:hover,
 html[data-theme="dark"] .hover\:bg-slate-100:hover,
 html[data-theme="dark"] .hover\:bg-white:hover {
-  background-color: #243149 !important;
+  background-color: #262626 !important;
 }
 
 html[data-theme="dark"] .text-teal-800,
@@ -143,8 +143,8 @@ html[data-theme="dark"] input,
 html[data-theme="dark"] select,
 html[data-theme="dark"] textarea {
   border-color: var(--app-border);
-  background-color: #111b2b;
-  color: #e2e8f0;
+  background-color: #111111;
+  color: #f3f4f6;
 }
 
 html[data-theme="dark"] input::placeholder,
