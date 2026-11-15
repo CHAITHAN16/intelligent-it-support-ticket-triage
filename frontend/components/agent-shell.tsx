@@ -112,7 +112,6 @@ export function AgentShell({
     return <>
       {navItems.map((item) => {
         const active = activeSection === item.section;
-        {sidebarExpanded && !mobile && item.section === "sla" && <span className="mb-1 mt-5 w-full border-t border-slate-100 px-3 pt-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Performance</span>}
         return <Link key={item.section} href={item.href} aria-label={item.label} aria-current={active ? "page" : undefined} title={sidebarExpanded || mobile ? undefined : item.label} className={`flex min-h-10 items-center gap-3 whitespace-nowrap rounded-lg border-l-2 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${mobile ? "px-3" : sidebarExpanded ? "px-3" : "justify-center px-0"} ${active ? "border-teal-600 bg-teal-50 text-teal-800" : "border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`}>
           <UiIcon name={NAV_ICONS[item.section]} className="h-5 w-5" />
           <span className={mobile || sidebarExpanded ? "" : "sr-only"}>{item.label}</span>
