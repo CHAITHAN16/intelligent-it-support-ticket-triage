@@ -84,7 +84,8 @@ export function AgentShell({
   const sidebarExpanded = useSyncExternalStore(subscribeToSidebarPreference, getSidebarPreference, getServerSidebarPreference);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("support-dashboard-theme");
+    let saved: string | null = null;
+    try { saved = window.localStorage.getItem("support-dashboard-theme"); } catch { /* Use the light theme when browser storage is unavailable. */ }
     const nextTheme = saved === "dark" ? "dark" : "light";
     setTheme(nextTheme);
     document.documentElement.dataset.theme = nextTheme;
@@ -94,7 +95,7 @@ export function AgentShell({
     const nextTheme = theme === "light" ? "dark" : "light";
     setTheme(nextTheme);
     document.documentElement.dataset.theme = nextTheme;
-    window.localStorage.setItem("support-dashboard-theme", nextTheme);
+    try { window.localStorage.setItem("support-dashboard-theme", nextTheme); } catch { /* The selected theme remains active for this page. */ }
   }
 
   useEffect(() => {

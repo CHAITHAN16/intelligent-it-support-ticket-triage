@@ -11,7 +11,8 @@ export function SiteHeader() {
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    const dark = window.localStorage.getItem("support-dashboard-theme") === "dark";
+    let dark = false;
+    try { dark = window.localStorage.getItem("support-dashboard-theme") === "dark"; } catch { /* Default to light mode when storage is unavailable. */ }
     setDarkMode(dark);
     document.documentElement.dataset.theme = dark ? "dark" : "light";
   }, []);
@@ -20,7 +21,7 @@ export function SiteHeader() {
     const dark = !darkMode;
     setDarkMode(dark);
     document.documentElement.dataset.theme = dark ? "dark" : "light";
-    window.localStorage.setItem("support-dashboard-theme", dark ? "dark" : "light");
+    try { window.localStorage.setItem("support-dashboard-theme", dark ? "dark" : "light"); } catch { /* The selected theme remains active for this page. */ }
   }
 
   return (
