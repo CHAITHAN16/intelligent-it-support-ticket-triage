@@ -108,9 +108,9 @@ export function AgentShell({
     };
   }, []);
 
-  function renderNavigation(mobile = false) {
+  function renderNavigation(mobile = false, items = navItems) {
     return <>
-      {navItems.map((item) => {
+      {items.map((item) => {
         const active = activeSection === item.section;
         return <Link key={item.section} href={item.href} aria-label={item.label} aria-current={active ? "page" : undefined} title={sidebarExpanded || mobile ? undefined : item.label} className={`flex min-h-10 items-center gap-3 whitespace-nowrap rounded-lg border-l-2 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${mobile ? "px-3" : sidebarExpanded ? "px-3" : "justify-center px-0"} ${active ? "border-teal-600 bg-teal-50 text-teal-800" : "border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`}>
           <UiIcon name={NAV_ICONS[item.section]} className="h-5 w-5" />
@@ -138,7 +138,10 @@ export function AgentShell({
         </div>
         {sidebarExpanded && <p className="px-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Workspace</p>}
         <nav aria-label="Agent workspace navigation" className="flex flex-col gap-1">
-          {renderNavigation()}
+          {sidebarExpanded && <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Workspace</p>}
+          {renderNavigation(false, navItems.filter((item) => ["overview", "team", "all"].includes(item.section)))}
+          {sidebarExpanded && <p className="mt-5 border-t border-slate-100 px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Performance</p>}
+          {renderNavigation(false, navItems.filter((item) => ["sla", "analytics"].includes(item.section)))}
         </nav>
         {activeSection === "team" && <div className={`mt-5 border-t border-slate-200 pt-4 ${sidebarExpanded ? "" : "flex justify-center"}`}>
           {sidebarExpanded && <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Selected team</p>}
