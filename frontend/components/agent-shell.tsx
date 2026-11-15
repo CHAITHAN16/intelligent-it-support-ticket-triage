@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { UiIcon } from "@/components/ui-icon";
 
 import type { Team } from "@/lib/api";
@@ -79,8 +79,23 @@ export function AgentShell({
   children: React.ReactNode;
 }) {
   const { logout, user } = useAuth();
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const navItems = NAV_ITEMS.filter((item) => item.section !== "analytics" || user?.role === "AGENT" || user?.role === "ADMIN");
   const sidebarExpanded = useSyncExternalStore(subscribeToSidebarPreference, getSidebarPreference, getServerSidebarPreference);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("support-dashboard-theme");
+    const nextTheme = saved === "dark" ? "dark" : "light";
+    setTheme(nextTheme);
+    document.documentElement.dataset.theme = nextTheme;
+  }, []);
+
+  function toggleTheme() {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+    document.documentElement.dataset.theme = nextTheme;
+    window.localStorage.setItem("support-dashboard-theme", nextTheme);
+  }
 
   useEffect(() => {
     const htmlOverflow = document.documentElement.style.overflow;
@@ -111,17 +126,17 @@ export function AgentShell({
 
   return (
     <div className="fixed inset-0 h-dvh w-full overflow-hidden bg-slate-50 text-slate-950">
-      <aside id="agent-sidebar" className={`fixed inset-y-0 left-0 z-30 hidden h-dvh flex-col overflow-y-auto border-r border-slate-800 bg-[#111827] py-6 transition-[width,padding] duration-200 ease-in-out md:flex ${sidebarExpanded ? "w-60 px-4" : "w-[4.5rem] px-2"}`}>
+      <aside id="agent-sidebar" className={`fixed inset-y-0 left-0 z-30 hidden h-dvh flex-col overflow-y-auto border-r border-slate-200 bg-white py-6 transition-[width,padding] duration-200 ease-in-out md:flex ${sidebarExpanded ? "w-60 px-4" : "w-[4.5rem] px-2"}`}>
         <div className={`mb-8 flex items-center ${sidebarExpanded ? "justify-between gap-2 px-2" : "flex-col justify-center gap-3"}`}>
           <Link href="/agent" className="flex items-center gap-3" aria-label="Support agent overview" title={sidebarExpanded ? undefined : "IT Support home"}>
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-xs font-bold text-white">IT</span>
-            {sidebarExpanded && <span className="text-sm font-semibold tracking-tight text-white">IT Support</span>}
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 text-xs font-bold text-white shadow-sm">IT</span>
+            {sidebarExpanded && <span className="text-sm font-semibold tracking-tight text-slate-900">IntelliDesk</span>}
           </Link>
-          <button type="button" onClick={() => setSidebarPreference(!sidebarExpanded)} aria-label={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"} aria-expanded={sidebarExpanded} aria-controls="agent-sidebar" title={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400">
+          <button type="button" onClick={() => setSidebarPreference(!sidebarExpanded)} aria-label={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"} aria-expanded={sidebarExpanded} aria-controls="agent-sidebar" title={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500">
             <SidebarToggleIcon expanded={sidebarExpanded} />
           </button>
         </div>
-        {sidebarExpanded && <p className="px-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Workspace</p>}
+        {sidebarExpanded && <p className="px-3 pb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Workspace</p>}
         <nav aria-label="Agent workspace navigation" className="flex flex-col gap-1">
           {renderNavigation()}
         </nav>
@@ -144,17 +159,17 @@ export function AgentShell({
         </div>
       </aside>
 
-      <header className={`fixed inset-x-0 top-0 z-20 h-16 border-b border-slate-800 bg-[#111827] text-white transition-[left] duration-200 ease-in-out ${sidebarExpanded ? "md:left-60" : "md:left-[4.5rem]"}`}>
+      <header className={`fixed inset-x-0 top-0 z-20 h-16 border-b border-slate-200 bg-white text-slate-900 transition-[left] duration-200 ease-in-out ${sidebarExpanded ? "md:left-60" : "md:left-[4.5rem]"}`}>
         <div className="flex h-full min-w-0 items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/agent" className="flex min-w-0 items-center gap-3" aria-label="Support agent overview">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-xs font-bold text-white">IT</span>
-            <span className="min-w-0 truncate text-sm font-semibold tracking-tight">IT Support <span className="font-normal text-slate-400">/ Agent workspace</span></span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600 text-xs font-bold text-white md:hidden">IT</span>
+            <span className="min-w-0 truncate text-sm font-semibold tracking-tight">IntelliDesk <span className="font-normal text-slate-400">/ Agent workspace</span></span>
           </Link>
-          <div className="flex items-center gap-3"><div className="hidden text-right sm:block"><p className="text-xs font-medium">{user?.name ?? "Support user"}</p><p className="text-[11px] text-slate-400">{user?.role === "ADMIN" ? "Administrator" : "Support agent"}</p></div><button type="button" onClick={logout} className="rounded-md border border-slate-600 px-3 py-2 text-sm font-medium text-slate-100 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400">Log out</button></div>
+          <div className="flex items-center gap-2 sm:gap-3"><button type="button" onClick={toggleTheme} aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`} aria-pressed={theme === "dark"} title={`Switch to ${theme === "light" ? "dark" : "light"} mode`} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"><UiIcon name={theme === "light" ? "moon" : "sun"} className="h-4 w-4" /><span className="sr-only">{theme === "light" ? "Dark mode" : "Light mode"}</span></button><div className="hidden text-right sm:block"><p className="text-xs font-medium">{user?.name ?? "Support user"}</p><p className="text-[11px] text-slate-400">{user?.role === "ADMIN" ? "Administrator" : "Support agent"}</p></div><button type="button" onClick={logout} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500">Log out</button></div>
         </div>
       </header>
 
-      <nav aria-label="Agent workspace navigation" className="fixed inset-x-0 top-16 z-20 flex h-12 items-center gap-1 overflow-x-auto border-b border-slate-800 bg-[#111827] px-3 md:hidden">
+      <nav aria-label="Agent workspace navigation" className="fixed inset-x-0 top-16 z-20 flex h-12 items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-3 md:hidden">
         {renderNavigation(true)}
       </nav>
       <main id="agent-main" aria-label="Agent workspace content" className={`fixed inset-x-0 bottom-0 top-28 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-6 focus:outline-none sm:px-6 sm:py-8 md:top-16 md:px-8 transition-[left] duration-200 ease-in-out ${sidebarExpanded ? "md:left-60" : "md:left-[4.5rem]"}`} tabIndex={-1}>
