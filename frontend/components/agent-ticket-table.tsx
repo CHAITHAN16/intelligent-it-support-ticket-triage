@@ -75,17 +75,17 @@ export function AgentTicketTable({
             <td className="whitespace-nowrap px-4 py-3 text-xs font-medium text-slate-500">#{ticket.id}</td>
             <td className="max-w-[300px] px-4 py-3"><Link href={ticketHref(ticket.id)} className="block truncate font-medium text-sky-800 hover:underline focus-visible:outline-2 focus-visible:outline-sky-600">{ticket.title}</Link></td>
             <td className="px-4 py-3 text-slate-600">{ticket.category ?? "Uncategorized"}</td>
-            <td className="px-4 py-3"><Badge className={priorityClass(ticket.priority)}>{ticket.priority}</Badge></td>
-            <td className="px-4 py-3"><Badge className={statusClass(ticket.status)}>{ticket.status.replaceAll("_", " ")}</Badge></td>
-            <td className="px-4 py-3"><span className="block text-slate-700">{ticket.assigned_team_name ?? "Unassigned team"}</span><span className="mt-0.5 block text-xs text-slate-500">{ticket.assigned_agent_id == null ? "No agent" : `Agent #${ticket.assigned_agent_id}`}</span></td>
+            <td className="px-4 py-3"><PriorityBadge priority={ticket.priority} /></td>
+            <td className="px-4 py-3"><StatusBadge status={ticket.status} /></td>
+            <td className="px-4 py-3"><span className="flex items-center gap-1.5 text-slate-700"><UiIcon name="users" className="h-3.5 w-3.5 text-slate-500" />{ticket.assigned_team_name ?? "Unassigned team"}</span><span className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500"><UiIcon name="user-check" className="h-3.5 w-3.5" />{ticket.assigned_agent_id == null ? "No agent" : `Agent #${ticket.assigned_agent_id}`}</span></td>
             <td className="whitespace-nowrap px-4 py-3 text-slate-500">{dateLabel(ticket.created_at)}</td>
           </tr>)}</tbody>
         </table>
       </div>
       <div className="divide-y divide-slate-100 md:hidden">{visibleTickets.map((ticket) => <Link key={ticket.id} href={ticketHref(ticket.id)} className="block px-4 py-4 hover:bg-slate-50 focus-visible:bg-sky-50 focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-sky-600">
-        <div className="flex items-start justify-between gap-3"><span className="min-w-0"><span className="block text-xs font-medium text-slate-500">Ticket #{ticket.id}</span><span className="mt-1 block text-sm font-semibold text-slate-950">{ticket.title}</span></span><Badge className={priorityClass(ticket.priority)}>{ticket.priority}</Badge></div>
-        <div className="mt-3 flex flex-wrap items-center gap-2"><Badge className={statusClass(ticket.status)}>{ticket.status.replaceAll("_", " ")}</Badge><span className="text-xs text-slate-600">{ticket.category ?? "Uncategorized"}</span><span className="text-xs text-slate-500">{ticket.assigned_team_name ?? "Unassigned team"}</span></div>
-        <time dateTime={ticket.created_at} className="mt-2 block text-xs text-slate-500">{dateLabel(ticket.created_at)}</time>
+        <div className="flex items-start justify-between gap-3"><span className="min-w-0"><span className="flex items-center gap-1 text-xs font-medium text-slate-500"><UiIcon name="ticket" className="h-3.5 w-3.5" />Ticket #{ticket.id}</span><span className="mt-1 block text-sm font-semibold text-slate-950">{ticket.title}</span></span><PriorityBadge priority={ticket.priority} /></div>
+        <div className="mt-3 flex flex-wrap items-center gap-2"><StatusBadge status={ticket.status} compact /><span className="text-xs text-slate-600">{ticket.category ?? "Uncategorized"}</span><span className="flex items-center gap-1 text-xs text-slate-500"><UiIcon name="users" className="h-3.5 w-3.5" />{ticket.assigned_team_name ?? "Unassigned team"}</span></div>
+        <time dateTime={ticket.created_at} className="mt-2 flex items-center gap-1 text-xs text-slate-500"><UiIcon name="clock" className="h-3.5 w-3.5" />{dateLabel(ticket.created_at)}</time>
       </Link>)}</div>
     </>}
   </section>;
