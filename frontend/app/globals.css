@@ -159,6 +159,30 @@ html[data-theme="dark"] .shadow-lg {
   box-shadow: var(--tw-shadow);
 }
 
+.sla-summary-success { background-color: #ecfdf5; }
+.sla-summary-warning { background-color: #fffbeb; }
+.sla-summary-breach { background-color: #fef2f2; }
+.sla-summary-neutral { background-color: #f1f5f9; }
+
+html[data-theme="dark"] .sla-clock-card {
+  background-color: #181818 !important;
+  border-color: #303030 !important;
+}
+
+html[data-theme="dark"] .sla-clock-icon {
+  background-color: #222222 !important;
+  border-color: #383838 !important;
+}
+
+html[data-theme="dark"] .sla-summary-success { background-color: #10261b; color: #86efac !important; }
+html[data-theme="dark"] .sla-summary-warning { background-color: #2b210f; color: #fcd34d !important; }
+html[data-theme="dark"] .sla-summary-breach { background-color: #2b1717; color: #fca5a5 !important; }
+html[data-theme="dark"] .sla-summary-neutral { background-color: #242424; color: #cbd5e1 !important; }
+
+html[data-theme="dark"] .sla-clock-card .bg-emerald-50 { background-color: #10261b !important; color: #86efac !important; }
+html[data-theme="dark"] .sla-clock-card .bg-amber-50 { background-color: #2b210f !important; color: #fcd34d !important; }
+html[data-theme="dark"] .sla-clock-card .bg-red-50 { background-color: #2b1717 !important; color: #fca5a5 !important; }
+
 .rounded-3xl {
   border-radius: 1rem;
 }
